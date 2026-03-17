@@ -11,7 +11,7 @@ func (m *Model) View() string {
 	if m.Width == 0 || m.Height == 0 {
 		return "Loading..."
 	}
-	
+
 	switch m.State {
 	case viewList:
 		return m.viewList()
@@ -30,11 +30,11 @@ func (m *Model) View() string {
 
 func (m *Model) viewList() string {
 	var b strings.Builder
-	
+
 	title := TitleStyle.Render(" 🎲 Foundry Tunnel Manager ")
 	b.WriteString(title)
 	b.WriteString("\n\n")
-	
+
 	if len(m.Items) == 0 {
 		b.WriteString("No tunnels configured. Press 'a' to add one.\n")
 	} else {
@@ -44,9 +44,9 @@ func (m *Model) viewList() string {
 			b.WriteString("\n")
 		}
 	}
-	
+
 	b.WriteString("\n")
-	
+
 	if m.Message != "" {
 		msgStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#FFD700")).
@@ -55,11 +55,10 @@ func (m *Model) viewList() string {
 		b.WriteString(msgStyle.Render(m.Message))
 		b.WriteString("\n")
 	}
-	
+
 	b.WriteString("\n")
 	b.WriteString(m.Help.View(m.Keys))
-	
-	// Show API key hint if not configured
+
 	if m.App.Config.Shortener.APIKeys["bitly"] == "" {
 		b.WriteString("\n")
 		hintStyle := lipgloss.NewStyle().
@@ -67,13 +66,13 @@ func (m *Model) viewList() string {
 			Italic(true)
 		b.WriteString(hintStyle.Render("💡 Press 'k' to configure Bit.ly API key for short URLs"))
 	}
-	
+
 	return b.String()
 }
 
 func (m *Model) renderTunnelItem(idx int, item TunnelItem) string {
 	selected := idx == m.Cursor
-	
+
 	var statusStr, statusColor string
 	if item.Status.Running {
 		if item.Status.Starting {
@@ -87,17 +86,17 @@ func (m *Model) renderTunnelItem(idx int, item TunnelItem) string {
 		statusStr = "● OFFLINE"
 		statusColor = "#FF0000"
 	}
-	
+
 	statusStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(statusColor))
-	
+
 	var parts []string
-	
+
 	if selected {
 		parts = append(parts, "▶ ")
 	} else {
 		parts = append(parts, "  ")
 	}
-	
+
 	nameStyle := lipgloss.NewStyle().Bold(selected)
 	if selected {
 		nameStyle = nameStyle.Background(lipgloss.Color("#333333"))
@@ -106,12 +105,12 @@ func (m *Model) renderTunnelItem(idx int, item TunnelItem) string {
 	parts = append(parts, fmt.Sprintf("│ %s", item.Tunnel.Provider))
 	parts = append(parts, fmt.Sprintf("│ :%d", item.Tunnel.LocalPort))
 	parts = append(parts, statusStyle.Render("│ "+statusStr))
-	
+
 	if item.Status.Running && !item.Status.Starting {
 		if item.Status.PublicURL != "" {
 			parts = append(parts, URLStyle.Render("│ "+truncate(item.Status.PublicURL, 30)))
 		}
-		
+
 		if item.Tunnel.ShortURL != "" {
 			shortDisplay := item.Tunnel.ShortURL
 			if mapping, ok := m.App.URLCache.Get(item.Tunnel.ID); ok {
@@ -120,17 +119,17 @@ func (m *Model) renderTunnelItem(idx int, item TunnelItem) string {
 			parts = append(parts, ShortURLStyle.Render("│ "+truncate(shortDisplay, 25)))
 		}
 	}
-	
+
 	return strings.Join(parts, " ")
 }
 
 func (m *Model) viewLogs() string {
 	var b strings.Builder
-	
+
 	title := TitleStyle.Render(" 📋 Tunnel Logs ")
 	b.WriteString(title)
 	b.WriteString("\n\n")
-	
+
 	var tunnelName string
 	if item, ok := m.selectedItem(); ok && item.Tunnel.ID == m.SelectedTunnel {
 		tunnelName = item.Tunnel.Name
@@ -142,29 +141,29 @@ func (m *Model) viewLogs() string {
 			}
 		}
 	}
-	
+
 	b.WriteString(fmt.Sprintf("Tunnel: %s", tunnelName))
 	b.WriteString("\n")
 	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).
 		Render("─────────────────────────────────────────"))
 	b.WriteString("\n")
-	
+
 	m.updateLogViewport()
 	b.WriteString(m.LogViewport.View())
-	
+
 	b.WriteString("\n")
 	b.WriteString(HelpStyle.Render("esc/b: back • ↑/↓: scroll"))
-	
+
 	return b.String()
 }
 
 func (m *Model) viewAddForm() string {
 	var b strings.Builder
-	
+
 	title := TitleStyle.Render(" ➕ Add New Tunnel ")
 	b.WriteString(title)
 	b.WriteString("\n\n")
-	
+
 	fields := []struct {
 		label   string
 		value   string
@@ -175,13 +174,13 @@ func (m *Model) viewAddForm() string {
 		{"Local Port", m.FormValues.Port, m.FormFocus == 2},
 		{"Short URL (optional)", m.FormValues.ShortURL, m.FormFocus == 3},
 	}
-	
+
 	for _, f := range fields {
 		labelStyle := lipgloss.NewStyle().Width(20)
 		if f.focused {
 			labelStyle = labelStyle.Bold(true).Foreground(lipgloss.Color("#FFD700"))
 		}
-		
+
 		valueStyle := lipgloss.NewStyle()
 		if f.focused {
 			valueStyle = valueStyle.Background(lipgloss.Color("#333333"))
@@ -189,18 +188,18 @@ func (m *Model) viewAddForm() string {
 		if f.value == "" {
 			valueStyle = valueStyle.Foreground(lipgloss.Color("#666666"))
 		}
-		
+
 		displayValue := f.value
 		if displayValue == "" {
 			displayValue = "..."
 		}
-		
+
 		b.WriteString(labelStyle.Render(f.label + ":"))
 		b.WriteString(" ")
 		b.WriteString(valueStyle.Render(displayValue))
 		b.WriteString("\n\n")
 	}
-	
+
 	submitStyle := lipgloss.NewStyle()
 	if m.FormFocus == 4 {
 		submitStyle = submitStyle.Background(lipgloss.Color("#00AA00")).
@@ -209,29 +208,29 @@ func (m *Model) viewAddForm() string {
 	}
 	b.WriteString(strings.Repeat(" ", 21))
 	b.WriteString(submitStyle.Render(" [ Submit ] "))
-	
+
 	b.WriteString("\n\n")
 	b.WriteString(HelpStyle.Render("tab: next • enter: submit • esc: cancel"))
-	
+
 	return b.String()
 }
 
 func (m *Model) viewDownloading() string {
 	var b strings.Builder
-	
+
 	title := TitleStyle.Render(" ⬇️ Downloading ")
 	b.WriteString(title)
 	b.WriteString("\n\n")
-	
+
 	b.WriteString(fmt.Sprintf("Downloading %s...\n\n", m.DownloadingProvider))
-	
+
 	if m.DownloadProgress.Total > 0 {
 		percent := int(m.DownloadProgress.Percent)
 		barWidth := 40
 		filled := int(float64(barWidth) * m.DownloadProgress.Percent / 100)
-		
+
 		bar := strings.Repeat("█", filled) + strings.Repeat("░", barWidth-filled)
-		
+
 		b.WriteString(fmt.Sprintf("[%s] %d%%\n", bar, percent))
 		b.WriteString(fmt.Sprintf("%.1f MB / %.1f MB\n",
 			float64(m.DownloadProgress.Current)/(1024*1024),
@@ -241,35 +240,35 @@ func (m *Model) viewDownloading() string {
 		frame := spinner[(m.MessageTimer/3)%len(spinner)]
 		b.WriteString(fmt.Sprintf("%s Starting download...\n", frame))
 	}
-	
+
 	b.WriteString("\n")
 	b.WriteString(HelpStyle.Render("esc: cancel"))
-	
+
 	return b.String()
 }
 
 func (m *Model) viewAPIKeyForm() string {
 	var b strings.Builder
-	
+
 	title := TitleStyle.Render(" 🔑 Configure API Key ")
 	b.WriteString(title)
 	b.WriteString("\n\n")
-	
+
 	b.WriteString("Enter your Bit.ly API key to enable editable short URLs.\n")
 	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).
 		Render("Get your token at: https://app.bitly.com/settings/api/"))
 	b.WriteString("\n\n")
-	
+
 	labelStyle := lipgloss.NewStyle().Width(15)
 	if m.APIKeyFormFocus == 0 {
 		labelStyle = labelStyle.Bold(true).Foreground(lipgloss.Color("#FFD700"))
 	}
-	
+
 	valueStyle := lipgloss.NewStyle()
 	if m.APIKeyFormFocus == 0 {
 		valueStyle = valueStyle.Background(lipgloss.Color("#333333"))
 	}
-	
+
 	displayValue := m.APIKeyFormValues.BitlyKey
 	if displayValue == "" {
 		valueStyle = valueStyle.Foreground(lipgloss.Color("#666666"))
@@ -277,12 +276,12 @@ func (m *Model) viewAPIKeyForm() string {
 	} else if len(displayValue) > 4 {
 		displayValue = strings.Repeat("•", len(displayValue)-4) + displayValue[len(displayValue)-4:]
 	}
-	
+
 	b.WriteString(labelStyle.Render("Bit.ly API:"))
 	b.WriteString(" ")
 	b.WriteString(valueStyle.Render(displayValue))
 	b.WriteString("\n\n")
-	
+
 	submitStyle := lipgloss.NewStyle()
 	if m.APIKeyFormFocus == 1 {
 		submitStyle = submitStyle.Background(lipgloss.Color("#00AA00")).
@@ -291,9 +290,9 @@ func (m *Model) viewAPIKeyForm() string {
 	}
 	b.WriteString(strings.Repeat(" ", 16))
 	b.WriteString(submitStyle.Render(" [ Save ] "))
-	
+
 	b.WriteString("\n\n")
 	b.WriteString(HelpStyle.Render("tab: next • enter: save • esc: cancel"))
-	
+
 	return b.String()
 }

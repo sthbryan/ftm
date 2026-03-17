@@ -25,15 +25,15 @@ func writeMac(text string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	
+
 	if _, err := stdin.Write([]byte(text)); err != nil {
 		return err
 	}
-	
+
 	stdin.Close()
 	return cmd.Wait()
 }
@@ -50,21 +50,21 @@ func writeLinux(text string) error {
 			}
 		}
 	}
-	
+
 	cmd = exec.Command("xclip", "-selection", "clipboard")
 	stdin, err = cmd.StdinPipe()
 	if err != nil {
 		return err
 	}
-	
+
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	
+
 	if _, err := stdin.Write([]byte(text)); err != nil {
 		return err
 	}
-	
+
 	stdin.Close()
 	return cmd.Wait()
 }
@@ -108,14 +108,12 @@ func readMac() (string, error) {
 }
 
 func readLinux() (string, error) {
-	// Try wl-paste first (Wayland)
 	cmd := exec.Command("wl-paste")
 	out, err := cmd.Output()
 	if err == nil {
 		return string(out), nil
 	}
-	
-	// Fall back to xclip (X11)
+
 	cmd = exec.Command("xclip", "-selection", "clipboard", "-o")
 	out, err = cmd.Output()
 	if err != nil {

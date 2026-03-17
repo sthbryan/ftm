@@ -17,10 +17,10 @@ type URLCache struct {
 }
 
 type URLMapping struct {
-	TunnelID    string `yaml:"tunnel_id"`
-	ShortURL    string `yaml:"short_url"`
-	CurrentURL  string `yaml:"current_url"`
-	Provider    string `yaml:"provider"`
+	TunnelID   string `yaml:"tunnel_id"`
+	ShortURL   string `yaml:"short_url"`
+	CurrentURL string `yaml:"current_url"`
+	Provider   string `yaml:"provider"`
 }
 
 func NewCache() *URLCache {
@@ -32,7 +32,7 @@ func NewCache() *URLCache {
 func (c *URLCache) Load() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	path := cachePath()
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -41,31 +41,31 @@ func (c *URLCache) Load() error {
 		}
 		return err
 	}
-	
+
 	return yaml.Unmarshal(data, c)
 }
 
 func (c *URLCache) Save() error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	dir := config.ConfigDir()
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	
+
 	data, err := yaml.Marshal(c)
 	if err != nil {
 		return err
 	}
-	
+
 	return os.WriteFile(cachePath(), data, 0644)
 }
 
 func (c *URLCache) Set(tunnelID, shortURL, currentURL, provider string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.Mappings[tunnelID] = URLMapping{
 		TunnelID:   tunnelID,
 		ShortURL:   shortURL,
@@ -77,7 +77,7 @@ func (c *URLCache) Set(tunnelID, shortURL, currentURL, provider string) {
 func (c *URLCache) Get(tunnelID string) (URLMapping, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	m, ok := c.Mappings[tunnelID]
 	return m, ok
 }
@@ -85,7 +85,7 @@ func (c *URLCache) Get(tunnelID string) (URLMapping, bool) {
 func (c *URLCache) Delete(tunnelID string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	delete(c.Mappings, tunnelID)
 }
 
@@ -94,21 +94,18 @@ func cachePath() string {
 }
 
 func (c *URLCache) EnsureShortURL(tunnelID, currentURL, preferredShort string, client Provider) (string, error) {
-	// Check if client has no API key (MultiProvider with no key returns error)
 	_, testErr := client.Shorten("https://test.com", "")
 	if testErr != nil && testErr.Error() == "no API key configured" {
-		// No shortener configured, return empty
 		return "", nil
 	}
-	
+
 	if mapping, ok := c.Get(tunnelID); ok {
 		if mapping.CurrentURL != currentURL && currentURL != "" {
 			if isInvalidURL(currentURL) {
 				c.Delete(tunnelID)
 				c.Save()
 			}
-			
-			// Try to update if provider supports it
+
 			if updater, ok := client.(UpdateableProvider); ok && mapping.ShortURL != "" {
 				updatedURL, err := updater.Update(mapping.ShortURL, currentURL)
 				if err == nil {
@@ -117,7 +114,7 @@ func (c *URLCache) EnsureShortURL(tunnelID, currentURL, preferredShort string, c
 					return updatedURL, nil
 				}
 			}
-			
+
 			shortURL, err := client.Shorten(currentURL, preferredShort)
 			if err != nil {
 				return mapping.ShortURL, nil
@@ -128,15 +125,15 @@ func (c *URLCache) EnsureShortURL(tunnelID, currentURL, preferredShort string, c
 		}
 		return mapping.ShortURL, nil
 	}
-	
+
 	shortURL, err := client.Shorten(currentURL, preferredShort)
 	if err != nil {
 		return "", err
 	}
-	
+
 	c.Set(tunnelID, shortURL, currentURL, client.Name())
 	c.Save()
-	
+
 	return shortURL, nil
 }
 

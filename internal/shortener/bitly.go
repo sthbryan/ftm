@@ -27,9 +27,9 @@ type bitlyUpdateRequest struct {
 }
 
 type bitlyResponse struct {
-	ID       string `json:"id"`
-	Link     string `json:"link"`
-	LongURL  string `json:"long_url"`
+	ID      string `json:"id"`
+	Link    string `json:"link"`
+	LongURL string `json:"long_url"`
 }
 
 func NewBitly(apiKey string) *BitlyClient {
@@ -102,8 +102,6 @@ func (c *BitlyClient) Update(shortURL, newLongURL string) (string, error) {
 		return "", fmt.Errorf("bitly requires API key")
 	}
 
-	// Extract bitlink ID from short URL
-	// e.g., "https://bit.ly/abc123" -> "bit.ly/abc123"
 	id := extractBitlinkID(shortURL)
 	if id == "" {
 		return "", fmt.Errorf("invalid bitly URL")
@@ -151,7 +149,6 @@ func (c *BitlyClient) Update(shortURL, newLongURL string) (string, error) {
 }
 
 func extractBitlinkID(shortURL string) string {
-	// Remove protocol and extract ID
 	if idx := len("https://"); len(shortURL) > idx && shortURL[:idx] == "https://" {
 		return shortURL[idx:]
 	}
