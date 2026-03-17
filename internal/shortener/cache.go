@@ -94,6 +94,13 @@ func cachePath() string {
 }
 
 func (c *URLCache) EnsureShortURL(tunnelID, currentURL, preferredShort string, client Provider) (string, error) {
+	// Check if client has no API key (MultiProvider with no key returns error)
+	_, testErr := client.Shorten("https://test.com", "")
+	if testErr != nil && testErr.Error() == "no API key configured" {
+		// No shortener configured, return empty
+		return "", nil
+	}
+	
 	if mapping, ok := c.Get(tunnelID); ok {
 		if mapping.CurrentURL != currentURL && currentURL != "" {
 			if isInvalidURL(currentURL) {
@@ -113,9 +120,6 @@ func (c *URLCache) EnsureShortURL(tunnelID, currentURL, preferredShort string, c
 			
 			shortURL, err := client.Shorten(currentURL, preferredShort)
 			if err != nil {
-				if IsDomainBlocked(err) {
-					return "", err
-				}
 				return mapping.ShortURL, nil
 			}
 			c.Set(tunnelID, shortURL, currentURL, client.Name())

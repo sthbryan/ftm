@@ -23,7 +23,7 @@ const (
 	viewAddForm
 	viewConfirm
 	viewDownloading
-	viewAPIKeys
+
 )
 
 type KeyMap struct {
@@ -36,7 +36,7 @@ type KeyMap struct {
 	Copy     key.Binding
 	Add      key.Binding
 	Delete   key.Binding
-	APIKeys  key.Binding
+
 	Back     key.Binding
 	Quit     key.Binding
 	Help     key.Binding
@@ -79,10 +79,7 @@ var DefaultKeys = KeyMap{
 		key.WithKeys("d"),
 		key.WithHelp("d", "delete"),
 	),
-	APIKeys: key.NewBinding(
-		key.WithKeys("i"),
-		key.WithHelp("i", "api keys"),
-	),
+
 	Back: key.NewBinding(
 		key.WithKeys("esc", "b"),
 		key.WithHelp("esc/b", "back"),
@@ -154,9 +151,7 @@ type Model struct {
 	DownloadProgress providers.DownloadProgress
 	DownloadingProvider string
 	
-	// API Key form
-	APIKeyInput string
-	APIKeyFocus int
+
 }
 
 type FormData struct {

@@ -10,6 +10,13 @@ type UpdateableProvider interface {
 	Update(shortURL, newLongURL string) (string, error)
 }
 
+type NoOpProvider struct{}
+
+func (n *NoOpProvider) Name() string { return "none" }
+func (n *NoOpProvider) Shorten(_, _ string) (string, error) {
+	return "", nil
+}
+
 type ShortenError struct {
 	Reason  string
 	Message string

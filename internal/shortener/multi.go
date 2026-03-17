@@ -1,46 +1,40 @@
 package shortener
 
+import "fmt"
+
 type MultiProvider struct {
-	providers []Provider
-	apiKeys   map[string]string
+	bitly   *BitlyClient
+	hasKey  bool
 }
 
 func NewMulti(apiKeys map[string]string) *MultiProvider {
-	m := &MultiProvider{
-		providers: []Provider{
-			NewCleanURI(),
-			NewTinyURL(),
-		},
-		apiKeys: apiKeys,
-	}
+	m := &MultiProvider{}
 	
-	// Add Bitly if API key exists
 	if apiKeys != nil && apiKeys["bitly"] != "" {
-		m.providers = append([]Provider{NewBitly(apiKeys["bitly"])}, m.providers...)
+		m.bitly = NewBitly(apiKeys["bitly"])
+		m.hasKey = true
 	}
 	
 	return m
 }
 
 func (m *MultiProvider) Name() string {
-	return "multi"
+	if m.hasKey {
+		return "bitly"
+	}
+	return "none"
 }
 
 func (m *MultiProvider) Shorten(longURL, custom string) (string, error) {
-	var lastErr error
-	
-	for _, p := range m.providers {
-		shortURL, err := p.Shorten(longURL, custom)
-		if err == nil {
-			return shortURL, nil
-		}
-		
-		lastErr = err
-		
-		if !IsDomainBlocked(err) {
-			return "", err
-		}
+	if !m.hasKey {
+		return "", fmt.Errorf("no API key configured")
 	}
-	
-	return "", lastErr
+	return m.bitly.Shorten(longURL, custom)
+}
+
+func (m *MultiProvider) Update(shortURL, newLongURL string) (string, error) {
+	if !m.hasKey {
+		return "", fmt.Errorf("no API key configured")
+	}
+	return m.bitly.Update(shortURL, newLongURL)
 }
