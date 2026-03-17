@@ -392,6 +392,11 @@ func (m *Model) handleAPIKeyFormKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) saveAPIKey() {
+	// Initialize map if nil
+	if m.App.Config.Shortener.APIKeys == nil {
+		m.App.Config.Shortener.APIKeys = make(map[string]string)
+	}
+	
 	if m.APIKeyFormValues.BitlyKey == "" {
 		m.showMessage("API key cleared")
 		delete(m.App.Config.Shortener.APIKeys, "bitly")
