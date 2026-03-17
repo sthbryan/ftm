@@ -31,7 +31,14 @@ func (m *Model) viewList() string {
 
 	title := TitleStyle.Render(" 🎲 Foundry Tunnel Manager ")
 	b.WriteString(title)
-	b.WriteString("\n\n")
+	b.WriteString("\n")
+	
+	if m.App.WebServer != nil {
+		urlStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#00BFFF"))
+		b.WriteString(urlStyle.Render(fmt.Sprintf(" 🌐 Dashboard: %s (presiona 'w' para abrir)", m.App.WebServer.URL())))
+		b.WriteString("\n")
+	}
+	b.WriteString("\n")
 
 	if len(m.Items) == 0 {
 		b.WriteString("No tunnels configured. Press 'a' to add one.\n")

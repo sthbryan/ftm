@@ -26,18 +26,19 @@ const (
 )
 
 type KeyMap struct {
-	Up     key.Binding
-	Down   key.Binding
-	Enter  key.Binding
-	Start  key.Binding
-	Stop   key.Binding
-	Logs   key.Binding
-	Copy   key.Binding
-	Add    key.Binding
-	Delete key.Binding
-	Back   key.Binding
-	Quit   key.Binding
-	Help   key.Binding
+	Up       key.Binding
+	Down     key.Binding
+	Enter    key.Binding
+	Start    key.Binding
+	Stop     key.Binding
+	Logs     key.Binding
+	Copy     key.Binding
+	Web      key.Binding
+	Add      key.Binding
+	Delete   key.Binding
+	Back     key.Binding
+	Quit     key.Binding
+	Help     key.Binding
 }
 
 var DefaultKeys = KeyMap{
@@ -68,6 +69,10 @@ var DefaultKeys = KeyMap{
 	Copy: key.NewBinding(
 		key.WithKeys("c"),
 		key.WithHelp("c", "copy URL"),
+	),
+	Web: key.NewBinding(
+		key.WithKeys("w"),
+		key.WithHelp("w", "open web"),
 	),
 	Add: key.NewBinding(
 		key.WithKeys("a"),

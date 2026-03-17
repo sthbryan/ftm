@@ -141,6 +141,9 @@ func (m *Model) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.copyTunnelURL(item)
 		}
 
+	case key.Matches(msg, m.Keys.Web):
+		m.openDashboard()
+
 	case key.Matches(msg, m.Keys.Add):
 		m.State = viewAddForm
 		m.FormFocus = 0
@@ -319,6 +322,14 @@ func (m *Model) copyTunnelURL(item TunnelItem) {
 	m.showMessage("No URL available - start tunnel first")
 }
 
+func (m *Model) openDashboard() {
+	if err := m.App.OpenDashboard(); err != nil {
+		m.showMessage("Error opening dashboard: " + err.Error())
+		return
+	}
+	m.showMessage("Dashboard opened in browser 🌐")
+}
+
 func (k KeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Help, k.Quit}
 }
@@ -326,7 +337,7 @@ func (k KeyMap) ShortHelp() []key.Binding {
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down, k.Enter},
-		{k.Start, k.Stop, k.Logs, k.Copy},
+		{k.Start, k.Stop, k.Logs, k.Copy, k.Web},
 		{k.Add, k.Delete},
 		{k.Back, k.Help, k.Quit},
 	}
