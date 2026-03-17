@@ -52,9 +52,11 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       
       - name: Build Go backend
+        shell: bash
         run: |
           cd desktop/go-api/cmd/server
           go build -o go-backend .
+          cp go-backend ../../../src-tauri/go-backend
       
       - name: Install npm dependencies
         run: |
