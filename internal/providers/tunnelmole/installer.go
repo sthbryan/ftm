@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"foundry-tunnel/internal/providers"
 )
@@ -48,10 +50,31 @@ func (ni *NodeInstaller) NpmBin() string {
 
 func (ni *NodeInstaller) TunnelmoleBin() string {
 	nodeDir := ni.NodeDir()
+	
+	// Check multiple possible locations
+	candidates := []string{}
+	
 	if runtime.GOOS == "windows" {
-		return filepath.Join(nodeDir, "tunnelmole.cmd")
+		candidates = append(candidates,
+			filepath.Join(nodeDir, "tunnelmole.cmd"),
+			filepath.Join(nodeDir, "bin", "tunnelmole.cmd"),
+		)
+	} else {
+		candidates = append(candidates,
+			filepath.Join(nodeDir, "bin", "tunnelmole"),
+			filepath.Join(nodeDir, "tunnelmole"),
+		)
 	}
-	return filepath.Join(nodeDir, "bin", "tunnelmole")
+	
+	// Return first existing candidate
+	for _, path := range candidates {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+	
+	// Default to first candidate
+	return candidates[0]
 }
 
 func (ni *NodeInstaller) IsInstalled() bool {
@@ -287,14 +310,28 @@ func (ni *NodeInstaller) extractZip(archivePath, destDir string) error {
 
 func (ni *NodeInstaller) installTunnelmole(progress chan<- providers.DownloadProgress) error {
 	npm := ni.NpmBin()
+	node := ni.NodeBin()
 	
-	// Set up npm prefix to install in our node directory
+	// Verify binaries exist
+	if _, err := os.Stat(node); err != nil {
+		return fmt.Errorf("node binary not found at %s: %w", node, err)
+	}
+	if _, err := os.Stat(npm); err != nil {
+		// Try to find npm in alternative location
+		altNpm := filepath.Join(ni.NodeDir(), "lib", "node_modules", "npm", "bin", "npm-cli.js")
+		if _, err2 := os.Stat(altNpm); err2 == nil {
+			npm = node + " " + altNpm
+		} else {
+			return fmt.Errorf("npm not found at %s: %w", npm, err)
+		}
+	}
+	
 	nodeDir := ni.NodeDir()
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("NPM_CONFIG_PREFIX=%s", nodeDir))
 	env = append(env, fmt.Sprintf("NPM_CONFIG_CACHE=%s", filepath.Join(ni.BaseDir, "npm-cache")))
 	
-	// Report extraction complete
+	// Report starting install
 	if progress != nil {
 		progress <- providers.DownloadProgress{
 			Percent: 50,
@@ -303,27 +340,85 @@ func (ni *NodeInstaller) installTunnelmole(progress chan<- providers.DownloadPro
 		}
 	}
 	
-	cmd := exec.Command(npm, "install", "-g", "tunnelmole")
+	// Create a context with 3 minute timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	
+	var cmd *exec.Cmd
+	if strings.Contains(npm, " ") {
+		parts := strings.Split(npm, " ")
+		args := append(parts[1:], "install", "-g", "tunnelmole")
+		cmd = exec.CommandContext(ctx, parts[0], args...)
+	} else {
+		cmd = exec.CommandContext(ctx, npm, "install", "-g", "tunnelmole")
+	}
+	
 	cmd.Env = env
 	cmd.Dir = ni.BaseDir
 	
-	// Capture output for debugging
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("npm install failed: %w\nOutput: %s", err, string(output))
-	}
+	// Run in background and update progress
+	done := make(chan error, 1)
+	go func() {
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			done <- fmt.Errorf("npm install failed: %w\nOutput: %s", err, string(output))
+			return
+		}
+		done <- nil
+	}()
 	
-	// Verify tunnelmole was installed
-	if _, err := os.Stat(ni.TunnelmoleBin()); err != nil {
-		return fmt.Errorf("tunnelmole binary not found after install: %w", err)
-	}
+	// Update progress while waiting
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
 	
-	if progress != nil {
-		progress <- providers.DownloadProgress{
-			Percent: 100,
-			Done:    true,
+	percent := 50.0
+	for {
+		select {
+		case err := <-done:
+			if err != nil {
+				return err
+			}
+			// Verify tunnelmole was installed
+			if _, err := os.Stat(ni.TunnelmoleBin()); err != nil {
+				// Try alternative locations
+				altPaths := []string{
+					filepath.Join(nodeDir, "bin", "tunnelmole"),
+					filepath.Join(nodeDir, "tunnelmole"),
+				}
+				found := false
+				for _, path := range altPaths {
+					if _, err := os.Stat(path); err == nil {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return fmt.Errorf("tunnelmole binary not found after install")
+				}
+			}
+			if progress != nil {
+				progress <- providers.DownloadProgress{
+					Percent: 100,
+					Done:    true,
+				}
+			}
+			return nil
+			
+		case <-ticker.C:
+			percent += 2
+			if percent > 95 {
+				percent = 95
+			}
+			if progress != nil {
+				progress <- providers.DownloadProgress{
+					Percent: percent,
+					Current: 0,
+					Total:   100,
+				}
+			}
+			
+		case <-ctx.Done():
+			return fmt.Errorf("installation timed out after 3 minutes")
 		}
 	}
-	
-	return nil
 }

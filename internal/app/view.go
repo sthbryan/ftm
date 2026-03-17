@@ -213,7 +213,7 @@ func (m *Model) viewDownloading() string {
 	case percent < 50:
 		step = "Extracting..."
 	case percent < 100:
-		step = "Installing tunnelmole (this may take a minute)..."
+		step = "Installing tunnelmole via npm..."
 	default:
 		step = "Complete!"
 	}
