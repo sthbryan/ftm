@@ -68,7 +68,6 @@ func (m *Model) viewEmptyState() string {
 		Foreground(lipgloss.Color(ColorBronze)).
 		Render("💡 Tip: You can also use the web dashboard at " + m.App.WebServer.URL())
 
-	// Center everything vertically
 	contentHeight := 12
 	paddingTop := (m.Height - contentHeight) / 2
 	if paddingTop < 2 {
@@ -106,7 +105,6 @@ func (m *Model) viewList() string {
 func (m *Model) viewTwoColumn() string {
 	var b strings.Builder
 
-	// Header
 	headerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorGold)).
 		Bold(true)
@@ -121,17 +119,14 @@ func (m *Model) viewTwoColumn() string {
 	b.WriteString(version)
 	b.WriteString("\n\n")
 
-	// Calculate column widths
 	leftWidth := int(float64(m.Width) * 0.4)
 	rightWidth := m.Width - leftWidth - 3
 
-	// Left column header
 	leftHeader := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color(ColorText)).
 		Render("Your Connections")
 
-	// Right column header
 	rightHeader := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color(ColorText)).
@@ -148,7 +143,6 @@ func (m *Model) viewTwoColumn() string {
 	b.WriteString(divider)
 	b.WriteString("\n")
 
-	// Render list and detail side by side
 	listContent := m.renderTunnelList(leftWidth - 2)
 	detailContent := m.renderDetailPanel(rightWidth - 2)
 
@@ -170,7 +164,6 @@ func (m *Model) viewTwoColumn() string {
 			rightLine = detailLines[i]
 		}
 
-		// Pad left line to column width
 		leftLine = lipgloss.NewStyle().Width(leftWidth).Render(leftLine)
 
 		b.WriteString(leftLine)
@@ -179,7 +172,6 @@ func (m *Model) viewTwoColumn() string {
 		b.WriteString("\n")
 	}
 
-	// Help bar
 	b.WriteString("\n")
 	b.WriteString(m.renderHelpBar())
 
@@ -252,7 +244,6 @@ func (m *Model) renderTunnelListItem(idx int, item TunnelItem, width int) string
 		bgColor = ColorOffline
 	}
 
-	// Build content
 	var parts []string
 
 	if selected {
@@ -268,7 +259,6 @@ func (m *Model) renderTunnelListItem(idx int, item TunnelItem, width int) string
 		Foreground(lipgloss.Color(ColorText))
 	parts = append(parts, nameStyle.Render(truncate(item.Tunnel.Name, 20)))
 
-	// Status text
 	var statusText string
 	if item.Status.Running {
 		if item.Status.Starting {
@@ -284,7 +274,6 @@ func (m *Model) renderTunnelListItem(idx int, item TunnelItem, width int) string
 
 	parts = append(parts, statusStyle.Render(statusText))
 
-	// Provider and port
 	metaStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorTextDim))
 	meta := fmt.Sprintf("%s • :%d", item.Tunnel.Provider, item.Tunnel.LocalPort)
@@ -292,7 +281,6 @@ func (m *Model) renderTunnelListItem(idx int, item TunnelItem, width int) string
 
 	content := strings.Join(parts, "  ")
 
-	// Apply background
 	itemStyle := lipgloss.NewStyle().
 		Background(lipgloss.Color(bgColor)).
 		Width(width).
@@ -319,7 +307,6 @@ func (m *Model) renderDetailPanel(width int) string {
 
 	tunnel := item.Tunnel
 
-	// Name
 	nameStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color(ColorGold)).
@@ -327,19 +314,16 @@ func (m *Model) renderDetailPanel(width int) string {
 	b.WriteString(nameStyle.Render(tunnel.Name))
 	b.WriteString("\n\n")
 
-	// Provider
 	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDim)).Render("Provider:"))
 	b.WriteString(" ")
 	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorText)).Render(string(tunnel.Provider)))
 	b.WriteString("\n")
 
-	// Local Port
 	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDim)).Render("Local Port:"))
 	b.WriteString(" ")
 	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorText)).Render(fmt.Sprintf(":%d", tunnel.LocalPort)))
 	b.WriteString("\n\n")
 
-	// Status
 	var statusEmoji, statusText string
 	if item.Status.Running {
 		if item.Status.Starting {
@@ -359,7 +343,6 @@ func (m *Model) renderDetailPanel(width int) string {
 	b.WriteString(fmt.Sprintf("%s %s", statusEmoji, statusText))
 	b.WriteString("\n\n")
 
-	// Public URL
 	if item.Status.Running && !item.Status.Starting && item.Status.PublicURL != "" {
 		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDim)).Render("Public URL:"))
 		b.WriteString("\n")
@@ -375,7 +358,6 @@ func (m *Model) renderDetailPanel(width int) string {
 		b.WriteString("\n\n")
 	}
 
-	// Action buttons
 	var actions []string
 	if item.Status.Running {
 		actions = append(actions, ButtonStyle.Render("[s] Stop"))
@@ -412,8 +394,11 @@ func (m *Model) renderHelpBar() string {
 func (m *Model) viewLogs() string {
 	var b strings.Builder
 
-	title := TitleStyle.Render(" 📋  TUNNEL LOGS  ")
-	b.WriteString(title)
+	header := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorGold)).
+		Bold(true).
+		Render("📋  Tunnel Logs")
+	b.WriteString(header)
 	b.WriteString("\n\n")
 
 	var tunnelName string
@@ -428,17 +413,25 @@ func (m *Model) viewLogs() string {
 		}
 	}
 
-	b.WriteString(fmt.Sprintf("Tunnel: %s", tunnelName))
+	nameStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorText)).
+		Bold(true)
+	b.WriteString(nameStyle.Render(tunnelName))
 	b.WriteString("\n")
-	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).
-		Render("─────────────────────────────────────────"))
+
+	divider := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorBronze)).
+		Render(strings.Repeat("─", m.Width-2))
+	b.WriteString(divider)
 	b.WriteString("\n")
 
 	m.updateLogViewport()
 	b.WriteString(m.LogViewport.View())
 
 	b.WriteString("\n")
-	b.WriteString(HelpStyle.Render("esc/b: back • ↑/↓: scroll"))
+	b.WriteString(lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorTextDim)).
+		Render("esc/b: back • ↑/↓: scroll"))
 
 	return b.String()
 }
@@ -446,8 +439,11 @@ func (m *Model) viewLogs() string {
 func (m *Model) viewAddForm() string {
 	var b strings.Builder
 
-	title := TitleStyle.Render(" ➕  ADD NEW TUNNEL  ")
-	b.WriteString(title)
+	header := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorGold)).
+		Bold(true).
+		Render("➕  Add New Tunnel")
+	b.WriteString(header)
 	b.WriteString("\n\n")
 
 	fields := []struct {
@@ -461,17 +457,22 @@ func (m *Model) viewAddForm() string {
 	}
 
 	for _, f := range fields {
-		labelStyle := lipgloss.NewStyle().Width(20)
+		labelStyle := lipgloss.NewStyle().
+			Width(15).
+			Foreground(lipgloss.Color(ColorTextDim))
 		if f.focused {
-			labelStyle = labelStyle.Bold(true).Foreground(lipgloss.Color("#FFD700"))
+			labelStyle = labelStyle.Bold(true).Foreground(lipgloss.Color(ColorGold))
 		}
 
-		valueStyle := lipgloss.NewStyle()
+		valueStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(ColorText))
 		if f.focused {
-			valueStyle = valueStyle.Background(lipgloss.Color("#333333"))
+			valueStyle = valueStyle.Background(lipgloss.Color(ColorBg)).
+				BorderStyle(lipgloss.NormalBorder()).
+				BorderForeground(lipgloss.Color(ColorGold))
 		}
 		if f.value == "" {
-			valueStyle = valueStyle.Foreground(lipgloss.Color("#666666"))
+			valueStyle = valueStyle.Foreground(lipgloss.Color(ColorTextDim))
 		}
 
 		displayValue := f.value
@@ -481,21 +482,23 @@ func (m *Model) viewAddForm() string {
 
 		b.WriteString(labelStyle.Render(f.label + ":"))
 		b.WriteString(" ")
-		b.WriteString(valueStyle.Render(displayValue))
+		b.WriteString(valueStyle.Render(" " + displayValue + " "))
 		b.WriteString("\n\n")
 	}
 
 	submitStyle := lipgloss.NewStyle()
 	if m.FormFocus == 3 {
-		submitStyle = submitStyle.Background(lipgloss.Color("#00AA00")).
-			Foreground(lipgloss.Color("#FFFFFF")).
-			Bold(true)
+		submitStyle = ButtonActiveStyle
+	} else {
+		submitStyle = ButtonStyle
 	}
-	b.WriteString(strings.Repeat(" ", 21))
-	b.WriteString(submitStyle.Render(" [ Submit ] "))
+	b.WriteString(strings.Repeat(" ", 16))
+	b.WriteString(submitStyle.Render(" Submit "))
 
 	b.WriteString("\n\n")
-	b.WriteString(HelpStyle.Render("tab: next • enter: submit • esc: cancel"))
+	b.WriteString(lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorTextDim)).
+		Render("tab: next • enter: submit • esc: cancel"))
 
 	return b.String()
 }
@@ -503,8 +506,11 @@ func (m *Model) viewAddForm() string {
 func (m *Model) viewDownloading() string {
 	var b strings.Builder
 
-	title := TitleStyle.Render(" ⬇️  INSTALLING  ")
-	b.WriteString(title)
+	header := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorGold)).
+		Bold(true).
+		Render("⬇️  Installing")
+	b.WriteString(header)
 	b.WriteString("\n\n")
 
 	percent := m.DownloadProgress.Percent
@@ -521,21 +527,37 @@ func (m *Model) viewDownloading() string {
 		step = "Complete!"
 	}
 
-	b.WriteString(fmt.Sprintf("%s\n\n", step))
+	stepStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorText))
+	b.WriteString(stepStyle.Render(step))
+	b.WriteString("\n\n")
 
 	barWidth := 40
 	filled := int(float64(barWidth) * percent / 100)
-	bar := strings.Repeat("█", filled) + strings.Repeat("░", barWidth-filled)
+
+	barStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorGold))
+	emptyStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorBronze))
+
+	bar := barStyle.Render(strings.Repeat("█", filled)) +
+		emptyStyle.Render(strings.Repeat("░", barWidth-filled))
+
 	b.WriteString(fmt.Sprintf("[%s] %d%%\n", bar, int(percent)))
 
 	if m.DownloadProgress.Total > 0 && percent < 50 {
-		b.WriteString(fmt.Sprintf("%.1f MB / %.1f MB\n",
+		sizeStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(ColorTextDim))
+		b.WriteString(sizeStyle.Render(fmt.Sprintf("%.1f MB / %.1f MB",
 			float64(m.DownloadProgress.Current)/(1024*1024),
-			float64(m.DownloadProgress.Total)/(1024*1024)))
+			float64(m.DownloadProgress.Total)/(1024*1024))))
+		b.WriteString("\n")
 	}
 
 	b.WriteString("\n")
-	b.WriteString(HelpStyle.Render("esc: cancel"))
+	b.WriteString(lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorTextDim)).
+		Render("esc: cancel"))
 
 	return b.String()
 }
