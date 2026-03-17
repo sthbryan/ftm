@@ -4,106 +4,291 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Foundry Tunnel Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1>Foundry Tunnel Manager</h1>
-            <p class="subtitle">Your gateway to online adventures</p>
+    <div class="app">
+        <header class="app-header fade-in">
+            <div class="brand">
+                <div class="d20-badge">
+                    <span class="d20-text">20</span>
+                </div>
+                <div class="brand-text">
+                    <h1>Foundry Tunnel Manager</h1>
+                    <p class="tagline">Share your world with players everywhere</p>
+                </div>
+            </div>
         </header>
 
-        <div class="toolbar">
-            <button class="btn btn-primary" id="btn-add">
-                <span class="icon">+</span> New Connection
-            </button>
-            <div class="connection-status" id="connection-status">
-                <span class="status-dot online"></span> Connected
-            </div>
-        </div>
-
-        <div class="tunnels-grid" id="tunnels-container">
-            <div class="empty-state" id="empty-state">
-                <div class="empty-icon">*</div>
-                <h3>No connections configured</h3>
-                <p>Click "New Connection" to start your adventure</p>
-            </div>
-        </div>
-
-        <div class="toast-container" id="toast-container"></div>
-    </div>
-
-    <div class="modal" id="add-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>New Connection</h2>
-                <button class="btn-close" id="btn-close-modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="add-form">
-                    <div class="form-group">
-                        <label for="tunnel-name">World Name</label>
-                        <input type="text" id="tunnel-name" placeholder="e.g., Lands of Fire" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="tunnel-port">Foundry Port</label>
-                        <input type="number" id="tunnel-port" value="30000" min="1" max="65535" required>
-                        <span class="help-text">The port where your Foundry VTT runs (usually 30000)</span>
-                    </div>
-                    <div class="form-group">
-                        <label>Connection Service</label>
-                        <div class="provider-grid" id="provider-grid">
-                            <div class="provider-card selected" data-provider="cloudflared">
-                                <div class="provider-icon">CF</div>
-                                <div class="provider-name">Cloudflared</div>
-                                <div class="provider-desc">Fast and reliable</div>
-                            </div>
-                            <div class="provider-card" data-provider="playitgg">
-                                <div class="provider-icon">P</div>
-                                <div class="provider-name">Playit.gg</div>
-                                <div class="provider-desc">For gaming</div>
-                            </div>
-                            <div class="provider-card" data-provider="localhostrun">
-                                <div class="provider-icon">LR</div>
-                                <div class="provider-name">localhost.run</div>
-                                <div class="provider-desc">No install needed</div>
-                            </div>
-                            <div class="provider-card" data-provider="serveo">
-                                <div class="provider-icon">S</div>
-                                <div class="provider-name">Serveo</div>
-                                <div class="provider-desc">Simple and fast</div>
-                            </div>
-                            <div class="provider-card" data-provider="pinggy">
-                                <div class="provider-icon">PI</div>
-                                <div class="provider-name">Pinggy</div>
-                                <div class="provider-desc">With QR code</div>
-                            </div>
-                            <div class="provider-card" data-provider="tunnelmole">
-                                <div class="provider-icon">TM</div>
-                                <div class="provider-name">Tunnelmole</div>
-                                <div class="provider-desc">Easy to use</div>
-                            </div>
+        <main class="app-main">
+            <section class="panel connections-panel slide-in-left">
+                <div class="panel-header">
+                    <h2>Your Connections</h2>
+                    <span class="connection-count" id="connection-count">0</span>
+                </div>
+                <div class="panel-body connections-scroll">
+                    <div id="tunnels-container" class="connection-list"
+                         hx-get="/api/tunnels"
+                         hx-trigger="load"
+                         hx-swap="innerHTML">
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <span>Loading connections...</span>
                         </div>
                     </div>
-                </form>
+                </div>
+            </section>
+
+            <section class="panel create-panel slide-in-right">
+                <div class="panel-header">
+                    <h2>New Connection</h2>
+                </div>
+                <div class="panel-body">
+                    <form class="create-form" 
+                          hx-post="/api/tunnels" 
+                          hx-target="#tunnels-container"
+                          hx-swap="beforeend"
+                          hx-on::after-request="this.reset(); document.getElementById('port').value='30000'; initDragAndDrop(); updateCount();">
+                        
+                        <div class="field-group">
+                            <label for="name">Connection Name</label>
+                            <input type="text" 
+                                   id="name" 
+                                   name="name" 
+                                   placeholder="e.g. Storm King's Thunder"
+                                   required
+                                   autocomplete="off">
+                        </div>
+
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label for="port">Port</label>
+                                <input type="number" 
+                                       id="port" 
+                                       name="port" 
+                                       value="30000" 
+                                       min="1" 
+                                       max="65535" 
+                                       required>
+                            </div>
+                            <div class="field-group">
+                                <label for="provider">Provider</label>
+                                <div class="select-wrap">
+                                    <select id="provider" name="provider" required>
+                                        <option value="cloudflared">Cloudflared</option>
+                                        <option value="playitgg">Playit.gg</option>
+                                        <option value="localhostrun">localhost.run</option>
+                                        <option value="serveo">Serveo</option>
+                                        <option value="pinggy">Pinggy</option>
+                                        <option value="tunnelmole">Tunnelmole</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <span>Create Connection</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer fade-in delay">
+            <p>Press <kbd>W</kbd> in your terminal to open this dashboard</p>
+        </footer>
+    </div>
+
+    <div class="modal-overlay" id="logs-modal" onclick="if(event.target===this)closeLogs()">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Connection Logs</h3>
+                <button class="btn-close" onclick="closeLogs()" aria-label="Close">&times;</button>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="btn-cancel">Cancel</button>
-                <button class="btn btn-primary" id="btn-create">Create Connection</button>
+            <div class="modal-body">
+                <pre id="logs-body"></pre>
             </div>
         </div>
     </div>
 
-    <div class="logs-modal" id="logs-modal">
-        <div class="logs-content">
-            <div class="logs-header">
-                <h3>Logs</h3>
-                <button class="btn-close" id="btn-close-logs">&times;</button>
-            </div>
-            <pre class="logs-body" id="logs-body"></pre>
-        </div>
-    </div>
+    <div id="toast-container"></div>
 
-    <script src="app.js"></script>
+    <script>
+        
+        const evtSource = new EventSource('/api/events');
+        
+        evtSource.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            updateConnection(data);
+        };
+        
+        function updateConnection(data) {
+            const el = document.getElementById('tunnel-' + data.id);
+            if (!el) return;
+            
+            const statusEl = el.querySelector('.connection-status');
+            const statusText = el.querySelector('.status-text');
+            const actionsEl = el.querySelector('.connection-actions');
+            
+            
+            el.className = 'connection-item ' + (data.starting ? 'starting' : data.running ? 'online' : data.error ? 'error' : 'offline');
+            statusEl.className = 'connection-status status-' + (data.starting ? 'starting' : data.running ? 'online' : data.error ? 'error' : 'offline');
+            statusText.textContent = data.starting ? 'Connecting...' : data.running ? 'Online' : data.error ? 'Error' : 'Offline';
+            
+            
+            const urlRowEl = el.querySelector('.connection-url-row');
+            if (data.publicUrl) {
+                if (urlRowEl) {
+                    urlRowEl.querySelector('.url-text').textContent = data.publicUrl;
+                } else {
+                    const urlRow = document.createElement('div');
+                    urlRow.className = 'connection-url-row';
+                    urlRow.onclick = function() { copyUrl(data.publicUrl); };
+                    urlRow.innerHTML = `
+                        <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span class="url-text">${data.publicUrl}</span>
+                        <span class="copy-hint">Click to copy</span>
+                    `;
+                    el.querySelector('.connection-content').appendChild(urlRow);
+                }
+            } else if (urlRowEl && !data.running) {
+                urlRowEl.remove();
+            }
+            
+            
+            if (actionsEl) {
+                const btn = actionsEl.querySelector('.btn-start, .btn:not(.btn-primary):not([onclick])');
+                if (btn) {
+                    if (data.running && !btn.classList.contains('btn-start')) {
+                        btn.outerHTML = '<button class="btn" hx-post="/api/tunnels/' + data.id + '/stop" hx-target="#tunnel-' + data.id + '" hx-swap="outerHTML">Stop</button>';
+                        htmx.process(actionsEl);
+                    } else if (!data.running && btn.textContent === 'Stop') {
+                        btn.outerHTML = '<button class="btn btn-start" hx-post="/api/tunnels/' + data.id + '/start" hx-target="#tunnel-' + data.id + '" hx-swap="outerHTML">Start</button>';
+                        htmx.process(actionsEl);
+                    }
+                }
+            }
+        }
+        
+        
+        let draggedItem = null;
+        
+        function initDragAndDrop() {
+            const container = document.getElementById('tunnels-container');
+            if (!container) return;
+            
+            const items = container.querySelectorAll('.connection-item');
+            
+            items.forEach(item => {
+                item.draggable = true;
+                
+                item.addEventListener('dragstart', function(e) {
+                    draggedItem = this;
+                    this.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                item.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                    draggedItem = null;
+                    
+                    
+                    const ids = Array.from(container.querySelectorAll('.connection-item')).map(el => el.dataset.id);
+                    fetch('/api/tunnels/reorder', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({order: ids})
+                    });
+                });
+                
+                item.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    if (this === draggedItem) return;
+                    
+                    const rect = this.getBoundingClientRect();
+                    const midY = rect.top + rect.height / 2;
+                    
+                    if (e.clientY < midY) {
+                        container.insertBefore(draggedItem, this);
+                    } else {
+                        container.insertBefore(draggedItem, this.nextSibling);
+                    }
+                });
+            });
+        }
+        
+        function updateCount() {
+            const count = document.querySelectorAll('.connection-item').length;
+            document.getElementById('connection-count').textContent = count;
+        }
+        
+        function closeLogs() {
+            document.getElementById('logs-modal').classList.remove('active');
+        }
+        
+        function showLogs(id) {
+            document.getElementById('logs-body').textContent = 'Loading...';
+            document.getElementById('logs-modal').classList.add('active');
+            fetch('/api/logs/' + id)
+                .then(r => r.text())
+                .then(t => document.getElementById('logs-body').textContent = t || 'No logs available')
+                .catch(() => document.getElementById('logs-body').textContent = 'Failed to load logs');
+        }
+        
+        function copyUrl(url) {
+            navigator.clipboard.writeText(url).then(() => showToast('URL copied to clipboard'));
+        }
+        
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            document.getElementById('toast-container').appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+        
+        function editName(el, id) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = el.textContent;
+            input.className = 'inline-edit';
+            input.onblur = () => saveEdit(input, id, 'name');
+            input.onkeydown = (e) => { if(e.key==='Enter') { saveEdit(input, id, 'name'); } };
+            el.replaceWith(input);
+            input.focus();
+        }
+        
+        function editPort(el, id) {
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.value = el.textContent;
+            input.className = 'inline-edit small';
+            input.onblur = () => saveEdit(input, id, 'port');
+            input.onkeydown = (e) => { if(e.key==='Enter') { saveEdit(input, id, 'port'); } };
+            el.replaceWith(input);
+            input.focus();
+        }
+        
+        function saveEdit(input, id, field) {
+            const form = new FormData();
+            form.append('id', id);
+            form.append(field, input.value);
+            fetch('/api/tunnels', {method: 'PUT', body: form})
+                .then(() => htmx.trigger('#tunnels-container', 'refresh'));
+        }
+        
+        
+        document.addEventListener('htmx:afterSwap', function() {
+            initDragAndDrop();
+            updateCount();
+        });
+    </script>
 </body>
 </html>

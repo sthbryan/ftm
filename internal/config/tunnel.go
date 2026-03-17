@@ -18,6 +18,7 @@ type TunnelConfig struct {
 	LocalPort  int      `yaml:"local_port"`
 	AutoStart  bool     `yaml:"auto_start"`
 	CustomArgs []string `yaml:"custom_args,omitempty"`
+	Order      int      `yaml:"order,omitempty"`
 }
 
 type TunnelStatus struct {
