@@ -379,9 +379,13 @@ func (m *Model) handleAPIKeyFormKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				if len(m.APIKeyFormValues.BitlyKey) > 0 {
 					m.APIKeyFormValues.BitlyKey = m.APIKeyFormValues.BitlyKey[:len(m.APIKeyFormValues.BitlyKey)-1]
 				}
-			} else if msg.String() == "ctrl+v" || msg.String() == "ctrl+V" {
-				// Paste from clipboard would need platform-specific implementation
-				// For now, users type or paste character by character
+			} else if msg.String() == "ctrl+v" {
+				// Paste from clipboard
+				if text, err := clipboard.Read(); err == nil {
+					// Trim whitespace/newlines
+					text = strings.TrimSpace(text)
+					m.APIKeyFormValues.BitlyKey += text
+				}
 			} else if len(msg.String()) == 1 {
 				m.APIKeyFormValues.BitlyKey += msg.String()
 			}

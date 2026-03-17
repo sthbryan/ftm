@@ -84,3 +84,51 @@ func WriteAll(lines []string) error {
 	}
 	return Write(text)
 }
+
+func Read() (string, error) {
+	switch runtime.GOOS {
+	case "darwin":
+		return readMac()
+	case "linux":
+		return readLinux()
+	case "windows":
+		return readWindows()
+	default:
+		return "", fmt.Errorf("unsupported platform: %s", runtime.GOOS)
+	}
+}
+
+func readMac() (string, error) {
+	cmd := exec.Command("pbpaste")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
+}
+
+func readLinux() (string, error) {
+	// Try wl-paste first (Wayland)
+	cmd := exec.Command("wl-paste")
+	out, err := cmd.Output()
+	if err == nil {
+		return string(out), nil
+	}
+	
+	// Fall back to xclip (X11)
+	cmd = exec.Command("xclip", "-selection", "clipboard", "-o")
+	out, err = cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
+}
+
+func readWindows() (string, error) {
+	cmd := exec.Command("powershell", "-command", "Get-Clipboard")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
+}
