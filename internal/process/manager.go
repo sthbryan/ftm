@@ -12,6 +12,7 @@ import (
 	"foundry-tunnel/internal/providers"
 	"foundry-tunnel/internal/providers/cloudflared"
 	"foundry-tunnel/internal/providers/playitgg"
+	"foundry-tunnel/internal/providers/ssh"
 	"foundry-tunnel/internal/providers/tunnelmole"
 )
 
@@ -19,6 +20,17 @@ type Manager struct {
 	mu        sync.RWMutex
 	processes map[string]*ManagedProcess
 	providers map[config.Provider]providers.Provider
+	
+	DownloadProgress chan providers.DownloadProgress
+}
+
+func (m *Manager) SetProgressChannel(ch chan providers.DownloadProgress) {
+	m.DownloadProgress = ch
+	for _, p := range m.providers {
+		if installer, ok := p.(interface{ SetProgressChannel(chan providers.DownloadProgress) }); ok {
+			installer.SetProgressChannel(ch)
+		}
+	}
 }
 
 type ManagedProcess struct {
@@ -78,6 +90,8 @@ func NewManager() *Manager {
 			config.ProviderPlayitgg:    playitgg.New(),
 			config.ProviderCloudflared: cloudflared.New(),
 			config.ProviderTunnelmole:  tunnelmole.New(),
+			config.ProviderLocalhostRun: ssh.NewLocalhostRun(),
+			config.ProviderServeo:      ssh.NewServeo(),
 		},
 	}
 }
