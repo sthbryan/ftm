@@ -29,13 +29,19 @@ func (m *Model) View() string {
 func (m *Model) viewList() string {
 	var b strings.Builder
 
-	title := TitleStyle.Render(" 🎲 Foundry Tunnel Manager ")
+	b.WriteString("\n")
+	title := TitleStyle.Render(" 🎲  FOUNDRY TUNNEL MANAGER  ")
 	b.WriteString(title)
 	b.WriteString("\n")
-	
+	subtitle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#CD853F")).
+		Render("      Share Your World With Players Everywhere")
+	b.WriteString(subtitle)
+	b.WriteString("\n\n")
+
 	if m.App.WebServer != nil {
-		urlStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#00BFFF"))
-		b.WriteString(urlStyle.Render(fmt.Sprintf(" 🌐 Dashboard: %s (presiona 'w' para abrir)", m.App.WebServer.URL())))
+		urlStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#1E90FF"))
+		b.WriteString(urlStyle.Render(fmt.Sprintf(" 🌐  Dashboard: %s (press 'w' to open)", m.App.WebServer.URL())))
 		b.WriteString("\n")
 	}
 	b.WriteString("\n")
@@ -115,7 +121,7 @@ func (m *Model) renderTunnelItem(idx int, item TunnelItem) string {
 func (m *Model) viewLogs() string {
 	var b strings.Builder
 
-	title := TitleStyle.Render(" 📋 Tunnel Logs ")
+	title := TitleStyle.Render(" 📋  TUNNEL LOGS  ")
 	b.WriteString(title)
 	b.WriteString("\n\n")
 
@@ -149,7 +155,7 @@ func (m *Model) viewLogs() string {
 func (m *Model) viewAddForm() string {
 	var b strings.Builder
 
-	title := TitleStyle.Render(" ➕ Add New Tunnel ")
+	title := TitleStyle.Render(" ➕  ADD NEW TUNNEL  ")
 	b.WriteString(title)
 	b.WriteString("\n\n")
 
@@ -206,7 +212,7 @@ func (m *Model) viewAddForm() string {
 func (m *Model) viewDownloading() string {
 	var b strings.Builder
 
-	title := TitleStyle.Render(" ⬇️ Installing ")
+	title := TitleStyle.Render(" ⬇️  INSTALLING  ")
 	b.WriteString(title)
 	b.WriteString("\n\n")
 
