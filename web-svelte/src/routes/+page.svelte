@@ -49,38 +49,6 @@
   </header>
 
   <main class="app-main">
-    <section class="panel connections-panel">
-      <div class="panel-header">
-        <h2>Your Connections</h2>
-        <span class="connection-count">{store.tunnels.length}</span>
-      </div>
-      <div class="panel-body connections-scroll">
-        {#if store.loading}
-          <div class="loading-state">
-            <div class="spinner"></div>
-            <span>Loading connections...</span>
-          </div>
-        {:else if store.tunnels.length === 0}
-          <div class="empty-state">
-            <div class="empty-state-icon">📡</div>
-            <h3>No connections yet</h3>
-            <p>Create your first connection to share your Foundry world with players.</p>
-          </div>
-        {:else}
-          <div class="connection-list">
-            {#each store.tunnels as tunnel (tunnel.id)}
-              <TunnelCard 
-                {tunnel} 
-                onStart={store.start}
-                onStop={store.stop}
-                onDelete={store.delete}
-              />
-            {/each}
-          </div>
-        {/if}
-      </div>
-    </section>
-
     <section class="panel create-panel">
       <div class="panel-header">
         <h2>New Connection</h2>
@@ -113,6 +81,38 @@
             <span>Create Connection</span>
           </button>
         </form>
+      </div>
+    </section>
+
+    <section class="panel connections-panel">
+      <div class="panel-header">
+        <h2>Your Connections</h2>
+        <span class="connection-count">{store.tunnels.length}</span>
+      </div>
+      <div class="panel-body connections-scroll">
+        {#if store.loading}
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Loading connections...</span>
+          </div>
+        {:else if store.tunnels.length === 0}
+          <div class="empty-state">
+            <div class="empty-state-icon">📡</div>
+            <h3>No connections yet</h3>
+            <p>Create your first connection to share your Foundry world with players.</p>
+          </div>
+        {:else}
+          <div class="connection-list">
+            {#each store.tunnels as tunnel (tunnel.id)}
+              <TunnelCard 
+                {tunnel} 
+                onStart={store.start}
+                onStop={store.stop}
+                onDelete={store.delete}
+              />
+            {/each}
+          </div>
+        {/if}
       </div>
     </section>
   </main>
@@ -174,7 +174,7 @@
 
   .app-main {
     display: grid;
-    grid-template-columns: 1fr 380px;
+    grid-template-columns: 380px 1fr;
     gap: 24px;
     flex: 1;
   }
@@ -290,6 +290,12 @@
     display: grid;
     grid-template-columns: 100px 1fr;
     gap: 12px;
+  }
+
+  @media (max-width: 500px) {
+    .field-row {
+      grid-template-columns: 1fr;
+    }
   }
 
   label {

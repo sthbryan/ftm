@@ -1,9 +1,12 @@
 <script>
+  import DeleteModal from './DeleteModal.svelte';
+  
   let { tunnel, onStart, onStop, onDelete } = $props();
   
   let showLogs = $state(false);
   let logs = $state('');
   let loadingLogs = $state(false);
+  let showDeleteModal = $state(false);
   
   const providerNames = {
     cloudflared: 'Cloudflared',
@@ -45,6 +48,11 @@
     }
     loadingLogs = false;
   }
+  
+  function handleDelete() {
+    showDeleteModal = false;
+    onDelete(tunnel.id);
+  }
 </script>
 
 <div class="connection-item {getStatusClass()}">
@@ -65,7 +73,7 @@
           <button class="btn btn-start" onclick={() => onStart(tunnel.id)}>Start</button>
         {/if}
         <button class="btn" onclick={loadLogs}>{showLogs ? 'Hide' : 'Logs'}</button>
-        <button class="btn" onclick={() => onDelete(tunnel.id)}>Delete</button>
+        <button class="btn btn-danger" onclick={() => showDeleteModal = true}>Delete</button>
       </div>
     </div>
     {#if tunnel.publicUrl}
@@ -90,6 +98,13 @@
   </div>
 </div>
 
+<DeleteModal 
+  show={showDeleteModal} 
+  name={tunnel.name} 
+  onConfirm={handleDelete} 
+  onCancel={() => showDeleteModal = false}
+/>
+
 <style>
   .connection-item {
     background: white;
@@ -112,7 +127,7 @@
   .connection-main {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     padding: 16px;
     gap: 16px;
   }
@@ -199,6 +214,7 @@
   .connection-actions {
     display: flex;
     gap: 8px;
+    flex-shrink: 0;
   }
 
   .btn {
@@ -225,6 +241,16 @@
   .btn-start:hover {
     background: #15803d;
     border-color: #15803d;
+  }
+
+  .btn-danger {
+    color: #dc2626;
+    border-color: #fecaca;
+    background: #fef2f2;
+  }
+
+  .btn-danger:hover {
+    background: #fee2e2;
   }
 
   .connection-url-row {
@@ -296,5 +322,16 @@
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-all;
+  }
+
+  @media (max-width: 600px) {
+    .connection-main {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .connection-actions {
+      justify-content: flex-start;
+    }
   }
 </style>
