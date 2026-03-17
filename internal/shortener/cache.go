@@ -3,6 +3,7 @@ package shortener
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"gopkg.in/yaml.v3"
@@ -81,6 +82,13 @@ func (c *URLCache) Get(tunnelID string) (URLMapping, bool) {
 	return m, ok
 }
 
+func (c *URLCache) Delete(tunnelID string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	
+	delete(c.Mappings, tunnelID)
+}
+
 func cachePath() string {
 	return filepath.Join(config.ConfigDir(), "url-cache.yaml")
 }
@@ -88,6 +96,10 @@ func cachePath() string {
 func (c *URLCache) EnsureShortURL(tunnelID, currentURL, preferredShort string, client Provider) (string, error) {
 	if mapping, ok := c.Get(tunnelID); ok {
 		if mapping.CurrentURL != currentURL && currentURL != "" {
+			if isInvalidURL(currentURL) {
+				c.Delete(tunnelID)
+				c.Save()
+			}
 			shortURL, err := client.Shorten(currentURL, preferredShort)
 			if err != nil {
 				if IsDomainBlocked(err) {
@@ -111,4 +123,11 @@ func (c *URLCache) EnsureShortURL(tunnelID, currentURL, preferredShort string, c
 	c.Save()
 	
 	return shortURL, nil
+}
+
+func isInvalidURL(url string) bool {
+	return strings.Contains(url, "dashboard.pinggy.io") ||
+		strings.Contains(url, "localhost.run") && !strings.Contains(url, ".lhr.life") ||
+		url == "" ||
+		url == "https://"
 }
