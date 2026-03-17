@@ -87,10 +87,16 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       
       - name: Build Go backend
+        shell: bash
         run: |
           cd desktop/go-api/cmd/server
-          go build -ldflags "-s -w" -o go-backend${{ matrix.suffix == 'windows' && '.exe' || '' }} .
-          cp go-backend${{ matrix.suffix == 'windows' && '.exe' || '' }} ../../../src-tauri/go-backend${{ matrix.suffix == 'windows' && '.exe' || '' }}
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            go build -ldflags "-s -w" -o go-backend.exe .
+            cp go-backend.exe ../../../src-tauri/go-backend.exe
+          else
+            go build -ldflags "-s -w" -o go-backend .
+            cp go-backend ../../../src-tauri/go-backend
+          fi
       
       - name: Install npm dependencies
         run: |
