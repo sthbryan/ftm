@@ -2,51 +2,76 @@
 
 Share your Foundry VTT world with players anywhere. No port forwarding needed.
 
-![Demo](demo.jpg)
-
 ## Features
 
-- **6 tunnel providers**: Cloudflared, Playit.gg, localhost.run, Serveo, Pinggy and Tunnelmole
-- **Auto-install**: Downloads and configures providers automatically
-- **Web dashboard**: Clean interface to manage connections (press `w` in TUI)
-- **Drag & drop**: Reorder connections as you like
-- **Real-time updates**: See tunnel status change instantly
+- **6 tunnel providers**: Cloudflared, Playit.gg, localhost.run, Serveo, Pinggy, Tunnelmole
+- **3 interfaces**: TUI, Web dashboard, Desktop app (Tauri v2)
+- **Auto-install**: Downloads providers automatically
+- **Drag & drop**: Reorder connections
+- **Real-time updates**: Live status changes
 
-## Install
+## Quick Start
 
 ```bash
+# Install
 go install github.com/deadbryam/ftm@latest
+
+# Run
+ftm              # TUI
+ftm --web        # Web dashboard only
 ```
 
-Or download the binary from [Releases](https://github.com/deadbryam/ftm/releases).
+**TUI shortcuts:** `↑/↓` navigate, `s` start/stop, `l` logs, `c` copy URL, `w` web, `a` add, `d` delete, `q` quit
 
-## Usage
+## Interfaces
+
+### TUI
+![TUI](docs/tui.webp)
+
+### Web Dashboard
+![Web](docs/web.webp)
+
+Access at `http://localhost:8080`
+
+### Desktop App (Tauri v2)
 
 ```bash
-ftm                    # Start TUI
-ftm --web              # Web dashboard only
-ftm --port 8080        # Custom web port
+cd desktop
+npm install
+npm run tauri build
 ```
 
-**TUI shortcuts:**
-- `↑/↓` - Navigate
-- `s` - Start tunnel
-- `x` - Stop tunnel
-- `l` - View logs
-- `c` - Copy URL
-- `w` - Open web dashboard
-- `a` - Add new tunnel
-- `d` - Delete tunnel
-- `q` - Quit
+## Build from Source
 
-## Web Dashboard
+**Requirements:**
+- Go 1.21+
+- Node.js 18+ (for Tauri desktop)
+- Rust (for Tauri desktop)
 
-Access at `http://localhost:8080` (auto-detected port).
+```bash
+# Clone
+git clone https://github.com/deadbryam/ftm.git
+cd ftm
 
-- Click & drag handles (⠿) to reorder
-- Click URL to copy
-- Edit name/port inline by clicking
+# Build CLI & Web
+go build -o ftm ./cmd/ftm
+
+# Build Desktop App (optional)
+cd desktop
+npm install
+npm run tauri build
+```
+
+## Contributing
+
+1. Fork the repo
+2. Create a branch: `git checkout -b feature/amazing`
+3. Commit: `git commit -m "Add amazing feature"`
+4. Push: `git push origin feature/amazing`
+5. Open a Pull Request
 
 ## License
 
-MIT
+MIT License - Copyright (c) 2024 deadbryam
+
+See [LICENSE](LICENSE) for details.
