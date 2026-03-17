@@ -121,7 +121,7 @@ func stripANSI(s string) string {
 	return ansiEscape.ReplaceAllString(s, "")
 }
 
-var pinggyRegex = regexp.MustCompile(`https?://[a-z0-9]+\.pinggy\.io`)
+var pinggyRegex = regexp.MustCompile(`https?://[a-z0-9-]+\.[a-z]+\.pinggy\.(io|link)`)
 
 func (p *PinggyProvider) ParseURL(line string) string {
 	clean := stripANSI(line)
@@ -132,7 +132,7 @@ func (p *PinggyProvider) ParseURL(line string) string {
 		return matches[0]
 	}
 
-	if strings.Contains(cleanLower, "pinggy.io") {
+	if strings.Contains(cleanLower, "pinggy.link") || strings.Contains(cleanLower, ".pinggy.io") {
 		if idx := strings.Index(cleanLower, "https://"); idx != -1 {
 			rest := clean[idx:]
 			if endIdx := strings.IndexAny(rest, " \t\n\r,"); endIdx != -1 {
@@ -149,6 +149,7 @@ func (p *PinggyProvider) IsReady(line string) bool {
 	clean := stripANSI(line)
 	cleanLower := strings.ToLower(clean)
 
-	return strings.Contains(cleanLower, "pinggy.io") ||
+	return strings.Contains(cleanLower, "pinggy.link") ||
+		strings.Contains(cleanLower, ".pinggy.io") ||
 		strings.Contains(cleanLower, "connected")
 }
