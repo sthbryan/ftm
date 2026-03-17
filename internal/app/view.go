@@ -30,6 +30,63 @@ func (m *Model) View() string {
 
 const headerMargin = 4
 
+func center(s string, width int) string {
+	pad := (width - lipgloss.Width(s)) / 2
+	if pad < 0 {
+		pad = 0
+	}
+	return strings.Repeat(" ", pad) + s
+}
+
+func (m *Model) viewEmptyState() string {
+	var b strings.Builder
+
+	icon := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorGold)).
+		Render("🌐  +  🎲")
+
+	title := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorGold)).
+		Bold(true).
+		Render("Welcome, Dungeon Master!")
+
+	subtitle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorText)).
+		Render("You haven't created any tunnels yet.")
+
+	desc := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorTextDim)).
+		Render("Tunnels let your players connect to your Foundry world.")
+
+	cta := ButtonActiveStyle.Render("[ Create First Tunnel ]")
+
+	hint := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorTextDim)).
+		Render("Or press 'a' to start")
+
+	tip := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorBronze)).
+		Render("💡 Tip: You can also use the web dashboard at " + m.App.WebServer.URL())
+
+	// Center everything vertically
+	contentHeight := 12
+	paddingTop := (m.Height - contentHeight) / 2
+	if paddingTop < 2 {
+		paddingTop = 2
+	}
+
+	b.WriteString(strings.Repeat("\n", paddingTop))
+	b.WriteString(center(icon, m.Width) + "\n\n")
+	b.WriteString(center(title, m.Width) + "\n\n")
+	b.WriteString(center(subtitle, m.Width) + "\n")
+	b.WriteString(center(desc, m.Width) + "\n\n")
+	b.WriteString(center(cta, m.Width) + "\n\n")
+	b.WriteString(center(hint, m.Width) + "\n\n")
+	b.WriteString(center(tip, m.Width) + "\n")
+
+	return b.String()
+}
+
 func (m *Model) viewList() string {
 	var b strings.Builder
 
@@ -57,7 +114,7 @@ func (m *Model) viewList() string {
 	b.WriteString("\n")
 
 	if len(m.Items) == 0 {
-		b.WriteString("No tunnels configured. Press 'a' to add one.\n")
+		return m.viewEmptyState()
 	} else {
 		for i, item := range m.Items {
 			tunnelItem := item.(TunnelItem)
