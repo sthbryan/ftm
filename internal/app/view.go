@@ -464,14 +464,16 @@ func (m *Model) viewAddForm() string {
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
+	inputWidth := 25
+
 	nameLabel := "Name"
 	nameValue := m.FormValues.Name
 	if nameValue == "" {
-		nameValue = "..."
+		nameValue = ""
 	}
 	nameHint := ""
 	if m.FormFocus == 0 {
-		nameLabel = "> Name"
+		nameLabel = "▶ Name"
 		nameHint = "type to enter"
 	}
 
@@ -479,59 +481,77 @@ func (m *Model) viewAddForm() string {
 	if m.FormFocus == 0 {
 		labelStyle = labelStyle.Bold(true).Foreground(lipgloss.Color(ColorGold))
 	}
-	valueStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorText))
+
+	nameStyle := lipgloss.NewStyle().
+		Width(inputWidth).
+		Padding(0, 1).
+		BorderStyle(lipgloss.RoundedBorder())
 	if m.FormFocus == 0 {
-		valueStyle = valueStyle.Background(lipgloss.Color(ColorBg)).
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color(ColorGold))
+		nameStyle = nameStyle.
+			BorderForeground(lipgloss.Color(ColorGold)).
+			Foreground(lipgloss.Color(ColorText))
+	} else {
+		nameStyle = nameStyle.
+			BorderForeground(lipgloss.Color(ColorBronze)).
+			Foreground(lipgloss.Color(ColorTextDim))
 	}
 
 	b.WriteString(labelStyle.Render(nameLabel + ":"))
-	b.WriteString(" ")
-	b.WriteString(valueStyle.Render(" " + nameValue + " "))
+	b.WriteString("\n")
+	b.WriteString(nameStyle.Render(nameValue))
 	if nameHint != "" {
 		hintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBronze))
 		b.WriteString(" " + hintStyle.Render(nameHint))
 	}
-	b.WriteString("\n\n")
+	b.WriteString("\n")
+	b.WriteString("\n")
 
 	providerLabel := "Provider"
 	providerValue := m.FormValues.Provider
 	providerHint := ""
 	if m.FormFocus == 1 {
-		providerLabel = "> Provider"
+		providerLabel = "▶ Provider"
 		providerValue = "← " + providerValue + " →"
-		providerHint = "arrow keys to change"
+		providerHint = "arrows to change"
 	}
 
 	labelStyle = lipgloss.NewStyle().Width(15).Foreground(lipgloss.Color(ColorTextDim))
 	if m.FormFocus == 1 {
 		labelStyle = labelStyle.Bold(true).Foreground(lipgloss.Color(ColorGold))
 	}
-	valueStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorText))
+
+	providerStyle := lipgloss.NewStyle().
+		Width(inputWidth).
+		Padding(0, 1).
+		BorderStyle(lipgloss.RoundedBorder())
 	if m.FormFocus == 1 {
-		valueStyle = valueStyle.Background(lipgloss.Color(ColorBg)).
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color(ColorGold))
+		providerStyle = providerStyle.
+			BorderForeground(lipgloss.Color(ColorGold)).
+			Foreground(lipgloss.Color(ColorText))
+	} else {
+		providerStyle = providerStyle.
+			BorderForeground(lipgloss.Color(ColorBronze)).
+			Foreground(lipgloss.Color(ColorTextDim))
 	}
 
 	b.WriteString(labelStyle.Render(providerLabel + ":"))
-	b.WriteString(" ")
-	b.WriteString(valueStyle.Render(" " + providerValue + " "))
+	b.WriteString("\n")
+	b.WriteString(providerStyle.Render(providerValue))
 	if providerHint != "" {
 		hintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBronze))
 		b.WriteString(" " + hintStyle.Render(providerHint))
 	}
-	b.WriteString("\n\n")
+	b.WriteString("\n")
+	b.WriteString("\n")
 
 	portLabel := "Local Port"
 	portValue := m.FormValues.Port
 	if portValue == "" {
-		portValue = "..."
+		portValue = ""
 	}
 	portHint := ""
 	if m.FormFocus == 2 {
-		portLabel = "> Local Port"
+		portLabel = "▶ Local Port"
 		portHint = "numbers only"
 	}
 
@@ -539,21 +559,30 @@ func (m *Model) viewAddForm() string {
 	if m.FormFocus == 2 {
 		labelStyle = labelStyle.Bold(true).Foreground(lipgloss.Color(ColorGold))
 	}
-	valueStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorText))
+
+	portStyle := lipgloss.NewStyle().
+		Width(inputWidth).
+		Padding(0, 1).
+		BorderStyle(lipgloss.RoundedBorder())
 	if m.FormFocus == 2 {
-		valueStyle = valueStyle.Background(lipgloss.Color(ColorBg)).
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color(ColorGold))
+		portStyle = portStyle.
+			BorderForeground(lipgloss.Color(ColorGold)).
+			Foreground(lipgloss.Color(ColorText))
+	} else {
+		portStyle = portStyle.
+			BorderForeground(lipgloss.Color(ColorBronze)).
+			Foreground(lipgloss.Color(ColorTextDim))
 	}
 
 	b.WriteString(labelStyle.Render(portLabel + ":"))
-	b.WriteString(" ")
-	b.WriteString(valueStyle.Render(" " + portValue + " "))
+	b.WriteString("\n")
+	b.WriteString(portStyle.Render(portValue))
 	if portHint != "" {
 		hintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBronze))
 		b.WriteString(" " + hintStyle.Render(portHint))
 	}
-	b.WriteString("\n\n")
+	b.WriteString("\n")
+	b.WriteString("\n")
 
 	submitStyle := lipgloss.NewStyle()
 	if m.FormFocus == 3 {
@@ -561,7 +590,7 @@ func (m *Model) viewAddForm() string {
 	} else {
 		submitStyle = ButtonStyle
 	}
-	b.WriteString(strings.Repeat(" ", 16))
+	b.WriteString(lipgloss.NewStyle().Width(16).Render(""))
 	b.WriteString(submitStyle.Render(" Submit "))
 
 	b.WriteString("\n\n")
