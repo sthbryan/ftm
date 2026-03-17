@@ -9,7 +9,6 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 
 	"foundry-tunnel/internal/config"
 	"foundry-tunnel/internal/providers"
@@ -95,39 +94,6 @@ var DefaultKeys = KeyMap{
 		key.WithHelp("?", "help"),
 	),
 }
-
-var (
-	TitleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#FFF8DC")).
-			Background(lipgloss.Color("#B7410E")).
-			Padding(0, 2)
-
-	TitleAccentStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#FFD700"))
-
-	StatusOnline = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#228B22")).
-			Bold(true)
-
-	StatusOffline = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#DC143C"))
-
-	StatusStarting = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF8C00"))
-
-	URLStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#1E90FF")).
-			Underline(true)
-
-	HelpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#666666"))
-
-	SelectedStyle = lipgloss.NewStyle().
-			Background(lipgloss.Color("#333333")).
-			Bold(true)
-)
 
 type Model struct {
 	App                 *App
