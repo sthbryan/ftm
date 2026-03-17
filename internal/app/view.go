@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+
+	"foundry-tunnel/internal/version"
 )
 
 func (m *Model) View() string {
@@ -26,17 +28,25 @@ func (m *Model) View() string {
 	}
 }
 
+const headerMargin = 4
+
 func (m *Model) viewList() string {
 	var b strings.Builder
 
-	b.WriteString("\n")
-	title := TitleStyle.Render(" 🎲  FOUNDRY TUNNEL MANAGER  ")
+	// Header with version
+	versionStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorTextDim))
+
+	title := TitleAccentStyle.Render("🎲  Foundry Tunnel Manager")
+	version := versionStyle.Render("v" + version.Version)
+
 	b.WriteString(title)
-	b.WriteString("\n")
-	subtitle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#CD853F")).
-		Render("      Share Your World With Players Everywhere")
-	b.WriteString(subtitle)
+	spacing := m.Width - lipgloss.Width(title) - lipgloss.Width(version) - headerMargin
+	if spacing < 1 {
+		spacing = 1
+	}
+	b.WriteString(strings.Repeat(" ", spacing))
+	b.WriteString(version)
 	b.WriteString("\n\n")
 
 	if m.App.WebServer != nil {
