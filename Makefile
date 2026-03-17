@@ -5,7 +5,7 @@ BINARY := ftm
 CMD := ./cmd/ftm
 
 build-web:
-	cd web-svelte && npm ci && npm run build
+	cd web-svelte && bun install && bun run build
 	rm -rf internal/web/static/*
 	cp -r web-svelte/dist/* internal/web/static/
 	touch internal/web/static/.gitkeep

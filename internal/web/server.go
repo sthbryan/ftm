@@ -127,15 +127,50 @@ func (s *Server) Start() error {
 	mux := http.NewServeMux()
 
 	staticFS, _ := fs.Sub(staticFiles, "static")
-	mux.Handle("/", http.FileServer(http.FS(staticFS)))
+	fileServer := http.FileServer(http.FS(staticFS))
 
-	mux.HandleFunc("/api/tunnels", s.handleTunnels)
-	mux.HandleFunc("/api/tunnels/", s.handleTunnelActions)
-	mux.HandleFunc("/api/events", s.handleSSE)
-	mux.HandleFunc("/api/copy-url", s.handleCopyURL)
-	mux.HandleFunc("/api/logs/", s.handleLogs)
-	mux.HandleFunc("/api/tunnels/reorder", s.handleReorder)
-	mux.HandleFunc("/api/status", s.handleStatus)
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		
+		switch {
+		case r.URL.Path == "/api/tunnels" || r.URL.Path == "/api/tunnels/":
+			s.handleTunnels(w, r)
+		case r.URL.Path == "/api/events":
+			s.handleSSE(w, r)
+		case r.URL.Path == "/api/copy-url":
+			s.handleCopyURL(w, r)
+		case strings.HasPrefix(r.URL.Path, "/api/logs/"):
+			s.handleLogs(w, r)
+		case r.URL.Path == "/api/tunnels/reorder":
+			s.handleReorder(w, r)
+		case r.URL.Path == "/api/status":
+			s.handleStatus(w, r)
+		case strings.HasPrefix(r.URL.Path, "/api/tunnels/"):
+			s.handleTunnelActions(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			return
+		}
+		
+		path := r.URL.Path
+		if path != "/" && !strings.Contains(path, ".") {
+			r.URL.Path = "/"
+		}
+		
+		fileServer.ServeHTTP(w, r)
+	})
 
 	s.httpServer = &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
