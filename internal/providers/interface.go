@@ -18,6 +18,13 @@ type Provider interface {
 	IsReady(line string) bool
 }
 
+// AutoInstaller is implemented by providers that can auto-install themselves
+type AutoInstaller interface {
+	Provider
+	IsInstalled() bool
+	Install(progress chan<- DownloadProgress) error
+}
+
 type Process struct {
 	Cancel context.CancelFunc
 	PublicURL string

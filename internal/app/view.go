@@ -199,11 +199,11 @@ func (m *Model) viewAddForm() string {
 func (m *Model) viewDownloading() string {
 	var b strings.Builder
 
-	title := TitleStyle.Render(" ⬇️ Downloading ")
+	title := TitleStyle.Render(" ⬇️ Installing ")
 	b.WriteString(title)
 	b.WriteString("\n\n")
 
-	b.WriteString(fmt.Sprintf("Downloading %s...\n\n", m.DownloadingProvider))
+	b.WriteString(fmt.Sprintf("Setting up %s...\n\n", m.DownloadingProvider))
 
 	if m.DownloadProgress.Total > 0 {
 		percent := int(m.DownloadProgress.Percent)

@@ -40,6 +40,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.DownloadProgress = providers.DownloadProgress(msg)
 		if m.DownloadProgress.Done {
 			m.State = viewList
+			if m.PendingTunnel != nil {
+				// Find the item and start the tunnel
+				for _, item := range m.Items {
+					if ti, ok := item.(TunnelItem); ok && ti.Tunnel.ID == m.PendingTunnel.ID {
+						m.PendingTunnel = nil
+						m.showMessage("Install complete! Starting tunnel...")
+						return m, m.startTunnel(ti)
+					}
+				}
+				m.PendingTunnel = nil
+			}
 			m.showMessage("Download complete!")
 		}
 		return m, m.checkDownloadProgress()

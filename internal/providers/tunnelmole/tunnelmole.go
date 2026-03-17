@@ -8,21 +8,30 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"foundry-tunnel/internal/config"
 	"foundry-tunnel/internal/providers"
 )
 
-type TunnelmoleProvider struct{}
+type TunnelmoleProvider struct {
+	installer *NodeInstaller
+}
 
 func New() providers.Provider {
-	return &TunnelmoleProvider{}
+	configDir, _ := os.UserHomeDir()
+	if configDir == "" {
+		configDir = "."
+	}
+	baseDir := filepath.Join(configDir, ".config", "foundry-tunnel")
+	
+	return &TunnelmoleProvider{
+		installer: NewNodeInstaller(baseDir),
+	}
 }
 
 func (p *TunnelmoleProvider) Name() string {
-	return "Tunnelmole"
+	return "tunnelmole"
 }
 
 func (p *TunnelmoleProvider) BinaryName() string {
@@ -37,7 +46,24 @@ func (p *TunnelmoleProvider) RequiresAuth() bool {
 	return false
 }
 
+func (p *TunnelmoleProvider) IsInstalled() bool {
+	// Check system-installed tunnelmole
+	if _, err := exec.LookPath("tmole"); err == nil {
+		return true
+	}
+	if _, err := exec.LookPath("tunnelmole"); err == nil {
+		return true
+	}
+	// Check our bundled installation
+	return p.installer.IsInstalled()
+}
+
+func (p *TunnelmoleProvider) Install(progress chan<- providers.DownloadProgress) error {
+	return p.installer.Install(progress)
+}
+
 func (p *TunnelmoleProvider) FindBinary() string {
+	// First check system PATH
 	if path, err := exec.LookPath("tmole"); err == nil {
 		return path
 	}
@@ -45,20 +71,18 @@ func (p *TunnelmoleProvider) FindBinary() string {
 		return path
 	}
 	
+	// Check our bundled installation
+	if p.installer.IsInstalled() {
+		return p.installer.TunnelmoleBin()
+	}
+	
+	// Check common npm locations
 	home, _ := os.UserHomeDir()
 	candidates := []string{
 		filepath.Join(home, ".npm-global", "bin", "tmole"),
 		filepath.Join(home, ".npm-global", "bin", "tunnelmole"),
 		"/usr/local/bin/tmole",
 		"/usr/local/bin/tunnelmole",
-	}
-	
-	if runtime.GOOS == "windows" {
-		npmPath := os.Getenv("APPDATA")
-		candidates = append(candidates,
-			filepath.Join(npmPath, "npm", "tmole.cmd"),
-			filepath.Join(npmPath, "npm", "tunnelmole.cmd"),
-		)
 	}
 	
 	for _, path := range candidates {
@@ -73,7 +97,7 @@ func (p *TunnelmoleProvider) FindBinary() string {
 func (p *TunnelmoleProvider) Start(ctx context.Context, tunnel config.TunnelConfig, logWriter io.Writer) (*providers.Process, error) {
 	binary := p.FindBinary()
 	if binary == "" {
-		return nil, fmt.Errorf("tunnelmole not found. Install with: npm install -g tunnelmole")
+		return nil, fmt.Errorf("installing")
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -85,7 +109,7 @@ func (p *TunnelmoleProvider) Start(ctx context.Context, tunnel config.TunnelConf
 	
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Stdout = logWriter
-	cmd.Stderr = logWriter
+		cmd.Stderr = logWriter
 	
 	if err := cmd.Start(); err != nil {
 		cancel()

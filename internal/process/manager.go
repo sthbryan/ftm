@@ -111,6 +111,39 @@ func (m *Manager) ListProviders() []providers.Provider {
 	return result
 }
 
+func (m *Manager) CheckInstallation(providerType config.Provider) (needsInstall bool, autoInstall bool) {
+	provider, ok := m.providers[providerType]
+	if !ok {
+		return false, false
+	}
+	
+	installer, ok := provider.(providers.AutoInstaller)
+	if !ok {
+		// Not an auto-installable provider
+		return false, false
+	}
+	
+	if installer.IsInstalled() {
+		return false, true
+	}
+	
+	return true, true
+}
+
+func (m *Manager) InstallProvider(providerType config.Provider) error {
+	provider, ok := m.providers[providerType]
+	if !ok {
+		return fmt.Errorf("unknown provider: %s", providerType)
+	}
+	
+	installer, ok := provider.(providers.AutoInstaller)
+	if !ok {
+		return fmt.Errorf("provider %s does not support auto-install", providerType)
+	}
+	
+	return installer.Install(m.DownloadProgress)
+}
+
 func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelStatus)) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -122,6 +155,11 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	provider, ok := m.providers[tunnel.Provider]
 	if !ok {
 		return fmt.Errorf("unknown provider: %s", tunnel.Provider)
+	}
+	
+	// Check if provider needs installation
+	if installer, ok := provider.(providers.AutoInstaller); ok && !installer.IsInstalled() {
+		return fmt.Errorf("installing")
 	}
 	
 	logBuffer := NewLogBuffer()

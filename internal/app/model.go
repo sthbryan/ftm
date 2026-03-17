@@ -137,6 +137,7 @@ type Model struct {
 	MessageTimer        int
 	DownloadProgress    providers.DownloadProgress
 	DownloadingProvider string
+	PendingTunnel       *config.TunnelConfig
 }
 
 type FormData struct {
@@ -241,15 +242,18 @@ func truncate(s string, max int) string {
 
 func (m *Model) startTunnel(item TunnelItem) tea.Cmd {
 	return func() tea.Msg {
+		// Check if provider needs installation
+		if needsInstall, canInstall := m.App.Manager.CheckInstallation(item.Tunnel.Provider); needsInstall && canInstall {
+			m.DownloadingProvider = string(item.Tunnel.Provider)
+			m.State = viewDownloading
+			m.PendingTunnel = &item.Tunnel
+			return m.installProvider(item.Tunnel.Provider)()
+		}
+
 		err := m.App.Manager.Start(item.Tunnel, func(status config.TunnelStatus) {
 		})
 
 		if err != nil {
-			if err.Error() == "installing" {
-				m.DownloadingProvider = string(item.Tunnel.Provider)
-				m.State = viewDownloading
-				return nil
-			}
 			return statusUpdateMsg{
 				tunnelID: item.Tunnel.ID,
 				status:   config.TunnelStatus{Error: err.Error()},
@@ -257,6 +261,19 @@ func (m *Model) startTunnel(item TunnelItem) tea.Cmd {
 		}
 
 		return nil
+	}
+}
+
+func (m *Model) installProvider(providerType config.Provider) tea.Cmd {
+	return func() tea.Msg {
+		err := m.App.Manager.InstallProvider(providerType)
+		if err != nil {
+			return statusUpdateMsg{
+				tunnelID: "",
+				status:   config.TunnelStatus{Error: "Install failed: " + err.Error()},
+			}
+		}
+		return downloadProgressMsg{Done: true, Percent: 100}
 	}
 }
 
