@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foundry Tunnel Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Foundry Tunnel Manager</h1>
+            <p class="subtitle">Your gateway to online adventures</p>
+        </header>
+
+        <div class="toolbar">
+            <button class="btn btn-primary" id="btn-add">
+                <span class="icon">+</span> New Connection
+            </button>
+            <div class="connection-status" id="connection-status">
+                <span class="status-dot online"></span> Connected
+            </div>
+        </div>
+
+        <div class="tunnels-grid" id="tunnels-container">
+            <div class="empty-state" id="empty-state">
+                <div class="empty-icon">*</div>
+                <h3>No connections configured</h3>
+                <p>Click "New Connection" to start your adventure</p>
+            </div>
+        </div>
+
+        <div class="toast-container" id="toast-container"></div>
+    </div>
+
+    <div class="modal" id="add-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>New Connection</h2>
+                <button class="btn-close" id="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-form">
+                    <div class="form-group">
+                        <label for="tunnel-name">World Name</label>
+                        <input type="text" id="tunnel-name" placeholder="e.g., Lands of Fire" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tunnel-port">Foundry Port</label>
+                        <input type="number" id="tunnel-port" value="30000" min="1" max="65535" required>
+                        <span class="help-text">The port where your Foundry VTT runs (usually 30000)</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Connection Service</label>
+                        <div class="provider-grid" id="provider-grid">
+                            <div class="provider-card selected" data-provider="cloudflared">
+                                <div class="provider-icon">CF</div>
+                                <div class="provider-name">Cloudflared</div>
+                                <div class="provider-desc">Fast and reliable</div>
+                            </div>
+                            <div class="provider-card" data-provider="playitgg">
+                                <div class="provider-icon">P</div>
+                                <div class="provider-name">Playit.gg</div>
+                                <div class="provider-desc">For gaming</div>
+                            </div>
+                            <div class="provider-card" data-provider="localhostrun">
+                                <div class="provider-icon">LR</div>
+                                <div class="provider-name">localhost.run</div>
+                                <div class="provider-desc">No install needed</div>
+                            </div>
+                            <div class="provider-card" data-provider="serveo">
+                                <div class="provider-icon">S</div>
+                                <div class="provider-name">Serveo</div>
+                                <div class="provider-desc">Simple and fast</div>
+                            </div>
+                            <div class="provider-card" data-provider="pinggy">
+                                <div class="provider-icon">PI</div>
+                                <div class="provider-name">Pinggy</div>
+                                <div class="provider-desc">With QR code</div>
+                            </div>
+                            <div class="provider-card" data-provider="tunnelmole">
+                                <div class="provider-icon">TM</div>
+                                <div class="provider-name">Tunnelmole</div>
+                                <div class="provider-desc">Easy to use</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel">Cancel</button>
+                <button class="btn btn-primary" id="btn-create">Create Connection</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="logs-modal" id="logs-modal">
+        <div class="logs-content">
+            <div class="logs-header">
+                <h3>Logs</h3>
+                <button class="btn-close" id="btn-close-logs">&times;</button>
+            </div>
+            <pre class="logs-body" id="logs-body"></pre>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
