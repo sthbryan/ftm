@@ -8,6 +8,7 @@ const (
 	ProviderTunnelmole  Provider = "tunnelmole"
 	ProviderLocalhostRun Provider = "localhostrun"
 	ProviderServeo      Provider = "serveo"
+	ProviderPinggy      Provider = "pinggy"
 )
 
 type TunnelConfig struct {

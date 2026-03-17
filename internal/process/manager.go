@@ -11,6 +11,7 @@ import (
 	"foundry-tunnel/internal/config"
 	"foundry-tunnel/internal/providers"
 	"foundry-tunnel/internal/providers/cloudflared"
+	"foundry-tunnel/internal/providers/pinggy"
 	"foundry-tunnel/internal/providers/playitgg"
 	"foundry-tunnel/internal/providers/ssh"
 	"foundry-tunnel/internal/providers/tunnelmole"
@@ -92,6 +93,7 @@ func NewManager() *Manager {
 			config.ProviderTunnelmole:  tunnelmole.New(),
 			config.ProviderLocalhostRun: ssh.NewLocalhostRun(),
 			config.ProviderServeo:      ssh.NewServeo(),
+			config.ProviderPinggy:      pinggy.New(),
 		},
 	}
 }
