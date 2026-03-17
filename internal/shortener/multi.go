@@ -2,21 +2,24 @@ package shortener
 
 type MultiProvider struct {
 	providers []Provider
+	apiKeys   map[string]string
 }
 
-func NewMulti(providers ...Provider) *MultiProvider {
-	return &MultiProvider{
-		providers: providers,
+func NewMulti(apiKeys map[string]string) *MultiProvider {
+	m := &MultiProvider{
+		providers: []Provider{
+			NewCleanURI(),
+			NewTinyURL(),
+		},
+		apiKeys: apiKeys,
 	}
-}
-
-func DefaultMulti() *MultiProvider {
-	return NewMulti(
-		NewISGD(),
-		NewCleanURI(),
-		NewDagd(),
-		NewTinyURL(),
-	)
+	
+	// Add Bitly if API key exists
+	if apiKeys != nil && apiKeys["bitly"] != "" {
+		m.providers = append([]Provider{NewBitly(apiKeys["bitly"])}, m.providers...)
+	}
+	
+	return m
 }
 
 func (m *MultiProvider) Name() string {

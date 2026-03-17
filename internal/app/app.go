@@ -35,7 +35,7 @@ func New() (*App, error) {
 	app := &App{
 		Config:    cfg,
 		Manager:   process.NewManager(),
-		Shortener: shortener.DefaultMulti(),
+		Shortener: shortener.NewMulti(cfg.Shortener.APIKeys),
 		URLCache:  cache,
 		DownloadProgress: make(chan providers.DownloadProgress, 10),
 	}

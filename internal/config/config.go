@@ -20,7 +20,8 @@ type Config struct {
 }
 
 type ShortenerConfig struct {
-	Provider string `yaml:"provider"`
+	Provider string            `yaml:"provider"`
+	APIKeys  map[string]string `yaml:"api_keys,omitempty"`
 }
 
 func DefaultConfig() *Config {
@@ -28,7 +29,8 @@ func DefaultConfig() *Config {
 		Version: 1,
 		Tunnels: []TunnelConfig{},
 		Shortener: ShortenerConfig{
-			Provider: "isgd",
+			Provider: "multi",
+			APIKeys:  make(map[string]string),
 		},
 	}
 }
