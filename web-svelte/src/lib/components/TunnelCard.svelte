@@ -1,7 +1,9 @@
 <script>
   let { tunnel, onStart, onStop, onDelete } = $props();
   
-  let showActions = $state(false);
+  let showLogs = $state(false);
+  let logs = $state('');
+  let loadingLogs = $state(false);
   
   const providerNames = {
     cloudflared: 'Cloudflared',
@@ -29,6 +31,20 @@
   function copyUrl(url) {
     navigator.clipboard.writeText(url);
   }
+  
+  async function loadLogs() {
+    showLogs = !showLogs;
+    if (!showLogs) return;
+    
+    loadingLogs = true;
+    try {
+      const res = await fetch(`/api/logs/${tunnel.id}`);
+      logs = await res.text();
+    } catch (e) {
+      logs = 'Failed to load logs';
+    }
+    loadingLogs = false;
+  }
 </script>
 
 <div class="connection-item {getStatusClass()}">
@@ -48,18 +64,27 @@
         {:else}
           <button class="btn btn-start" onclick={() => onStart(tunnel.id)}>Start</button>
         {/if}
-        <button class="btn" onclick={() => showActions = !showActions}>Logs</button>
+        <button class="btn" onclick={loadLogs}>{showLogs ? 'Hide' : 'Logs'}</button>
         <button class="btn" onclick={() => onDelete(tunnel.id)}>Delete</button>
       </div>
     </div>
     {#if tunnel.publicUrl}
-      <div class="connection-url-row" onclick={() => copyUrl(tunnel.publicUrl)}>
+      <button type="button" class="connection-url-row" onclick={() => copyUrl(tunnel.publicUrl)}>
         <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </svg>
         <span class="url-text">{tunnel.publicUrl}</span>
         <span class="copy-hint">Click to copy</span>
+      </button>
+    {/if}
+    {#if showLogs}
+      <div class="logs-panel">
+        {#if loadingLogs}
+          <div class="logs-loading">Loading...</div>
+        {:else}
+          <pre class="logs-content">{logs || 'No logs available'}</pre>
+        {/if}
       </div>
     {/if}
   </div>
@@ -180,6 +205,15 @@
     padding: 8px 14px;
     font-size: 13px;
     border-radius: 6px;
+    border: 1px solid #d6d3d1;
+    background: white;
+    color: #44403c;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn:hover {
+    background: #f5f5f4;
   }
 
   .btn-start {
@@ -202,6 +236,10 @@
     border-top: 1px solid #f5f5f4;
     cursor: pointer;
     transition: all 0.15s;
+    border: none;
+    width: 100%;
+    font: inherit;
+    text-align: left;
   }
 
   .connection-url-row:hover {
@@ -234,5 +272,29 @@
 
   .connection-url-row:hover .copy-hint {
     opacity: 1;
+  }
+
+  .logs-panel {
+    border-top: 1px solid #f5f5f4;
+    background: #1c1917;
+    max-height: 300px;
+    overflow: auto;
+  }
+
+  .logs-loading {
+    padding: 20px;
+    color: #a8a29e;
+    text-align: center;
+  }
+
+  .logs-content {
+    margin: 0;
+    padding: 16px;
+    color: #d6d3d1;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
   }
 </style>
