@@ -24,6 +24,8 @@ const (
 	viewDownloading
 )
 
+const TwoColumnThreshold = 100
+
 type KeyMap struct {
 	Up       key.Binding
 	Down     key.Binding

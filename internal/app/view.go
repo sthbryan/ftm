@@ -88,56 +88,146 @@ func (m *Model) viewEmptyState() string {
 }
 
 func (m *Model) viewList() string {
+	if m.Width == 0 || m.Height == 0 {
+		return "Loading..."
+	}
+
+	if len(m.Items) == 0 {
+		return m.viewEmptyState()
+	}
+
+	if m.Width >= TwoColumnThreshold {
+		return m.viewTwoColumn()
+	}
+
+	return m.viewSingleColumn()
+}
+
+func (m *Model) viewTwoColumn() string {
 	var b strings.Builder
 
-	// Header with version
+	// Header
+	headerStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorGold)).
+		Bold(true)
 	versionStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color(ColorTextDim))
 
-	title := TitleAccentStyle.Render("🎲  Foundry Tunnel Manager")
+	title := headerStyle.Render("🎲  Foundry Tunnel Manager")
 	version := versionStyle.Render("v" + version.Version)
 
 	b.WriteString(title)
-	spacing := m.Width - lipgloss.Width(title) - lipgloss.Width(version) - headerMargin
-	if spacing < 1 {
-		spacing = 1
+	b.WriteString(strings.Repeat(" ", m.Width-lipgloss.Width(title)-lipgloss.Width(version)-headerMargin))
+	b.WriteString(version)
+	b.WriteString("\n\n")
+
+	// Calculate column widths
+	leftWidth := int(float64(m.Width) * 0.4)
+	rightWidth := m.Width - leftWidth - 3
+
+	// Left column header
+	leftHeader := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color(ColorText)).
+		Render("Your Connections")
+
+	// Right column header
+	rightHeader := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color(ColorText)).
+		Render("Selected Tunnel")
+
+	b.WriteString(leftHeader)
+	b.WriteString(strings.Repeat(" ", leftWidth-lipgloss.Width(leftHeader)+3))
+	b.WriteString(rightHeader)
+	b.WriteString("\n")
+
+	divider := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorBronze)).
+		Render(strings.Repeat("─", m.Width-2))
+	b.WriteString(divider)
+	b.WriteString("\n")
+
+	// Render list and detail side by side
+	listContent := m.renderTunnelList(leftWidth - 2)
+	detailContent := m.renderDetailPanel(rightWidth - 2)
+
+	listLines := strings.Split(listContent, "\n")
+	detailLines := strings.Split(detailContent, "\n")
+
+	maxLines := len(listLines)
+	if len(detailLines) > maxLines {
+		maxLines = len(detailLines)
 	}
-	b.WriteString(strings.Repeat(" ", spacing))
+
+	for i := 0; i < maxLines; i++ {
+		leftLine := ""
+		if i < len(listLines) {
+			leftLine = listLines[i]
+		}
+		rightLine := ""
+		if i < len(detailLines) {
+			rightLine = detailLines[i]
+		}
+
+		// Pad left line to column width
+		leftLine = lipgloss.NewStyle().Width(leftWidth).Render(leftLine)
+
+		b.WriteString(leftLine)
+		b.WriteString(" │ ")
+		b.WriteString(rightLine)
+		b.WriteString("\n")
+	}
+
+	// Help bar
+	b.WriteString("\n")
+	b.WriteString(m.renderHelpBar())
+
+	return b.String()
+}
+
+func (m *Model) viewSingleColumn() string {
+	var b strings.Builder
+
+	headerStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorGold)).
+		Bold(true)
+	versionStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color(ColorTextDim))
+
+	title := headerStyle.Render("🎲  Foundry Tunnel Manager")
+	version := versionStyle.Render("v" + version.Version)
+
+	b.WriteString(title)
+	b.WriteString(strings.Repeat(" ", m.Width-lipgloss.Width(title)-lipgloss.Width(version)-headerMargin))
 	b.WriteString(version)
 	b.WriteString("\n\n")
 
 	if m.App.WebServer != nil {
-		urlStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#1E90FF"))
-		b.WriteString(urlStyle.Render(fmt.Sprintf(" 🌐  Dashboard: %s (press 'w' to open)", m.App.WebServer.URL())))
-		b.WriteString("\n")
-	}
-	b.WriteString("\n")
-
-	if len(m.Items) == 0 {
-		return m.viewEmptyState()
-	} else {
-		for i, item := range m.Items {
-			tunnelItem := item.(TunnelItem)
-			b.WriteString(m.renderTunnelItem(i, tunnelItem))
-			b.WriteString("\n")
-		}
+		urlStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(ColorGold))
+		b.WriteString(urlStyle.Render("🌐  Dashboard: " + m.App.WebServer.URL() + " (press 'w')"))
+		b.WriteString("\n\n")
 	}
 
+	b.WriteString(m.renderTunnelList(m.Width - 2))
 	b.WriteString("\n")
-
-	if m.Message != "" {
-		msgStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFD700")).
-			Background(lipgloss.Color("#333333")).
-			Padding(0, 1)
-		b.WriteString(msgStyle.Render(m.Message))
-		b.WriteString("\n")
-	}
-
-	b.WriteString("\n")
-	b.WriteString(m.Help.View(m.Keys))
+	b.WriteString(m.renderHelpBar())
 
 	return b.String()
+}
+
+// Placeholder functions for renderTunnelList, renderDetailPanel, and renderHelpBar
+func (m *Model) renderTunnelList(width int) string {
+	return ""
+}
+
+func (m *Model) renderDetailPanel(width int) string {
+	return ""
+}
+
+func (m *Model) renderHelpBar() string {
+	return ""
 }
 
 func (m *Model) renderTunnelItem(idx int, item TunnelItem) string {
