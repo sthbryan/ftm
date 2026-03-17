@@ -308,7 +308,86 @@ func (m *Model) renderTunnelListItem(idx int, item TunnelItem, width int) string
 }
 
 func (m *Model) renderDetailPanel(width int) string {
-	return ""
+	var b strings.Builder
+
+	item, ok := m.selectedItem()
+	if !ok {
+		return lipgloss.NewStyle().
+			Foreground(lipgloss.Color(ColorTextDim)).
+			Render("Select a tunnel to view details")
+	}
+
+	tunnel := item.Tunnel
+
+	// Name
+	nameStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color(ColorGold)).
+		Width(width)
+	b.WriteString(nameStyle.Render(tunnel.Name))
+	b.WriteString("\n\n")
+
+	// Provider
+	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDim)).Render("Provider:"))
+	b.WriteString(" ")
+	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorText)).Render(string(tunnel.Provider)))
+	b.WriteString("\n")
+
+	// Local Port
+	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDim)).Render("Local Port:"))
+	b.WriteString(" ")
+	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorText)).Render(fmt.Sprintf(":%d", tunnel.LocalPort)))
+	b.WriteString("\n\n")
+
+	// Status
+	var statusEmoji, statusText string
+	if item.Status.Running {
+		if item.Status.Starting {
+			statusEmoji = "🟡"
+			statusText = "STARTING"
+		} else {
+			statusEmoji = "🟢"
+			statusText = "ONLINE"
+		}
+	} else {
+		statusEmoji = "🔴"
+		statusText = "OFFLINE"
+	}
+
+	b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDim)).Render("Status:"))
+	b.WriteString(" ")
+	b.WriteString(fmt.Sprintf("%s %s", statusEmoji, statusText))
+	b.WriteString("\n\n")
+
+	// Public URL
+	if item.Status.Running && !item.Status.Starting && item.Status.PublicURL != "" {
+		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDim)).Render("Public URL:"))
+		b.WriteString("\n")
+
+		urlBox := URLBoxStyle.Width(width - 2).Render(item.Status.PublicURL)
+		b.WriteString(urlBox)
+		b.WriteString("\n")
+
+		copyHint := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(ColorBronze)).
+			Render("Press 'c' to copy")
+		b.WriteString(copyHint)
+		b.WriteString("\n\n")
+	}
+
+	// Action buttons
+	var actions []string
+	if item.Status.Running {
+		actions = append(actions, ButtonStyle.Render("[s] Stop"))
+	} else {
+		actions = append(actions, ButtonStyle.Render("[s] Start"))
+	}
+	actions = append(actions, ButtonStyle.Render("[l] Logs"))
+	actions = append(actions, ButtonStyle.Render("[d] Delete"))
+
+	b.WriteString(strings.Join(actions, "  "))
+
+	return b.String()
 }
 
 func (m *Model) renderHelpBar() string {
