@@ -52,7 +52,12 @@ func (p *PinggyProvider) Start(ctx context.Context, tunnel config.TunnelConfig, 
 	args := []string{
 		"-p", "443",
 		"-o", "StrictHostKeyChecking=no",
+		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "BatchMode=yes",
 		"-o", "ServerAliveInterval=30",
+		"-o", "ServerAliveCountMax=3",
+		"-o", "ConnectTimeout=10",
+		"-o", "LogLevel=ERROR",
 		"-R", fmt.Sprintf("0:localhost:%d", tunnel.LocalPort),
 		"a.pinggy.io",
 	}

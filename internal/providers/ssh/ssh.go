@@ -62,21 +62,27 @@ func (p *SSHProvider) Start(ctx context.Context, tunnel config.TunnelConfig, log
 
 	ctx, cancel := context.WithCancel(ctx)
 
+	baseArgs := []string{
+		"-o", "StrictHostKeyChecking=no",
+		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "BatchMode=yes",
+		"-o", "ServerAliveInterval=30",
+		"-o", "ServerAliveCountMax=3",
+		"-o", "ConnectTimeout=10",
+		"-o", "LogLevel=ERROR",
+	}
+
 	var args []string
 	if p.host == "localhost.run" {
-		args = []string{
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "ServerAliveInterval=60",
+		args = append(baseArgs,
 			"-R", fmt.Sprintf("80:localhost:%d", tunnel.LocalPort),
 			"nokey@localhost.run",
-		}
+		)
 	} else if p.host == "serveo.net" {
-		args = []string{
-			"-o", "StrictHostKeyChecking=no",
-			"-o", "ServerAliveInterval=60",
+		args = append(baseArgs,
 			"-R", fmt.Sprintf("80:localhost:%d", tunnel.LocalPort),
 			"serveo.net",
-		}
+		)
 	}
 
 	if len(tunnel.CustomArgs) > 0 {
