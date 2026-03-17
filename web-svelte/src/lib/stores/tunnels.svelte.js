@@ -14,7 +14,7 @@ export function useTunnels() {
       
       loading = true;
       
-      fetch('/api/tunnels?format=json')
+      fetch('/api/tunnels')
         .then(r => r.json())
         .then(data => {
           tunnels = data;
@@ -30,22 +30,23 @@ export function useTunnels() {
       eventSource.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
-          if (msg.id && (msg.running !== undefined || msg.starting !== undefined)) {
-            const idx = tunnels.findIndex(t => t.id === msg.id);
-            if (idx >= 0) {
-              const t = tunnels[idx];
-              let status = 'stopped';
-              if (msg.starting) status = 'starting';
-              else if (msg.running) status = 'running';
-              else if (msg.error) status = 'error';
-              
-              tunnels[idx] = {
-                ...t,
-                status,
-                publicUrl: msg.publicUrl || t.publicUrl,
-                error: msg.error
-              };
-            }
+          if (!msg.id) return;
+          
+          const idx = tunnels.findIndex(t => t.id === msg.id);
+          if (idx < 0) return;
+          
+          const current = tunnels[idx];
+          let newStatus = 'stopped';
+          if (msg.starting) newStatus = 'starting';
+          else if (msg.running) newStatus = 'running';
+          else if (msg.error) newStatus = 'error';
+          
+          if (current.status !== newStatus || current.publicUrl !== msg.publicUrl || current.error !== msg.error) {
+            tunnels = tunnels.map((t, i) => 
+              i === idx 
+                ? { ...t, status: newStatus, publicUrl: msg.publicUrl || t.publicUrl, error: msg.error }
+                : t
+            );
           }
         } catch (e) {}
       };
@@ -65,9 +66,7 @@ export function useTunnels() {
     async start(id) {
       const idx = tunnels.findIndex(t => t.id === id);
       if (idx >= 0) {
-        const arr = [...tunnels];
-        arr[idx] = { ...arr[idx], status: 'starting' };
-        tunnels = arr;
+        tunnels = tunnels.map((t, i) => i === idx ? { ...t, status: 'starting' } : t);
       }
       
       try {
@@ -75,9 +74,7 @@ export function useTunnels() {
         if (!res.ok) throw new Error('Failed to start');
       } catch (e) {
         if (idx >= 0) {
-          const arr = [...tunnels];
-          arr[idx] = { ...arr[idx], status: 'error', error: e.message };
-          tunnels = arr;
+          tunnels = tunnels.map((t, i) => i === idx ? { ...t, status: 'error', error: e.message } : t);
         }
       }
     },
@@ -86,9 +83,7 @@ export function useTunnels() {
       await fetch(`/api/tunnels/${id}/stop`, { method: 'POST' });
       const idx = tunnels.findIndex(t => t.id === id);
       if (idx >= 0) {
-        const arr = [...tunnels];
-        arr[idx] = { ...arr[idx], status: 'stopped', publicUrl: null };
-        tunnels = arr;
+        tunnels = tunnels.map((t, i) => i === idx ? { ...t, status: 'stopped', publicUrl: null } : t);
       }
     },
     
