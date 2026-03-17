@@ -97,28 +97,35 @@ func (p *SSHProvider) Start(ctx context.Context, tunnel config.TunnelConfig, log
 	}, nil
 }
 
-var urlRegex = regexp.MustCompile(`https?://[a-zA-Z0-9][-a-zA-Z0-9]*[.][a-zA-Z0-9][-a-zA-Z0-9.]*[a-zA-Z0-9]`)
+var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
+
+func stripANSI(s string) string {
+	return ansiEscape.ReplaceAllString(s, "")
+}
+
+var urlRegex = regexp.MustCompile(`https?://[a-zA-Z0-9][-a-zA-Z0-9.]*[a-zA-Z0-9]`)
 
 func (p *SSHProvider) ParseURL(line string) string {
-	lineLower := strings.ToLower(line)
+	clean := stripANSI(line)
+	cleanLower := strings.ToLower(clean)
 	
 	if p.host == "localhost.run" {
-		if !strings.Contains(lineLower, "localhost.run") && !strings.Contains(lineLower, "lhr.life") {
+		if !strings.Contains(cleanLower, "localhost.run") && !strings.Contains(cleanLower, "lhr.life") {
 			return ""
 		}
 	} else if p.host == "serveo.net" {
-		if !strings.Contains(lineLower, "serveo.net") {
+		if !strings.Contains(cleanLower, "serveo") && !strings.Contains(cleanLower, "serveousercontent") {
 			return ""
 		}
 	}
 	
-	matches := urlRegex.FindStringSubmatch(line)
+	matches := urlRegex.FindStringSubmatch(clean)
 	if len(matches) > 0 {
 		return matches[0]
 	}
 	
-	if idx := strings.Index(lineLower, "https://"); idx != -1 {
-		rest := line[idx:]
+	if idx := strings.Index(cleanLower, "https://"); idx != -1 {
+		rest := clean[idx:]
 		if endIdx := strings.IndexAny(rest, " \t\n\r"); endIdx != -1 {
 			rest = rest[:endIdx]
 		}
@@ -129,13 +136,14 @@ func (p *SSHProvider) ParseURL(line string) string {
 }
 
 func (p *SSHProvider) IsReady(line string) bool {
-	lineLower := strings.ToLower(line)
+	clean := stripANSI(line)
+	cleanLower := strings.ToLower(clean)
 	
 	if p.host == "localhost.run" {
-		return strings.Contains(lineLower, "localhost.run") || 
-		       strings.Contains(lineLower, "lhr.life")
+		return strings.Contains(cleanLower, "localhost.run") || 
+		       strings.Contains(cleanLower, "lhr.life")
 	}
 	
-	return strings.Contains(lineLower, "serveo.net") || 
-	       strings.Contains(lineLower, "forwarding")
+	return strings.Contains(cleanLower, "serveo") || 
+	       strings.Contains(cleanLower, "forwarding")
 }
