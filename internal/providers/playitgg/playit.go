@@ -14,10 +14,14 @@ import (
 	"foundry-tunnel/internal/providers"
 )
 
-type PlayitggProvider struct{}
+type PlayitggProvider struct {
+	installer *providers.Installer
+}
 
 func New() providers.Provider {
-	return &PlayitggProvider{}
+	return &PlayitggProvider{
+		installer: providers.NewInstaller(),
+	}
 }
 
 func (p *PlayitggProvider) Name() string {
@@ -46,6 +50,7 @@ func (p *PlayitggProvider) FindBinary() string {
 	
 	home, _ := os.UserHomeDir()
 	candidates := []string{
+		filepath.Join(p.installer.BinDir(), p.BinaryName()),
 		filepath.Join(home, ".local", "bin", p.BinaryName()),
 		filepath.Join(home, "bin", p.BinaryName()),
 		"/usr/local/bin/" + p.BinaryName(),
@@ -71,7 +76,11 @@ func (p *PlayitggProvider) FindBinary() string {
 func (p *PlayitggProvider) Start(ctx context.Context, tunnel config.TunnelConfig, logWriter io.Writer) (*providers.Process, error) {
 	binary := p.FindBinary()
 	if binary == "" {
-		return nil, fmt.Errorf("playit binary not found. Please install from %s", p.InstallURL())
+		var err error
+		binary, err = p.installer.EnsureInstalled(p)
+		if err != nil {
+			return nil, fmt.Errorf("failed to install playit: %w", err)
+		}
 	}
 
 	ctx, cancel := context.WithCancel(ctx)

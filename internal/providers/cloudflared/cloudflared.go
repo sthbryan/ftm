@@ -14,10 +14,14 @@ import (
 	"foundry-tunnel/internal/providers"
 )
 
-type CloudflaredProvider struct{}
+type CloudflaredProvider struct {
+	installer *providers.Installer
+}
 
 func New() providers.Provider {
-	return &CloudflaredProvider{}
+	return &CloudflaredProvider{
+		installer: providers.NewInstaller(),
+	}
 }
 
 func (p *CloudflaredProvider) Name() string {
@@ -46,6 +50,7 @@ func (p *CloudflaredProvider) FindBinary() string {
 	
 	home, _ := os.UserHomeDir()
 	candidates := []string{
+		filepath.Join(p.installer.BinDir(), p.BinaryName()),
 		filepath.Join(home, ".cloudflared", p.BinaryName()),
 		"/usr/local/bin/" + p.BinaryName(),
 		"/usr/bin/" + p.BinaryName(),
@@ -70,7 +75,11 @@ func (p *CloudflaredProvider) FindBinary() string {
 func (p *CloudflaredProvider) Start(ctx context.Context, tunnel config.TunnelConfig, logWriter io.Writer) (*providers.Process, error) {
 	binary := p.FindBinary()
 	if binary == "" {
-		return nil, fmt.Errorf("cloudflared not found. Install: %s", p.InstallURL())
+		var err error
+		binary, err = p.installer.EnsureInstalled(p)
+		if err != nil {
+			return nil, fmt.Errorf("failed to install cloudflared: %w", err)
+		}
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
