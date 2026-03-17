@@ -72,7 +72,7 @@ func (p *TunnelmoleProvider) FindBinary() string {
 func (p *TunnelmoleProvider) Start(ctx context.Context, tunnel config.TunnelConfig, logWriter io.Writer) (*providers.Process, error) {
 	binary := p.FindBinary()
 	if binary == "" {
-		return nil, fmt.Errorf("tunnelmole not found. Install: npm install -g tunnelmole")
+		return nil, fmt.Errorf("tunnelmole not found. Install with: npm install -g tunnelmole")
 	}
 
 	ctx, cancel := context.WithCancel(ctx)

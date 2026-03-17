@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -15,13 +14,18 @@ import (
 )
 
 type Installer struct {
-	binDir string
+	binDir   string
+	progress chan<- DownloadProgress
 }
 
 func NewInstaller() *Installer {
 	return &Installer{
 		binDir: filepath.Join(config.ConfigDir(), "bin"),
 	}
+}
+
+func (i *Installer) SetProgressChannel(ch chan<- DownloadProgress) {
+	i.progress = ch
 }
 
 func (i *Installer) EnsureInstalled(p Provider) (string, error) {
@@ -48,34 +52,50 @@ func (i *Installer) EnsureInstalled(p Provider) (string, error) {
 }
 
 func (i *Installer) installPlayitgg() (string, error) {
-	url := i.playitggURL()
+	url, err := i.playitggURL()
+	if err != nil {
+		return "", err
+	}
+	
 	binPath := filepath.Join(i.binDir, "playit")
 	
 	if err := i.downloadBinary(url, binPath); err != nil {
-		return "", err
+		return "", fmt.Errorf("download failed: %w", err)
 	}
 	
 	return binPath, nil
 }
 
 func (i *Installer) installCloudflared() (string, error) {
-	url := i.cloudflaredURL()
-	binPath := filepath.Join(i.binDir, "cloudflared")
-	
-	tmpFile := binPath + ".tmp"
-	if err := i.downloadFile(url, tmpFile); err != nil {
+	url, err := i.cloudflaredURL()
+	if err != nil {
 		return "", err
 	}
-	defer os.Remove(tmpFile)
+	
+	binPath := filepath.Join(i.binDir, "cloudflared")
 	
 	if strings.HasSuffix(url, ".tgz") {
+		tmpFile := binPath + ".tgz"
+		if err := i.downloadFile(url, tmpFile); err != nil {
+			return "", fmt.Errorf("download failed: %w", err)
+		}
+		defer os.Remove(tmpFile)
+		
 		if err := i.extractTgz(tmpFile, binPath); err != nil {
-			return "", err
+			return "", fmt.Errorf("extract failed: %w", err)
 		}
-	} else if strings.HasSuffix(url, ".zip") {
-		if err := i.extractZip(tmpFile, binPath); err != nil {
-			return "", err
+	} else {
+		if err := i.downloadBinary(url, binPath); err != nil {
+			return "", fmt.Errorf("download failed: %w", err)
 		}
+	}
+	
+	if _, err := os.Stat(binPath); err != nil {
+		return "", fmt.Errorf("binary not found after install: %w", err)
+	}
+	
+	if err := os.Chmod(binPath, 0755); err != nil {
+		return "", fmt.Errorf("chmod failed: %w", err)
 	}
 	
 	return binPath, nil
@@ -85,29 +105,26 @@ func (i *Installer) installTunnelmole() (string, error) {
 	return "", fmt.Errorf("tunnelmole requires npm. Run: npm install -g tunnelmole")
 }
 
-func (i *Installer) playitggURL() string {
+func (i *Installer) playitggURL() (string, error) {
 	os := runtime.GOOS
 	arch := runtime.GOARCH
 	
 	switch os {
 	case "darwin":
-		if arch == "arm64" {
-			return "https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-darwin-aarch64"
-		}
-		return "https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-darwin-amd64"
+		return "", fmt.Errorf("playit.gg no tiene build para macOS. Usa Cloudflared o instala manualmente con: brew install playit")
 	case "linux":
 		if arch == "arm64" {
-			return "https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-aarch64"
+			return "https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-aarch64", nil
 		}
-		return "https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64"
+		return "https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64", nil
 	case "windows":
-		return "https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-windows-x86_64.exe"
+		return "https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-windows-x86_64.exe", nil
 	default:
-		return ""
+		return "", fmt.Errorf("unsupported OS: %s", os)
 	}
 }
 
-func (i *Installer) cloudflaredURL() string {
+func (i *Installer) cloudflaredURL() (string, error) {
 	os := runtime.GOOS
 	arch := runtime.GOARCH
 	
@@ -116,64 +133,27 @@ func (i *Installer) cloudflaredURL() string {
 	switch os {
 	case "darwin":
 		if arch == "arm64" {
-			return base + "/cloudflared-darwin-arm64.tgz"
+			return base + "/cloudflared-darwin-arm64.tgz", nil
 		}
-		return base + "/cloudflared-darwin-amd64.tgz"
+		return base + "/cloudflared-darwin-amd64.tgz", nil
 	case "linux":
 		if arch == "arm64" {
-			return base + "/cloudflared-linux-arm64"
+			return base + "/cloudflared-linux-arm64", nil
 		}
-		return base + "/cloudflared-linux-amd64"
+		return base + "/cloudflared-linux-amd64", nil
 	case "windows":
-		return base + "/cloudflared-windows-amd64.exe"
+		return base + "/cloudflared-windows-amd64.exe", nil
 	default:
-		return ""
+		return "", fmt.Errorf("unsupported OS: %s", os)
 	}
 }
 
 func (i *Installer) downloadBinary(url, dest string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("download failed: %s", resp.Status)
-	}
-	
-	out, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-	
-	if _, err := io.Copy(out, resp.Body); err != nil {
-		return err
-	}
-	
-	return os.Chmod(dest, 0755)
+	return downloadWithProgress(url, dest, i.progress)
 }
 
 func (i *Installer) downloadFile(url, dest string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("download failed: %s", resp.Status)
-	}
-	
-	out, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-	
-	_, err = io.Copy(out, resp.Body)
-	return err
+	return downloadWithProgress(url, dest, i.progress)
 }
 
 func (i *Installer) extractTgz(src, dest string) error {
