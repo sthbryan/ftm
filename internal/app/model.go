@@ -23,7 +23,7 @@ const (
 	viewAddForm
 	viewConfirm
 	viewDownloading
-
+	viewAPIKeyForm
 )
 
 type KeyMap struct {
@@ -36,6 +36,7 @@ type KeyMap struct {
 	Copy     key.Binding
 	Add      key.Binding
 	Delete   key.Binding
+	APIKey   key.Binding
 
 	Back     key.Binding
 	Quit     key.Binding
@@ -78,6 +79,10 @@ var DefaultKeys = KeyMap{
 	Delete: key.NewBinding(
 		key.WithKeys("d"),
 		key.WithHelp("d", "delete"),
+	),
+	APIKey: key.NewBinding(
+		key.WithKeys("k"),
+		key.WithHelp("k", "set API key"),
 	),
 
 	Back: key.NewBinding(
@@ -145,6 +150,9 @@ type Model struct {
 	FormFocus int
 	FormValues FormData
 	
+	APIKeyFormFocus int
+	APIKeyFormValues APIKeyFormData
+	
 	Message   string
 	MessageTimer int
 	
@@ -159,6 +167,10 @@ type FormData struct {
 	Provider  string
 	Port      string
 	ShortURL  string
+}
+
+type APIKeyFormData struct {
+	BitlyKey string
 }
 
 type TunnelItem struct {

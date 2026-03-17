@@ -82,6 +82,8 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleLogsKey(msg)
 	case viewAddForm:
 		return m.handleFormKey(msg)
+	case viewAPIKeyForm:
+		return m.handleAPIKeyFormKey(msg)
 	case viewDownloading:
 		if key.Matches(msg, m.Keys.Back) || key.Matches(msg, m.Keys.Quit) {
 			m.State = viewList
@@ -148,6 +150,13 @@ func (m *Model) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.Cursor--
 			}
 			m.showMessage("Tunnel deleted")
+		}
+		
+	case key.Matches(msg, m.Keys.APIKey):
+		m.State = viewAPIKeyForm
+		m.APIKeyFormFocus = 0
+		m.APIKeyFormValues = APIKeyFormData{
+			BitlyKey: m.App.Config.Shortener.APIKeys["bitly"],
 		}
 	}
 	
@@ -341,7 +350,56 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down, k.Enter},
 		{k.Start, k.Stop, k.Logs, k.Copy},
-		{k.Add, k.Delete},
+		{k.Add, k.Delete, k.APIKey},
 		{k.Back, k.Help, k.Quit},
 	}
+}
+
+func (m *Model) handleAPIKeyFormKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "tab":
+		m.APIKeyFormFocus = (m.APIKeyFormFocus + 1) % 2
+		
+	case "shift+tab":
+		m.APIKeyFormFocus = (m.APIKeyFormFocus - 1 + 2) % 2
+		
+	case "enter":
+		if m.APIKeyFormFocus == 1 {
+			m.saveAPIKey()
+		} else {
+			m.APIKeyFormFocus++
+		}
+		
+	case "esc":
+		m.State = viewList
+		
+	default:
+		if m.APIKeyFormFocus == 0 {
+			if msg.String() == "backspace" {
+				if len(m.APIKeyFormValues.BitlyKey) > 0 {
+					m.APIKeyFormValues.BitlyKey = m.APIKeyFormValues.BitlyKey[:len(m.APIKeyFormValues.BitlyKey)-1]
+				}
+			} else if msg.String() == "ctrl+v" || msg.String() == "ctrl+V" {
+				// Paste from clipboard would need platform-specific implementation
+				// For now, users type or paste character by character
+			} else if len(msg.String()) == 1 {
+				m.APIKeyFormValues.BitlyKey += msg.String()
+			}
+		}
+	}
+	
+	return m, nil
+}
+
+func (m *Model) saveAPIKey() {
+	if m.APIKeyFormValues.BitlyKey == "" {
+		m.showMessage("API key cleared")
+		delete(m.App.Config.Shortener.APIKeys, "bitly")
+	} else {
+		m.App.Config.Shortener.APIKeys["bitly"] = m.APIKeyFormValues.BitlyKey
+		m.showMessage("API key saved!")
+	}
+	
+	m.App.SaveConfig()
+	m.State = viewList
 }
