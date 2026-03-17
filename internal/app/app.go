@@ -74,3 +74,9 @@ func (a *App) SaveConfig() error {
 func (a *App) EnsureShortURL(tunnelID, publicURL, preferred string) (string, error) {
 	return a.URLCache.EnsureShortURL(tunnelID, publicURL, preferred, a.Shortener)
 }
+
+func (a *App) IsShortenerBlocked() bool {
+	// Test with a known blocked domain
+	_, err := a.Shortener.Shorten("https://xxx.trycloudflare.com", "")
+	return shortener.IsDomainBlocked(err)
+}

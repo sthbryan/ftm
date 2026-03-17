@@ -1,7 +1,6 @@
 package shortener
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -91,6 +90,9 @@ func (c *URLCache) EnsureShortURL(tunnelID, currentURL, preferredShort string, c
 		if mapping.CurrentURL != currentURL && currentURL != "" {
 			shortURL, err := client.Update(preferredShort, currentURL)
 			if err != nil {
+				if IsDomainBlocked(err) {
+					return "", err
+				}
 				return mapping.ShortURL, nil
 			}
 			c.Set(tunnelID, shortURL, currentURL, "isgd")
@@ -102,7 +104,7 @@ func (c *URLCache) EnsureShortURL(tunnelID, currentURL, preferredShort string, c
 	
 	shortURL, err := client.Shorten(currentURL, preferredShort)
 	if err != nil {
-		return "", fmt.Errorf("failed to create short URL: %w", err)
+		return "", err
 	}
 	
 	c.Set(tunnelID, shortURL, currentURL, "isgd")

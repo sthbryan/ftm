@@ -246,7 +246,10 @@ func (m *Model) startTunnel(item TunnelItem) tea.Cmd {
 	return func() tea.Msg {
 		err := m.App.Manager.Start(item.Tunnel, func(status config.TunnelStatus) {
 			if status.PublicURL != "" && item.Tunnel.ShortURL != "" {
-				m.App.EnsureShortURL(item.Tunnel.ID, status.PublicURL, item.Tunnel.ShortURL)
+				_, err := m.App.EnsureShortURL(item.Tunnel.ID, status.PublicURL, item.Tunnel.ShortURL)
+				if err != nil {
+					m.showMessage("Short URL failed: " + err.Error())
+				}
 			}
 		})
 		
