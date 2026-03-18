@@ -13,7 +13,7 @@
     "windows": [
       {
         "title": "Foundry Tunnel Manager",
-        "url": "http://localhost:40510",
+        "url": "about:blank",
         "width": 1024,
         "height": 768,
         "resizable": true,

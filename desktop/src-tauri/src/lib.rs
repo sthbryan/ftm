@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::thread;
 use std::time::Duration;
-use tauri::Manager;
 
 const PORT_RANGE_START: u16 = 40510;
 const PORT_RANGE_END: u16 = 40550;
@@ -14,7 +13,7 @@ const WEB_PORT_ENV: &str = "FOUNDRY_TUNNEL_WEB_PORT";
 
 fn find_available_port() -> u16 {
     for port in PORT_RANGE_START..=PORT_RANGE_END {
-        if std::net::TcpListener::bind(format!("127.0.0.1:{}", port)).is_ok() {
+        if std::net::TcpListener::bind(format!("0.0.0.0:{}", port)).is_ok() {
             return port;
         }
     }
@@ -121,9 +120,9 @@ fn wait_for_server(port: u16) {
     }
 }
 
-pub fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+pub fn setup_app(_app: &tauri::App) -> Result<u16, Box<dyn std::error::Error>> {
     let port = start_ftm_server(&find_or_build_binary());
     env::set_var(WEB_PORT_ENV, port.to_string());
     info!("FTM server running on port {}", port);
-    Ok(())
+    Ok(port)
 }
