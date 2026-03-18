@@ -61,6 +61,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 </svelte:head>
 
+<link rel="stylesheet" href="/themes.css" />
+
 <div class="app">
   <header class="app-header">
     <div class="brand">
@@ -160,199 +162,6 @@
 <Toasts />
 
 <style>
-  :root {
-    --bg-color: #fbf9f6;
-    --card-bg: #ffffff;
-    --text-color: #44403c;
-    --text-heading: #1c1917;
-    --text-muted: #78716c;
-    --border-color: #e7e5e4;
-    --border-light: #f5f5f4;
-    --primary-color: #92400e;
-    --primary-hover: #78350f;
-    --hover-bg: #f5f5f4;
-    --status-running-bg: #dcfce7;
-    --status-running-text: #166534;
-    --status-starting-bg: #fef3c7;
-    --status-starting-text: #92400e;
-    --status-installing-bg: #dbeafe;
-    --status-installing-text: #1e40af;
-    --status-error-bg: #fee2e2;
-    --status-error-text: #991b1b;
-    --status-stopped-bg: #f5f5f4;
-    --status-stopped-text: #78716c;
-    --logs-bg: #1c1917;
-    --logs-text: #d6d3d1;
-    --url-bg: #fafaf9;
-    --url-text: #92400e;
-  }
-
-  :root[data-theme="dark"] {
-    --bg-color: #0c0a09;
-    --card-bg: #1c1917;
-    --text-color: #d6d3d1;
-    --text-heading: #fafaf9;
-    --text-muted: #a8a29e;
-    --border-color: #292524;
-    --border-light: #1c1917;
-    --primary-color: #fbbf24;
-    --primary-hover: #f59e0b;
-    --hover-bg: #292524;
-    --status-running-bg: #14532d;
-    --status-running-text: #86efac;
-    --status-starting-bg: #713f12;
-    --status-starting-text: #fcd34d;
-    --status-installing-bg: #1e3a8a;
-    --status-installing-text: #93c5fd;
-    --status-error-bg: #7f1d1d;
-    --status-error-text: #fca5a5;
-    --status-stopped-bg: #292524;
-    --status-stopped-text: #a8a29e;
-    --logs-bg: #0c0a09;
-    --logs-text: #d6d3d1;
-    --url-bg: #292524;
-    --url-text: #fbbf24;
-  }
-
-  :root[data-theme="sepia"] {
-    --bg-color: #f4ecd8;
-    --card-bg: #fdf6e3;
-    --text-color: #433422;
-    --text-heading: #2d2416;
-    --text-muted: #8b7355;
-    --border-color: #d4c5a9;
-    --border-light: #e8dcc8;
-    --primary-color: #8b4513;
-    --primary-hover: #654321;
-    --hover-bg: #e8dcc8;
-    --status-running-bg: #d4edda;
-    --status-running-text: #155724;
-    --status-starting-bg: #fff3cd;
-    --status-starting-text: #856404;
-    --status-installing-bg: #cce5ff;
-    --status-installing-text: #004085;
-    --status-error-bg: #f8d7da;
-    --status-error-text: #721c24;
-    --status-stopped-bg: #e8dcc8;
-    --status-stopped-text: #8b7355;
-    --logs-bg: #2d2416;
-    --logs-text: #e8dcc8;
-    --url-bg: #e8dcc8;
-    --url-text: #8b4513;
-  }
-
-  :root[data-theme="red"] {
-    --bg-color: #fff6f6;
-    --card-bg: #ffffff;
-    --text-color: #2b0b0b;
-    --text-heading: #1b0a09;
-    --text-muted: #6b2626;
-    --border-color: #f2dede;
-    --border-light: #fff6f6;
-    --primary-color: #dc2626;
-    --primary-hover: #b91c1c;
-    --hover-bg: #fff2f2;
-    --status-running-bg: #fee2e2;
-    --status-running-text: #7f1d1d;
-    --status-starting-bg: #fff2e6;
-    --status-starting-text: #b45309;
-    --status-installing-bg: #dbeafe;
-    --status-installing-text: #1e40af;
-    --status-error-bg: #fee2e2;
-    --status-error-text: #7f1d1d;
-    --status-stopped-bg: #fff6f6;
-    --status-stopped-text: #6b2626;
-    --logs-bg: #2b0b0b;
-    --logs-text: #f7eaea;
-    --url-bg: #fff6f6;
-    --url-text: #dc2626;
-  }
-
-  :root[data-theme="blue"] {
-    --bg-color: #f3f8ff;
-    --card-bg: #ffffff;
-    --text-color: #0b1220;
-    --text-heading: #071029;
-    --text-muted: #40577a;
-    --border-color: #e6f0ff;
-    --border-light: #f3f8ff;
-    --primary-color: #2563eb;
-    --primary-hover: #1d4ed8;
-    --hover-bg: #eef6ff;
-    --status-running-bg: #e6f8ef;
-    --status-running-text: #0b5132;
-    --status-starting-bg: #fff7e6;
-    --status-starting-text: #d97706;
-    --status-installing-bg: #e6f0ff;
-    --status-installing-text: #1e3a8a;
-    --status-error-bg: #ffeef0;
-    --status-error-text: #9b1b1b;
-    --status-stopped-bg: #f3f8ff;
-    --status-stopped-text: #40577a;
-    --logs-bg: #071029;
-    --logs-text: #eaf3ff;
-    --url-bg: #eef6ff;
-    --url-text: #2563eb;
-  }
-
-  :root[data-theme="dracula"] {
-    --bg-color: #282a36;
-    --card-bg: #3b3a4a;
-    --text-color: #f8f8f2;
-    --text-heading: #f8f8f2;
-    --text-muted: #b8bfd9;
-    --border-color: #454655;
-    --border-light: #2d2f39;
-    --primary-color: #ff79c6;
-    --primary-hover: #ff6bb0;
-    --hover-bg: #3e3f4b;
-    --status-running-bg: #50fa7b;
-    --status-running-text: #0b2b12;
-    --status-starting-bg: #f1fa8c;
-    --status-starting-text: #2b2b0b;
-    --status-installing-bg: #8be9fd;
-    --status-installing-text: #062033;
-    --status-error-bg: #ff6b6b;
-    --status-error-text: #2b0b0b;
-    --status-stopped-bg: #3b3a4a;
-    --status-stopped-text: #e6e6f0;
-    --logs-bg: #23232c;
-    --logs-text: #e6e6e9;
-    --url-bg: #2f3139;
-    --url-text: #8be9fd;
-    --input-bg: #2b2d36;
-    --input-text: #f8f8f2;
-    --input-placeholder: #9aa0c7;
-    --input-disabled: #3b3f55;
-  }
-
-  :root[data-theme="contrast"] {
-    --bg-color: #000000;
-    --card-bg: #000000;
-    --text-color: #ffffff;
-    --text-heading: #ffffff;
-    --text-muted: #cccccc;
-    --border-color: #ffffff;
-    --border-light: #333333;
-    --primary-color: #ffff00;
-    --primary-hover: #ffff00;
-    --hover-bg: #333333;
-    --status-running-bg: #00ff00;
-    --status-running-text: #000000;
-    --status-starting-bg: #ffff00;
-    --status-starting-text: #000000;
-    --status-installing-bg: #00ffff;
-    --status-installing-text: #000000;
-    --status-error-bg: #ff0000;
-    --status-error-text: #ffffff;
-    --status-stopped-bg: #333333;
-    --status-stopped-text: #ffffff;
-    --logs-bg: #000000;
-    --logs-text: #00ff00;
-    --url-bg: #333333;
-    --url-text: #ffff00;
-  }
-
   :global(body) {
     margin: 0;
     font-family: 'Inter', system-ui, sans-serif;
@@ -563,7 +372,7 @@
 
   .connection-count {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
-    color: white;
+    color: var(--badge-text);
     font-size: 12px;
     font-weight: 600;
     padding: 2px 10px;

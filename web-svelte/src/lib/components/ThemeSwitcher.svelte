@@ -4,16 +4,6 @@
 
   const theme = useTheme();
 
-  const themeIcons = {
-    light: "☀️",
-    dark: "🌙",
-    sepia: "📜",
-    contrast: "⚡",
-    red: "🔴",
-    blue: "🔵",
-    dracula: "🦇",
-  };
-
   const themeLabels = {
     light: "Light",
     dark: "Dark",
@@ -21,6 +11,7 @@
     contrast: "High Contrast",
     red: "Red",
     blue: "Blue",
+    purple: "Purple",
     dracula: "Dracula",
   };
 

@@ -1,4 +1,4 @@
-const THEMES = ['light', 'dark', 'sepia', 'contrast', 'red', 'blue', 'dracula'];
+const THEMES = ['light', 'dark', 'sepia', 'contrast', 'red', 'blue', 'purple', 'dracula'];
 const STORAGE_KEY = 'ftm-theme';
 
 let currentTheme = $state('light');
