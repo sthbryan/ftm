@@ -95,7 +95,7 @@
           </div>
 
           <button type="submit" class="btn btn-primary btn-full">
-            <span>Create Connection</span>
+            Create Connection
           </button>
         </form>
       </div>

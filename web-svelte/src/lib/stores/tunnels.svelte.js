@@ -52,7 +52,13 @@ export function useTunnels() {
       };
       
       eventSource.onerror = () => {
-        error = 'Connection lost';
+        error = 'Connection lost. Retrying...';
+        setTimeout(() => {
+          if (eventSource.readyState === EventSource.CLOSED) {
+            this.disconnect();
+            this.connect();
+          }
+        }, 3000);
       };
     },
     

@@ -3,11 +3,17 @@
 </script>
 
 {#if show}
-  <div class="modal-overlay" onclick={onCancel}>
-    <div class="modal" onclick={(e) => e.stopPropagation()}>
+  <div class="modal-overlay" onclick={onCancel} role="presentation">
+    <div 
+      class="modal" 
+      onclick={(e) => e.stopPropagation()} 
+      role="dialog" 
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
       <div class="modal-header">
-        <h3>Delete Connection</h3>
-        <button class="close-btn" onclick={onCancel}>&times;</button>
+        <h3 id="modal-title">Delete Connection</h3>
+        <button class="close-btn" onclick={onCancel} aria-label="Close dialog">&times;</button>
       </div>
       <div class="modal-body">
         <p>Are you sure you want to delete <strong>{name}</strong>?</p>
@@ -148,6 +154,12 @@
     background: #b91c1c;
     border-color: #b91c1c;
     box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  }
+
+  .btn-danger:focus-visible,
+  .btn-secondary:focus-visible {
+    outline: 2px solid #92400e;
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {

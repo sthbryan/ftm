@@ -6,7 +6,7 @@
   let loadingLogs = $state(false);
   let justStarted = $state(false);
   let prevStatus = $state('');
-  let logsContainer = $state(null);
+
   
   $effect(() => {
     const currentStatus = tunnel.status;
@@ -75,14 +75,14 @@
       </div>
       <div class="connection-actions">
         {#if tunnel.status === 'running' || tunnel.status === 'starting'}
-          <button class="btn btn-stop" onclick={() => onStop(tunnel.id)}>Stop</button>
+          <button type="button" class="btn btn-stop" onclick={() => onStop(tunnel.id)}>Stop</button>
         {:else}
-          <button class="btn btn-start" onclick={() => onStart(tunnel.id)}>Start</button>
+          <button type="button" class="btn btn-start" onclick={() => onStart(tunnel.id)}>Start</button>
         {/if}
-        <button class="btn" onclick={loadLogs}>
+        <button type="button" class="btn" onclick={loadLogs}>
           <span class="logs-label">{showLogs ? 'Hide' : 'Logs'}</span>
         </button>
-        <button class="btn btn-danger" onclick={() => onShowDelete(tunnel)}>Delete</button>
+        <button type="button" class="btn btn-danger" onclick={() => onShowDelete(tunnel)}>Delete</button>
       </div>
     </div>
     {#if tunnel.publicUrl}
@@ -95,7 +95,7 @@
         <span class="copy-hint">Click to copy</span>
       </button>
     {/if}
-    <div class="logs-wrapper" class:expanded={showLogs} bind:this={logsContainer}>
+    <div class="logs-wrapper" class:expanded={showLogs}>
       <div class="logs-panel">
         {#if loadingLogs}
           <div class="logs-loading">
