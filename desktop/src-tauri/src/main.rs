@@ -1,66 +1,74 @@
-use std::path::PathBuf;
-use std::process::Stdio;
-use std::time::Duration;
-use tauri::{Manager, WebviewUrl};
-use tokio::time::sleep;
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-fn main() {
+use tauri::Manager;
+use std::process::Command;
+use std::time::Duration;
+use std::thread;
+use std::net::TcpStream;
+
+#[tokio::main]
+async fn main() {
     tauri::Builder::default()
         .setup(|app| {
             let app_handle = app.handle().clone();
             
-            tauri::async_runtime::spawn(async move {
-                start_go_backend(&app_handle).await;
-                
-                for _ in 0..50 {
-                    sleep(Duration::from_millis(100)).await;
-                    if check_server().await {
-                        break;
-                    }
+            std::thread::spawn(move || {
+                if let Err(e) = start_server(&app_handle) {
+                    eprintln!("Failed to start server: {}", e);
                 }
-                
-                let window = tauri::WebviewWindowBuilder::new(
-                    &app_handle,
-                    "main",
-                    WebviewUrl::External("http://localhost:8080".parse().unwrap())
-                )
-                .title("Foundry Tunnel Manager")
-                .inner_size(1200.0, 800.0)
-                .min_inner_size(900.0, 600.0)
-                .center()
-                .build()
-                .unwrap();
             });
-            
+
+            #[cfg(debug_assertions)]
+            if let Some(main_window) = app.get_webview_window("main") {
+                main_window.open_devtools();
+            }
+
             Ok(())
         })
+        .on_window_event(|_window, event| {
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                std::process::exit(0);
+            }
+        })
         .run(tauri::generate_context!())
-        .expect("error running app");
+        .expect("error while running tauri application");
 }
 
-async fn start_go_backend(app_handle: &tauri::AppHandle) {
-    let resource_path = app_handle.path().resource_dir().unwrap();
+fn start_server(app_handle: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    let exe_dir = std::env::current_exe()?
+        .parent()
+        .ok_or("Failed to get exe directory")?
+        .to_path_buf();
     
-    #[cfg(target_os = "windows")]
-    let binary_name = "go-backend.exe";
-    #[cfg(not(target_os = "windows"))]
-    let binary_name = "go-backend";
-    
-    let binary_path = if cfg!(dev) {
-        PathBuf::from("../go-api/cmd/server").join(binary_name)
+    let server_exe = if cfg!(target_os = "windows") {
+        exe_dir.join("ftm.exe")
     } else {
-        resource_path.join(binary_name)
+        exe_dir.join("ftm")
     };
-    
-    let _child = tokio::process::Command::new(&binary_path)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn();
-}
 
-async fn check_server() -> bool {
-    match tokio::net::TcpStream::connect("127.0.0.1:8080").await {
-        Ok(_) => true,
-        Err(_) => false,
+    if !server_exe.exists() {
+        return Err(format!("Server binary not found at {:?}", server_exe).into());
     }
+
+    let _cmd = Command::new(&server_exe)
+        .arg("-web")
+        .arg("-port")
+        .arg("7777")
+        .spawn()?;
+
+    for _ in 0..30 {
+        if TcpStream::connect("127.0.0.1:7777").is_ok() {
+            println!("Server ready at http://localhost:7777");
+            thread::sleep(Duration::from_millis(500));
+            
+            let main_window = app_handle.get_webview_window("main")
+                .ok_or("Failed to get main window")?;
+            main_window.navigate(tauri::Url::parse("http://localhost:7777")?)?;
+            
+            return Ok(());
+        }
+        thread::sleep(Duration::from_millis(100));
+    }
+
+    Err("Server failed to start within 3 seconds".into())
 }

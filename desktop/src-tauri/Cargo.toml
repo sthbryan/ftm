@@ -1,23 +1,27 @@
 [package]
-name = "foundry-tunnel-desktop"
-version = "0.3.0"
-description = "Foundry Tunnel Manager Desktop"
+name = "ftm"
+version = "0.0.1"
+description = "Foundry Tunnel Manager desktop app"
+authors = ["you"]
 edition = "2021"
 
+[lib]
+name = "prtty_lib"
+path = "src/lib.rs"
+
 [[bin]]
-name = "foundry-tunnel-desktop"
+name = "ftm"
 path = "src/main.rs"
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.5", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
-tokio = { version = "1", features = ["process", "rt-multi-thread", "net", "time"] }
-serde = { version = "1", features = ["derive"] }
+tauri = { version = "2.5", features = [] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
 
-[profile.release]
-opt-level = "s"
-lto = true
-codegen-units = 1
-strip = true
+[features]
+default = [ "custom-protocol" ]
+custom-protocol = [ "tauri/custom-protocol" ]

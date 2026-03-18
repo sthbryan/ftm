@@ -1,10 +1,17 @@
 {
-  "name": "foundry-tunnel-desktop",
-  "version": "0.3.0",
+  "name": "ftm-desktop",
+  "version": "0.0.1",
+  "description": "Foundry Tunnel Manager desktop application",
+  "type": "module",
   "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build && sh -c 'cp src-tauri/bin/ftm src-tauri/target/release/bundle/macos/prtty.app/Contents/MacOS/ 2>/dev/null || true'",
     "tauri": "tauri"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0"
+    "@tauri-apps/cli": "^2.10.1"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.10.1"
   }
 }
