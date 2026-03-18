@@ -297,15 +297,15 @@
 
   :root[data-theme="dracula"] {
     --bg-color: #282a36;
-    --card-bg: #44475a;
+    --card-bg: #313245;
     --text-color: #f8f8f2;
     --text-heading: #f8f8f2;
-    --text-muted: #6272a4;
-    --border-color: #3a3f58;
-    --border-light: #2b2e3b;
+    --text-muted: #9aa0c7;
+    --border-color: #3b3f55;
+    --border-light: #2a2c35;
     --primary-color: #ff79c6;
     --primary-hover: #ff6bb0;
-    --hover-bg: #333444;
+    --hover-bg: #363746;
     --status-running-bg: #50fa7b;
     --status-running-text: #0b2b12;
     --status-starting-bg: #f1fa8c;
@@ -314,12 +314,16 @@
     --status-installing-text: #062033;
     --status-error-bg: #ff6b6b;
     --status-error-text: #2b0b0b;
-    --status-stopped-bg: #3a3f58;
-    --status-stopped-text: #f8f8f2;
-    --logs-bg: #21222c;
-    --logs-text: #f8f8f2;
-    --url-bg: #333444;
+    --status-stopped-bg: #343648;
+    --status-stopped-text: #dfe1ea;
+    --logs-bg: #23232c;
+    --logs-text: #e6e6e9;
+    --url-bg: #2b2e36;
     --url-text: #8be9fd;
+    --input-bg: #2b2d36;
+    --input-text: #f8f8f2;
+    --input-placeholder: #9aa0c7;
+    --input-disabled: #3b3f55;
   }
 
   :root[data-theme="contrast"] {
