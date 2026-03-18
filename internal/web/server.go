@@ -19,6 +19,7 @@ import (
 	"foundry-tunnel/internal/clipboard"
 	"foundry-tunnel/internal/config"
 	"foundry-tunnel/internal/process"
+	"foundry-tunnel/internal/version"
 )
 
 type TunnelView struct {
@@ -642,7 +643,7 @@ func (s *Server) handleStatus(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"port":    s.port,
-		"version": "0.2.0",
+		"version": version.Version,
 	})
 }
 
