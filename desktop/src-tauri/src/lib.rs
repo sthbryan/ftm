@@ -8,9 +8,21 @@ use std::thread;
 use std::time::Duration;
 use tauri::Manager;
 
-const PORT_RANGE_START: u16 = 40500;
+const PORT_RANGE_START: u16 = 40510;
 const PORT_RANGE_END: u16 = 40550;
 const WEB_PORT_ENV: &str = "FOUNDRY_TUNNEL_WEB_PORT";
+
+fn find_available_port() -> u16 {
+    for port in PORT_RANGE_START..=PORT_RANGE_END {
+        if std::net::TcpListener::bind(format!("127.0.0.1:{}", port)).is_ok() {
+            return port;
+        }
+    }
+    panic!(
+        "No available port found in range {}-{}",
+        PORT_RANGE_START, PORT_RANGE_END
+    );
+}
 
 pub fn find_or_build_binary() -> PathBuf {
     let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -20,16 +32,11 @@ pub fn find_or_build_binary() -> PathBuf {
         .unwrap()
         .to_path_buf();
 
-    let binary_paths = [
-        project_root.join("bin").join("ftm"),
-        project_root.join("ftm"),
-    ];
+    let binary_path = project_root.join("bin").join("ftm");
 
-    for binary_path in &binary_paths {
-        if binary_path.exists() {
-            info!("Found ftm binary at {:?}", binary_path);
-            return binary_path.clone();
-        }
+    if binary_path.exists() {
+        info!("Found ftm binary at {:?}", binary_path);
+        return binary_path;
     }
 
     let go_module = project_root.join("cmd").join("ftm");
@@ -38,9 +45,12 @@ pub fn find_or_build_binary() -> PathBuf {
         panic!("Go module not found: {:?}", go_module);
     }
 
+    let bin_dir = project_root.join("bin");
+    let _ = std::fs::create_dir_all(&bin_dir);
+
     info!("Building ftm binary...");
     let output = Command::new("go")
-        .args(["build", "-o", binary_paths[0].to_str().unwrap()])
+        .args(["build", "-o", binary_path.to_str().unwrap(), "./cmd/ftm"])
         .current_dir(&project_root)
         .output()
         .expect("Failed to build ftm binary");
@@ -52,16 +62,24 @@ pub fn find_or_build_binary() -> PathBuf {
     }
 
     info!("ftm binary built successfully");
-    binary_paths[0].clone()
+    binary_path
 }
 
 pub fn start_ftm_server(binary_path: &PathBuf) -> u16 {
     let port = find_available_port();
 
+    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf();
+
     let mut child = Command::new(binary_path)
         .arg("--server")
         .arg("--port")
         .arg(port.to_string())
+        .current_dir(&project_root)
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
         .spawn()
@@ -80,22 +98,6 @@ pub fn start_ftm_server(binary_path: &PathBuf) -> u16 {
 
     wait_for_server(port);
     port
-}
-
-fn find_available_port() -> u16 {
-    for port in PORT_RANGE_START..=PORT_RANGE_END {
-        if is_port_available(port) {
-            return port;
-        }
-    }
-    panic!(
-        "No available port found in range {}-{}",
-        PORT_RANGE_START, PORT_RANGE_END
-    );
-}
-
-fn is_port_available(port: u16) -> bool {
-    std::net::TcpListener::bind(format!("127.0.0.1:{}", port)).is_ok()
 }
 
 fn wait_for_server(port: u16) {
@@ -123,12 +125,5 @@ pub fn setup_app(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let port = start_ftm_server(&find_or_build_binary());
     env::set_var(WEB_PORT_ENV, port.to_string());
     info!("FTM server running on port {}", port);
-
-    let url = format!("http://localhost:{}/", port);
-    info!("Opening webview to: {}", url);
-
-    let window = app.get_webview_window("main").unwrap();
-    window.eval(&format!("window.location.href = '{}';", url))?;
-
     Ok(())
 }

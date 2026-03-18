@@ -53,11 +53,7 @@ func NewServer(manager *process.Manager, cfg *config.Config) *Server {
 
 func (s *Server) findPort() int {
 	if s.config.WebPort > 0 {
-		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.WebPort))
-		if err == nil {
-			ln.Close()
-			return s.config.WebPort
-		}
+		return s.config.WebPort
 	}
 	for port := 40500; port <= 40550; port++ {
 		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
