@@ -115,8 +115,8 @@
         {:else if store.tunnels.length === 0}
           <div class="empty-state">
             <div class="empty-state-icon">📡</div>
-            <h3>The air is quiet...</h3>
-            <p>No active portals to the realm. Forge your first tunnel to summon players to your table.</p>
+            <h3>No connections yet</h3>
+            <p>Create your first tunnel to share your Foundry VTT world with players.</p>
           </div>
         {:else}
           <div class="connection-list">
