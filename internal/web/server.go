@@ -462,8 +462,6 @@ func (s *Server) startTunnel(w http.ResponseWriter, id string) {
 	}
 
 	if needsInstall, canInstall := s.manager.CheckInstallation(tunnel.Provider); needsInstall && canInstall {
-		go s.manager.InstallProvider(tunnel.Provider)
-		
 		update := map[string]interface{}{
 			"id":       tunnel.ID,
 			"status":   "installing",
@@ -480,6 +478,30 @@ func (s *Server) startTunnel(w http.ResponseWriter, id string) {
 			"port":     tunnel.LocalPort,
 			"status":   "installing",
 		})
+		
+		go func() {
+			if err := s.manager.InstallProvider(tunnel.Provider); err != nil {
+				update := map[string]interface{}{
+					"id":    tunnel.ID,
+					"status": "error",
+					"error": "Installation failed: " + err.Error(),
+				}
+				data, _ := json.Marshal(update)
+				s.broadcast(string(data))
+				return
+			}
+			
+			if err := s.manager.Start(*tunnel, func(status config.TunnelStatus) {}); err != nil {
+				update := map[string]interface{}{
+					"id":    tunnel.ID,
+					"status": "error",
+					"error": err.Error(),
+				}
+				data, _ := json.Marshal(update)
+				s.broadcast(string(data))
+			}
+		}()
+		
 		return
 	}
 
