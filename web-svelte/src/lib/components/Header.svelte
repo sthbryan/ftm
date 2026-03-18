@@ -16,8 +16,7 @@
 <style>
   .app-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
     margin-bottom: 24px;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--border-color);
@@ -25,6 +24,14 @@
     transform: translateY(-20px);
     animation: headerIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     flex-shrink: 0;
+  }
+
+  @media (min-width: 768px) {
+    .app-header {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
   }
 
   @keyframes headerIn {
