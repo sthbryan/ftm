@@ -35,6 +35,9 @@ web-svelte/dist/
 internal/web/static/*
 !internal/web/static/.gitkeep
 
+# Tauri generated files
+desktop/src-tauri/gen/
+
 # Logs
 .logs/
 
