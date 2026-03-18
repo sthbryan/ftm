@@ -3,6 +3,13 @@ let soundEnabled = $state(true);
 
 const audioContext = typeof window !== 'undefined' ? new (window.AudioContext || window.webkitAudioContext)() : null;
 
+try {
+  const { useSound } = await import('./sound.svelte.js');
+  const soundStore = useSound();
+  soundEnabled = soundStore.enabled;
+} catch (e) {
+}
+
 function playSound(type) {
   if (!soundEnabled || !audioContext) return;
   
@@ -38,7 +45,10 @@ export function useToast() {
   return {
     get toasts() { return toasts; },
     get soundEnabled() { return soundEnabled; },
-    set soundEnabled(value) { soundEnabled = value; },
+    set soundEnabled(value) { 
+      soundEnabled = value;
+      try { if (typeof window !== 'undefined') localStorage.setItem('ftm-sound-enabled', value); } catch(e){}
+    },
     
     show(message, type = 'info', duration = 3000) {
       const id = Date.now() + Math.random();
