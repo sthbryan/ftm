@@ -203,6 +203,7 @@
   .brand-text h1 {
     font-family: 'Crimson Pro', Georgia, serif;
     font-size: 32px;
+    line-height: normal;
     font-weight: 700;
     color: #1c1917;
     margin: 0 0 4px 0;
