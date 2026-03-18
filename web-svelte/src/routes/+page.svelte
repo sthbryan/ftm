@@ -5,6 +5,7 @@
   import { useProviders, detectPort } from '$lib/stores/providers.svelte';
   import { useTheme } from '$lib/stores/theme.svelte';
   import Header from '$lib/components/Header.svelte';
+  import Footer from '$lib/components/Footer.svelte';
   import TunnelCard from '$lib/components/TunnelCard.svelte';
   import DeleteModal from '$lib/components/DeleteModal.svelte';
   import Toasts from '$lib/components/Toasts.svelte';
@@ -138,9 +139,7 @@
     </section>
   </main>
 
-  <footer class="app-footer">
-    <p>Press <kbd>W</kbd> in your terminal to open this dashboard</p>
-  </footer>
+  <Footer />
 </div>
 
 <DeleteModal 
@@ -468,29 +467,6 @@
   .btn-full {
     width: 100%;
     padding: 12px;
-  }
-
-  .app-footer {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid #e7e5e4;
-    text-align: center;
-    flex-shrink: 0;
-  }
-
-  .app-footer p {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin: 0;
-  }
-
-  kbd {
-    background: var(--hover-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-family: inherit;
-    font-size: 11px;
   }
 
   @media (prefers-reduced-motion: reduce) {
