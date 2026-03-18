@@ -1,10 +1,14 @@
 <script>
   import { useToast } from '$lib/stores/toast.svelte';
-  
+  import { useSound } from '$lib/stores/sound.svelte';
+
   const toastStore = useToast();
-  
+  const soundStore = useSound();
+
   function toggleSound() {
-    toastStore.soundEnabled = !toastStore.soundEnabled;
+    soundStore.toggle();
+    // mirror into toast store for UI reflect
+    toastStore.soundEnabled = soundStore.enabled;
   }
 </script>
 
@@ -25,11 +29,13 @@
     </div>
   {/each}
   
+  <!-- migrated sound toggle: keep for backward compatibility but hidden (logic now in ThemeSwitcher) -->
   <button 
     class="sound-toggle" 
     onclick={toggleSound}
     title={toastStore.soundEnabled ? 'Sound on' : 'Sound off'}
     aria-label={toastStore.soundEnabled ? 'Disable sound' : 'Enable sound'}
+    style="display:none"
   >
     {toastStore.soundEnabled ? '🔊' : '🔇'}
   </button>
