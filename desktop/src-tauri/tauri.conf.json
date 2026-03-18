@@ -5,7 +5,7 @@
   "identifier": "com.foundrytunnel",
   "build": {
     "beforeDevCommand": "",
-    "beforeBuildCommand": "cd ../web-svelte && npm ci && npm run build",
+    "beforeBuildCommand": "cd ../web-svelte && bun install && bun run build",
     "frontendDist": "../web-svelte/dist",
     "devUrl": "http://localhost:5173"
   },
