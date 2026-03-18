@@ -32,7 +32,7 @@
     <label for="theme-select" class="sr-only">Theme</label>
     <select
       id="theme-select"
-      on:change={(e) => theme.set(e.target.value)}
+      onchange={(e) => theme.set(e.target.value)}
       bind:value={theme.current}
       aria-label="Select theme"
     >
@@ -45,7 +45,7 @@
   <div class="controls">
     <button
       class="sound-button"
-      on:click={() => sound.toggle()}
+      onclick={() => sound.toggle()}
       aria-pressed={sound.enabled}
       title={sound.enabled ? "Sound on" : "Sound off"}
     >
