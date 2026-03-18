@@ -9,6 +9,7 @@ Share your Foundry VTT world with players anywhere. No port forwarding needed.
 - **Auto-install**: Downloads providers automatically
 - **Drag & drop**: Reorder connections
 - **Real-time updates**: Live status changes
+- **Theming**: Multiple themes for web dashboard
 
 ## Quick Start
 
