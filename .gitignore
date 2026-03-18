@@ -2,6 +2,7 @@
 /ftm
 /ftm-*
 *.exe
+bin/
 
 # Go
 *.o
