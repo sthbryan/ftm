@@ -136,8 +136,8 @@ func (p *PinggyProvider) ParseURL(line string) string {
 		return matches[0]
 	}
 
-	if strings.Contains(cleanLower, "pinggy.link") || 
-	   (strings.Contains(cleanLower, ".pinggy.io") && !strings.Contains(cleanLower, "dashboard")) {
+	if strings.Contains(cleanLower, "pinggy.link") ||
+		(strings.Contains(cleanLower, ".pinggy.io") && !strings.Contains(cleanLower, "dashboard")) {
 		if idx := strings.Index(cleanLower, "https://"); idx != -1 {
 			rest := clean[idx:]
 			if endIdx := strings.IndexAny(rest, " \t\n\r,"); endIdx != -1 {

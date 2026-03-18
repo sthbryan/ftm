@@ -9,11 +9,11 @@ import (
 )
 
 type DownloadProgress struct {
-	Total     int64
-	Current   int64
-	Percent   float64
-	Done      bool
-	Error     error
+	Total   int64
+	Current int64
+	Percent float64
+	Done    bool
+	Error   error
 }
 
 func downloadWithProgress(url, dest string, progress chan<- DownloadProgress) error {
@@ -49,7 +49,7 @@ func downloadWithProgress(url, dest string, progress chan<- DownloadProgress) er
 		if n > 0 {
 			out.Write(buf[:n])
 			current += int64(n)
-			
+
 			if progress != nil && total > 0 {
 				progress <- DownloadProgress{
 					Total:   total,
@@ -59,7 +59,7 @@ func downloadWithProgress(url, dest string, progress chan<- DownloadProgress) er
 				}
 			}
 		}
-		
+
 		if err == io.EOF {
 			break
 		}
@@ -69,11 +69,11 @@ func downloadWithProgress(url, dest string, progress chan<- DownloadProgress) er
 	}
 
 	out.Close()
-	
+
 	if err := os.Rename(dest+".tmp", dest); err != nil {
 		return err
 	}
-	
+
 	if err := os.Chmod(dest, 0755); err != nil {
 		return err
 	}

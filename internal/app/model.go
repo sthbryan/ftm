@@ -27,18 +27,18 @@ const (
 const TwoColumnThreshold = 100
 
 type KeyMap struct {
-	Up       key.Binding
-	Down     key.Binding
-	Enter    key.Binding
-	Toggle   key.Binding
-	Logs     key.Binding
-	Copy     key.Binding
-	Web      key.Binding
-	Add      key.Binding
-	Delete   key.Binding
-	Back     key.Binding
-	Quit     key.Binding
-	Help     key.Binding
+	Up     key.Binding
+	Down   key.Binding
+	Enter  key.Binding
+	Toggle key.Binding
+	Logs   key.Binding
+	Copy   key.Binding
+	Web    key.Binding
+	Add    key.Binding
+	Delete key.Binding
+	Back   key.Binding
+	Quit   key.Binding
+	Help   key.Binding
 }
 
 var DefaultKeys = KeyMap{

@@ -48,7 +48,7 @@ func (p *PlayitggProvider) FindBinary() string {
 	if path, err := exec.LookPath(p.BinaryName()); err == nil {
 		return path
 	}
-	
+
 	home, _ := os.UserHomeDir()
 	candidates := []string{
 		filepath.Join(p.installer.BinDir(), p.BinaryName()),
@@ -57,20 +57,20 @@ func (p *PlayitggProvider) FindBinary() string {
 		"/usr/local/bin/" + p.BinaryName(),
 		"./" + p.BinaryName(),
 	}
-	
+
 	if runtime.GOOS == "windows" {
-		candidates = append(candidates, 
+		candidates = append(candidates,
 			filepath.Join(os.Getenv("LOCALAPPDATA"), "playit", p.BinaryName()),
 			filepath.Join(os.Getenv("PROGRAMFILES"), "playit", p.BinaryName()),
 		)
 	}
-	
+
 	for _, path := range candidates {
 		if _, err := os.Stat(path); err == nil {
 			return path
 		}
 	}
-	
+
 	return ""
 }
 
@@ -85,16 +85,16 @@ func (p *PlayitggProvider) Start(ctx context.Context, tunnel config.TunnelConfig
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	
+
 	args := []string{"--local", fmt.Sprintf("localhost:%d", tunnel.LocalPort)}
 	if len(tunnel.CustomArgs) > 0 {
 		args = append(args, tunnel.CustomArgs...)
 	}
-	
+
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Stdout = logWriter
 	cmd.Stderr = logWriter
-	
+
 	if err := cmd.Start(); err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to start playit: %w", err)
@@ -112,7 +112,7 @@ func (p *PlayitggProvider) ParseURL(line string) string {
 	if len(matches) > 0 {
 		return matches[0]
 	}
-	
+
 	lineLower := strings.ToLower(line)
 	if idx := strings.Index(lineLower, "https://"); idx != -1 {
 		rest := line[idx:]
@@ -124,13 +124,13 @@ func (p *PlayitggProvider) ParseURL(line string) string {
 			return rest
 		}
 	}
-	
+
 	return ""
 }
 
 func (p *PlayitggProvider) IsReady(line string) bool {
 	line = strings.ToLower(line)
-	return strings.Contains(line, "connected") || 
-		   strings.Contains(line, "tunnel ready") ||
-		   strings.Contains(line, "playit.gg")
+	return strings.Contains(line, "connected") ||
+		strings.Contains(line, "tunnel ready") ||
+		strings.Contains(line, "playit.gg")
 }

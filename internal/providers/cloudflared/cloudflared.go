@@ -48,7 +48,7 @@ func (p *CloudflaredProvider) FindBinary() string {
 	if path, err := exec.LookPath(p.BinaryName()); err == nil {
 		return path
 	}
-	
+
 	home, _ := os.UserHomeDir()
 	candidates := []string{
 		filepath.Join(p.installer.BinDir(), p.BinaryName()),
@@ -57,19 +57,19 @@ func (p *CloudflaredProvider) FindBinary() string {
 		"/usr/bin/" + p.BinaryName(),
 		"./" + p.BinaryName(),
 	}
-	
+
 	if runtime.GOOS == "windows" {
 		candidates = append(candidates,
 			filepath.Join(os.Getenv("ProgramFiles"), "cloudflared", p.BinaryName()),
 		)
 	}
-	
+
 	for _, path := range candidates {
 		if _, err := os.Stat(path); err == nil {
 			return path
 		}
 	}
-	
+
 	return ""
 }
 
@@ -84,7 +84,7 @@ func (p *CloudflaredProvider) Start(ctx context.Context, tunnel config.TunnelCon
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	
+
 	args := []string{
 		"tunnel",
 		"--url", fmt.Sprintf("http://localhost:%d", tunnel.LocalPort),
@@ -92,11 +92,11 @@ func (p *CloudflaredProvider) Start(ctx context.Context, tunnel config.TunnelCon
 	if len(tunnel.CustomArgs) > 0 {
 		args = append(args, tunnel.CustomArgs...)
 	}
-	
+
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Stdout = logWriter
 	cmd.Stderr = logWriter
-	
+
 	if err := cmd.Start(); err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to start cloudflared: %w", err)
@@ -114,7 +114,7 @@ func (p *CloudflaredProvider) ParseURL(line string) string {
 	if len(matches) > 0 {
 		return matches[0]
 	}
-	
+
 	lineLower := strings.ToLower(line)
 	if idx := strings.Index(lineLower, "https://"); idx != -1 {
 		rest := line[idx:]
@@ -125,12 +125,12 @@ func (p *CloudflaredProvider) ParseURL(line string) string {
 			return rest
 		}
 	}
-	
+
 	return ""
 }
 
 func (p *CloudflaredProvider) IsReady(line string) bool {
 	line = strings.ToLower(line)
 	return strings.Contains(line, "trycloudflare.com") ||
-		   strings.Contains(line, "started tunnel")
+		strings.Contains(line, "started tunnel")
 }

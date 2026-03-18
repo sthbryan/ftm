@@ -469,7 +469,7 @@ func (s *Server) startTunnel(w http.ResponseWriter, id string) {
 		}
 		data, _ := json.Marshal(update)
 		s.broadcast(string(data))
-		
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"id":       tunnel.ID,
@@ -478,30 +478,30 @@ func (s *Server) startTunnel(w http.ResponseWriter, id string) {
 			"port":     tunnel.LocalPort,
 			"status":   "installing",
 		})
-		
+
 		go func() {
 			if err := s.manager.InstallProvider(tunnel.Provider); err != nil {
 				update := map[string]interface{}{
-					"id":    tunnel.ID,
+					"id":     tunnel.ID,
 					"status": "error",
-					"error": "Installation failed: " + err.Error(),
+					"error":  "Installation failed: " + err.Error(),
 				}
 				data, _ := json.Marshal(update)
 				s.broadcast(string(data))
 				return
 			}
-			
+
 			if err := s.manager.Start(*tunnel, func(status config.TunnelStatus) {}); err != nil {
 				update := map[string]interface{}{
-					"id":    tunnel.ID,
+					"id":     tunnel.ID,
 					"status": "error",
-					"error": err.Error(),
+					"error":  err.Error(),
 				}
 				data, _ := json.Marshal(update)
 				s.broadcast(string(data))
 			}
 		}()
-		
+
 		return
 	}
 
@@ -654,7 +654,7 @@ func (s *Server) handleProviders(w http.ResponseWriter) {
 func (s *Server) handleDetectPort(w http.ResponseWriter) {
 	commonPorts := []int{30000, 30001, 8080, 8081, 8082, 4200, 5173}
 	found := []int{}
-	
+
 	for _, port := range commonPorts {
 		if ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port)); err == nil {
 			ln.Close()
@@ -662,12 +662,12 @@ func (s *Server) handleDetectPort(w http.ResponseWriter) {
 			found = append(found, port)
 		}
 	}
-	
+
 	suggested := 30000
 	if len(found) > 0 {
 		suggested = found[0]
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"ports":     found,
