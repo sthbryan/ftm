@@ -685,6 +685,8 @@
 
   .select-wrap select {
     height: 42px;
+    appearance: none;
+    cursor: pointer;
   }
 
   .btn {

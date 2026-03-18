@@ -69,6 +69,8 @@
     border: 1px solid var(--border-color);
     background: var(--card-bg);
     color: var(--text-color);
+    appearance: none;
+    cursor: pointer;
   }
 
   .controls {
