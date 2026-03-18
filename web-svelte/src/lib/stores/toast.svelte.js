@@ -3,15 +3,20 @@ let soundEnabled = $state(true);
 
 const audioContext = typeof window !== 'undefined' ? new (window.AudioContext || window.webkitAudioContext)() : null;
 
-try {
-  const { useSound } = await import('./sound.svelte.js');
-  const soundStore = useSound();
-  soundEnabled = soundStore.enabled;
-} catch (e) {
+if (typeof window !== 'undefined') {
+  import('./sound.svelte.js')
+    .then(mod => {
+      try {
+        const soundStore = mod.useSound();
+        soundEnabled = !!soundStore.enabled;
+      } catch (e) {}
+    })
+    .catch(() => {});
 }
 
 function playSound(type) {
-  if (!soundEnabled || !audioContext) return;
+  const enabled = (typeof window !== 'undefined') ? (localStorage.getItem('ftm-sound-enabled') !== 'false') : soundEnabled;
+  if (!enabled || !audioContext) return;
   
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();

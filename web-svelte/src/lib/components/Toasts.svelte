@@ -29,16 +29,6 @@
     </div>
   {/each}
   
-  <!-- migrated sound toggle: keep for backward compatibility but hidden (logic now in ThemeSwitcher) -->
-  <button 
-    class="sound-toggle" 
-    onclick={toggleSound}
-    title={toastStore.soundEnabled ? 'Sound on' : 'Sound off'}
-    aria-label={toastStore.soundEnabled ? 'Disable sound' : 'Enable sound'}
-    style="display:none"
-  >
-    {toastStore.soundEnabled ? '🔊' : '🔇'}
-  </button>
 </div>
 
 <style>
@@ -125,8 +115,8 @@
     height: 44px;
     border-radius: 50%;
     border: none;
-    background: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    background: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     cursor: pointer;
     font-size: 20px;
     display: flex;
@@ -134,11 +124,12 @@
     justify-content: center;
     pointer-events: auto;
     transition: transform 0.15s, box-shadow 0.15s;
+    color: var(--text-color);
   }
 
   .sound-toggle:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.14);
   }
 
   @media (max-width: 640px) {
