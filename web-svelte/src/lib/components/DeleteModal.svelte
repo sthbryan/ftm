@@ -3,18 +3,34 @@
 </script>
 
 {#if show}
-  <div class="modal-overlay" onclick={onCancel} role="presentation">
-    <div 
-      class="modal" 
-      onclick={(e) => e.stopPropagation()} 
-      role="dialog" 
+  <div
+    class="modal-overlay"
+    onclick={onCancel}
+    role="presentation"
+    tabindex="0"
+    onkeydown={(e) => {
+      if (
+        e.key === "Enter" ||
+        e.key === " " ||
+        e.key === "Spacebar" ||
+        e.key === "Escape"
+      )
+        onCancel();
+    }}
+  >
+    <div
+      class="modal"
+      onclick={(e) => e.stopPropagation()}
+      role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
       tabindex="-1"
     >
       <div class="modal-header">
         <h3 id="modal-title">Delete Connection</h3>
-        <button class="close-btn" onclick={onCancel} aria-label="Close dialog">&times;</button>
+        <button class="close-btn" onclick={onCancel} aria-label="Close dialog"
+          >&times;</button
+        >
       </div>
       <div class="modal-body">
         <p>Are you sure you want to delete <strong>{name}</strong>?</p>
@@ -41,7 +57,9 @@
   }
 
   @keyframes overlayIn {
-    to { background: rgba(0, 0, 0, 0.5); }
+    to {
+      background: rgba(0, 0, 0, 0.5);
+    }
   }
 
   .modal {
@@ -168,21 +186,21 @@
       width: 95%;
       border-radius: 12px;
     }
-    
+
     .modal-header {
       padding: 20px 20px 0;
     }
-    
+
     .modal-body {
       padding: 14px 20px;
     }
-    
+
     .modal-footer {
       padding: 0 20px 20px;
       flex-direction: column-reverse;
       gap: 8px;
     }
-    
+
     .btn {
       width: 100%;
       padding: 12px;

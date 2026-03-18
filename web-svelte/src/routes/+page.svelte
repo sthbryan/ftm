@@ -386,7 +386,6 @@
 
   /* Inputs and form elements - ensure readable in dark themes */
   .create-form input,
-  .create-form textarea,
   .create-form select {
     width: 100%;
     padding: 10px 12px;
@@ -399,15 +398,13 @@
     transition: box-shadow 0.15s, border-color 0.15s;
   }
 
-  .create-form input::placeholder,
-  .create-form textarea::placeholder {
-    color: var(--text-muted);
+  .create-form input::placeholder {
+    color: var(--input-placeholder, var(--text-muted));
   }
 
   .create-form input:disabled,
-  .create-form textarea:disabled,
   .create-form select:disabled {
-    background: var(--hover-bg);
+    background: var(--input-disabled, var(--hover-bg));
     color: var(--text-muted);
   }
 

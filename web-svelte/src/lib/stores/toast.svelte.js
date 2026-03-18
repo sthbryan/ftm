@@ -3,16 +3,6 @@ let soundEnabled = $state(true);
 
 const audioContext = typeof window !== 'undefined' ? new (window.AudioContext || window.webkitAudioContext)() : null;
 
-if (typeof window !== 'undefined') {
-  import('./sound.svelte.js')
-    .then(mod => {
-      try {
-        const soundStore = mod.useSound();
-        soundEnabled = !!soundStore.enabled;
-      } catch (e) {}
-    })
-    .catch(() => {});
-}
 
 function playSound(type) {
   const enabled = (typeof window !== 'undefined') ? (localStorage.getItem('ftm-sound-enabled') !== 'false') : soundEnabled;
