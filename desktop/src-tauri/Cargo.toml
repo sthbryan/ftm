@@ -6,7 +6,7 @@ authors = ["you"]
 edition = "2021"
 
 [lib]
-name = "prtty_lib"
+name = "ftm_lib"
 path = "src/lib.rs"
 
 [[bin]]

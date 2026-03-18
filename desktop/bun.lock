@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "prtty-desktop",
+      "name": "ftm-desktop",
       "dependencies": {
         "@tauri-apps/api": "^2.10.1",
       },
