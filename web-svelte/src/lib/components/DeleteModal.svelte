@@ -10,6 +10,7 @@
       role="dialog" 
       aria-modal="true"
       aria-labelledby="modal-title"
+      tabindex="-1"
     >
       <div class="modal-header">
         <h3 id="modal-title">Delete Connection</h3>
