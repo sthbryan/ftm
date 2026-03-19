@@ -50,9 +50,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Install Tauri CLI
-        uses: cargo-bins/cargo-binstall@v1
-        with:
-          packages: tauri-cli@^2
+        run: |
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall.sh | bash
+          cargo binstall tauri-cli@^2 -y
 
       - name: Install dependencies (Linux)
         if: matrix.os == 'ubuntu-latest'
