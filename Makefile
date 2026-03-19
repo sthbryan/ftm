@@ -15,10 +15,10 @@ build: build-web
 	go build -ldflags "-X main.Version=$(VERSION)" -o $(BINARY) $(CMD)
 
 tauri: build-web
-	cd $(TAURI_DIR) && cargo tauri build
+	cd $(TAURI_DIR) && bunx @tauri-apps/cli build
 
 tauri-dev: build-web
-	cd $(TAURI_DIR) && cargo tauri dev
+	cd $(TAURI_DIR) && bunx @tauri-apps/cli dev
 
 run:
 	go run $(CMD)
