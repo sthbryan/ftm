@@ -44,7 +44,7 @@ func (i *Installer) EnsureInstalled(p Provider) (string, error) {
 	case "Playit.gg":
 		return i.installPlayitgg()
 	case "Cloudflare Tunnel":
-		return i.installCloudflared()
+		return i.installCloudflared(p)
 	case "Tunnelmole":
 		return i.installTunnelmole()
 	default:
@@ -67,13 +67,13 @@ func (i *Installer) installPlayitgg() (string, error) {
 	return binPath, nil
 }
 
-func (i *Installer) installCloudflared() (string, error) {
+func (i *Installer) installCloudflared(p Provider) (string, error) {
 	url, err := i.cloudflaredURL()
 	if err != nil {
 		return "", err
 	}
 
-	binPath := filepath.Join(i.binDir, "cloudflared")
+	binPath := filepath.Join(i.binDir, p.BinaryName())
 
 	if strings.HasSuffix(url, ".tgz") {
 		tmpFile := binPath + ".tgz"
