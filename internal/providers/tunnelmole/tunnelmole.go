@@ -15,7 +15,7 @@ import (
 )
 
 type TunnelmoleProvider struct {
-	installer *NodeInstaller
+	installer *BunInstaller
 }
 
 func New() providers.Provider {
@@ -26,7 +26,7 @@ func New() providers.Provider {
 	baseDir := filepath.Join(configDir, ".config", "foundry-tunnel")
 
 	return &TunnelmoleProvider{
-		installer: NewNodeInstaller(baseDir),
+		installer: NewBunInstaller(baseDir),
 	}
 }
 

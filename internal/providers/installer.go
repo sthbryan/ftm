@@ -103,7 +103,7 @@ func (i *Installer) installCloudflared(p Provider) (string, error) {
 }
 
 func (i *Installer) installTunnelmole() (string, error) {
-	return "", fmt.Errorf("tunnelmole requires npm. Run: npm install -g tunnelmole")
+	return "", fmt.Errorf("tunnelmole requires bun. Run: bun install -g tunnelmole")
 }
 
 func (i *Installer) playitggURL() (string, error) {
