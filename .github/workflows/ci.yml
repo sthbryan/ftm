@@ -48,7 +48,12 @@ jobs:
           go-version: '1.21'
       
       - uses: dtolnay/rust-toolchain@stable
-      
+
+      - name: Install Tauri CLI
+        uses: cargo-bins/cargo-binstall@v1
+        with:
+          packages: tauri-cli@^2
+
       - name: Install dependencies (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -73,4 +78,4 @@ jobs:
       - name: Build Tauri
         run: |
           cd desktop/src-tauri
-          cargo build
+          cargo tauri build
