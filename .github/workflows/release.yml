@@ -47,12 +47,13 @@ jobs:
           go-version: '1.21'
       
       - name: Build web frontend
+        shell: bash
         run: |
           cd web-svelte && bun install && bun run build
           rm -rf ../internal/web/static
           cp -r dist ../internal/web/static
           touch ../internal/web/static/.gitkeep
-      
+
       - name: Build binary
         env:
           GOOS: ${{ matrix.goos }}
@@ -100,12 +101,13 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       
       - name: Build web frontend
+        shell: bash
         run: |
           cd web-svelte && bun install && bun run build
           rm -rf ../internal/web/static
           cp -r dist ../internal/web/static
           touch ../internal/web/static/.gitkeep
-      
+
       - name: Build Go backend
         shell: bash
         run: |
