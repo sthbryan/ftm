@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/deadbryam/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/config"
 )
 
 type Provider interface {

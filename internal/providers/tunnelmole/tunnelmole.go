@@ -11,8 +11,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/deadbryam/ftm/internal/config"
-	"github.com/deadbryam/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/providers"
 )
 
 const errRosettaNeeded = "tunnelmole requires Rosetta 2 to run on Apple Silicon. Install it with: softwareupdate --install-rosetta"

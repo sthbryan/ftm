@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/deadbryam/ftm/internal/config"
-	"github.com/deadbryam/ftm/internal/providers"
-	"github.com/deadbryam/ftm/internal/providers/cloudflared"
-	"github.com/deadbryam/ftm/internal/providers/pinggy"
-	"github.com/deadbryam/ftm/internal/providers/playitgg"
-	"github.com/deadbryam/ftm/internal/providers/ssh"
-	"github.com/deadbryam/ftm/internal/providers/tunnelmole"
+	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/providers/cloudflared"
+	"github.com/sthbryan/ftm/internal/providers/pinggy"
+	"github.com/sthbryan/ftm/internal/providers/playitgg"
+	"github.com/sthbryan/ftm/internal/providers/ssh"
+	"github.com/sthbryan/ftm/internal/providers/tunnelmole"
 )
 
 type Manager struct {

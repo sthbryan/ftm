@@ -7,10 +7,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/deadbryam/ftm/internal/config"
-	"github.com/deadbryam/ftm/internal/process"
-	"github.com/deadbryam/ftm/internal/providers"
-	"github.com/deadbryam/ftm/internal/web"
+	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/process"
+	"github.com/sthbryan/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/web"
 )
 
 type App struct {

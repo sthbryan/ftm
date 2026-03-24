@@ -1,4 +1,4 @@
-module github.com/deadbryam/ftm
+module github.com/sthbryan/ftm
 
 go 1.21
 

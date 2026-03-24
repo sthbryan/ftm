@@ -6,9 +6,9 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/deadbryam/ftm/internal/clipboard"
-	"github.com/deadbryam/ftm/internal/config"
-	"github.com/deadbryam/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/clipboard"
+	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/providers"
 )
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

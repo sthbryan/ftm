@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-REPO="deadbryam/ftm"
+REPO="sthbryan/ftm"
 BINARY_NAME="ftm"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 TAG="latest"

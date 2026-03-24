@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/deadbryam/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/config"
 )
 
 type Installer struct {

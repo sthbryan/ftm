@@ -16,10 +16,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/deadbryam/ftm/internal/clipboard"
-	"github.com/deadbryam/ftm/internal/config"
-	"github.com/deadbryam/ftm/internal/process"
-	"github.com/deadbryam/ftm/internal/version"
+	"github.com/sthbryan/ftm/internal/clipboard"
+	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/process"
+	"github.com/sthbryan/ftm/internal/version"
 )
 
 type TunnelView struct {

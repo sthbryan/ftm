@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/deadbryam/ftm/internal/app"
-	"github.com/deadbryam/ftm/internal/version"
+	"github.com/sthbryan/ftm/internal/app"
+	"github.com/sthbryan/ftm/internal/version"
 )
 
 var BuildVersion string

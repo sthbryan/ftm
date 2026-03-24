@@ -30,14 +30,14 @@ Access at `http://localhost:40500`
 ### Option 1: Install Script (Recommended)
 
 ```bash
-curl -L https://raw.githubusercontent.com/deadbryam/ftm/main/install.sh | bash
+curl -L https://raw.githubusercontent.com/sthbryan/ftm/main/install.sh | bash
 ```
 
 This automatically detects your OS and architecture, downloads the correct binary, and installs it to `~/.local/bin`.
 
 ### Option 2: Manual Download
 
-Download a prebuilt binary from [GitHub Releases](https://github.com/deadbryam/ftm/releases/latest).
+Download a prebuilt binary from [GitHub Releases](https://github.com/sthbryan/ftm/releases/latest).
 
 | Platform | File |
 |----------|------|
@@ -62,7 +62,7 @@ xattr -d com.apple.quarantine /usr/local/bin/ftm
 ### Option 3: Go
 
 ```bash
-go install github.com/deadbryam/ftm@latest
+go install github.com/sthbryan/ftm@latest
 ```
 
 ### Run
@@ -81,7 +81,7 @@ ftm --web        # Web dashboard only
 
 ```bash
 # Clone
-git clone https://github.com/deadbryam/ftm.git
+git clone https://github.com/sthbryan/ftm.git
 cd ftm
 
 # Build CLI & Web
@@ -98,6 +98,6 @@ go build -o ftm ./cmd/ftm
 
 ## License
 
-MIT License - Copyright (c) 2024 deadbryam
+MIT License - Copyright (c) 2024 sthbryan
 
 See [LICENSE](LICENSE) for details.

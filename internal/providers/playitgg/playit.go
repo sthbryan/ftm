@@ -11,8 +11,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/deadbryam/ftm/internal/config"
-	"github.com/deadbryam/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/providers"
 )
 
 type PlayitggProvider struct {

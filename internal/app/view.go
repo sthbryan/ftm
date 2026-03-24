@@ -6,8 +6,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/deadbryam/ftm/internal/config"
-	"github.com/deadbryam/ftm/internal/version"
+	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/version"
 )
 
 func (m *Model) View() string {

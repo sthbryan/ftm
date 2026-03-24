@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/deadbryam/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/providers"
 )
 
 type Installer struct {
