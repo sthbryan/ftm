@@ -126,9 +126,10 @@ jobs:
         shell: bash
         run: |
           mkdir -p desktop/frontend/dist
+          mkdir -p desktop/build
           cp -r web-svelte/dist/* desktop/frontend/dist/
           cp -r web-svelte/dist/* internal/web/static/
-          cp icon.png desktop/build/appicon.png
+          cp desktop/icon.png desktop/build/appicon.png
 
       - name: Build Desktop
         run: cd desktop && wails build -s -platform ${{ matrix.platform }}
