@@ -27,12 +27,20 @@ Access at `http://localhost:40500`
 
 ## Installation
 
-### Option 1: Binary Download
+### Option 1: Install Script (Recommended)
 
-Download a prebuilt binary for your platform from [GitHub Releases](https://github.com/deadbryam/ftm/releases/latest).
+```bash
+curl -L https://raw.githubusercontent.com/deadbryam/ftm/main/install.sh | bash
+```
 
-| Platform | Download |
-|----------|----------|
+This automatically detects your OS and architecture, downloads the correct binary, and installs it to `~/.local/bin`.
+
+### Option 2: Manual Download
+
+Download a prebuilt binary from [GitHub Releases](https://github.com/deadbryam/ftm/releases/latest).
+
+| Platform | File |
+|----------|------|
 | Windows | `ftm-windows-x64.exe` |
 | Linux x64 | `ftm-linux-x64` |
 | Linux ARM64 | `ftm-linux-arm64` |
@@ -42,13 +50,8 @@ Download a prebuilt binary for your platform from [GitHub Releases](https://gith
 Then run:
 
 ```bash
-# Linux / macOS
 chmod +x ftm-*
 sudo mv ftm-* /usr/local/bin/ftm
-ftm
-
-# Windows
-.\ftm-windows-x64.exe
 ```
 
 For macOS Apple Silicon, you may need to remove the quarantine attribute:
@@ -56,7 +59,7 @@ For macOS Apple Silicon, you may need to remove the quarantine attribute:
 xattr -d com.apple.quarantine /usr/local/bin/ftm
 ```
 
-### Option 2: Go
+### Option 3: Go
 
 ```bash
 go install github.com/deadbryam/ftm@latest
