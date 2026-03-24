@@ -1,8 +1,7 @@
 <script>
-  import DeleteModal from './DeleteModal.svelte';
   import { useToast } from '$lib/stores/toast.svelte';
   
-  let { tunnel, onStart, onStop, onDelete, onShowDelete, index = 0, installProgress = null } = $props();
+  let { tunnel, onStart, onStop, onShowDelete, index = 0, installProgress = null } = $props();
   
   const toast = useToast();
   
@@ -13,14 +12,17 @@
   let prevStatus = $state('');
   
   $effect(() => {
-    const currentStatus = tunnel.status;
-    if (currentStatus === 'running' && prevStatus !== 'running' && prevStatus !== '') {
+    const currentStatus = tunnel.state;
+    if (currentStatus === 'online' && prevStatus !== 'online' && prevStatus !== '') {
       justStarted = true;
       toast.success(`Tunnel "${tunnel.name}" is now running!`);
       setTimeout(() => justStarted = false, 600);
     }
     if (currentStatus === 'error' && prevStatus !== 'error') {
       toast.error(`Tunnel "${tunnel.name}" failed to start`);
+    }
+    if (currentStatus === 'timeout' && prevStatus !== 'timeout') {
+      toast.error(`Tunnel "${tunnel.name}" timed out`);
     }
     prevStatus = currentStatus;
   });
@@ -34,20 +36,22 @@
     pinggy: 'Pinggy'
   };
   
+  const statusMap = {
+    online: { class: 'running', text: 'Running' },
+    starting: { class: 'starting', text: 'Starting...' },
+    connecting: { class: 'starting', text: 'Connecting...' },
+    installing: { class: 'installing', text: 'Installing...' },
+    downloading: { class: 'installing', text: 'Installing...' },
+    timeout: { class: 'error', text: 'Timeout' },
+    error: { class: 'error', text: 'Error' }
+  };
+  
   function getStatusClass() {
-    if (tunnel.status === 'running') return 'running';
-    if (tunnel.status === 'starting') return 'starting';
-    if (tunnel.status === 'installing') return 'installing';
-    if (tunnel.status === 'error') return 'error';
-    return 'stopped';
+    return statusMap[tunnel.state]?.class || 'stopped';
   }
   
   function getStatusText() {
-    if (tunnel.status === 'running') return 'Running';
-    if (tunnel.status === 'starting') return 'Starting...';
-    if (tunnel.status === 'installing') return 'Installing...';
-    if (tunnel.status === 'error') return 'Error';
-    return 'Stopped';
+    return statusMap[tunnel.state]?.text || 'Stopped';
   }
   
   function copyUrl(url) {
@@ -104,9 +108,9 @@
         {/if}
       </div>
       <div class="connection-actions">
-        {#if tunnel.status === 'running' || tunnel.status === 'starting' || tunnel.status === 'installing'}
-          <button type="button" class="btn btn-stop" onclick={() => onStop(tunnel.id)} disabled={tunnel.status === 'installing'}>
-            {tunnel.status === 'installing' ? 'Wait...' : 'Stop'}
+        {#if tunnel.state === 'online' || tunnel.state === 'starting' || tunnel.state === 'connecting' || tunnel.state === 'installing' || tunnel.state === 'downloading'}
+          <button type="button" class="btn btn-stop" onclick={() => onStop(tunnel.id)} disabled={tunnel.state === 'installing' || tunnel.state === 'downloading'}>
+            {tunnel.state === 'installing' || tunnel.state === 'downloading' ? 'Wait...' : 'Stop'}
           </button>
         {:else}
           <button type="button" class="btn btn-start" onclick={() => onStart(tunnel.id)}>Start</button>
@@ -126,6 +130,16 @@
         <span class="url-text">{tunnel.publicUrl}</span>
         <span class="copy-hint">Click to copy</span>
       </button>
+    {/if}
+    {#if tunnel.errorMessage}
+      <div class="error-row">
+        <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span class="error-text">{tunnel.errorMessage}</span>
+      </div>
     {/if}
     <div class="logs-wrapper" class:expanded={showLogs}>
       <div class="logs-panel">
@@ -499,6 +513,27 @@
 
   .connection-url-row:hover .copy-hint {
     opacity: 1;
+  }
+
+  .error-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--status-error-bg, #fee2e2);
+    border-top: 1px solid var(--status-error-dot, #ef4444);
+    color: var(--status-error-text, #991b1b);
+  }
+
+  .error-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .error-text {
+    font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, monospace;
   }
 
   @media (max-width: 640px) {

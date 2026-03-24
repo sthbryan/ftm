@@ -52,19 +52,17 @@ export function useTunnels() {
           if (idx < 0) return;
           
           const current = tunnels[idx];
-          let newStatus = msg.status || 'stopped';
-          if (msg.running) newStatus = 'running';
-          else if (msg.starting) newStatus = 'starting';
+          const newState = msg.state || 'stopped';
           
-          if (current.status !== newStatus || current.publicUrl !== msg.publicUrl || current.error !== msg.error) {
+          if (current.state !== newState || current.publicUrl !== msg.publicUrl || current.errorMessage !== msg.errorMessage) {
             tunnels = tunnels.map((t, i) => 
               i === idx 
-                ? { ...t, status: newStatus, publicUrl: msg.publicUrl || t.publicUrl, error: msg.error }
+                ? { ...t, state: newState, publicUrl: msg.publicUrl || t.publicUrl, errorMessage: msg.errorMessage || t.errorMessage }
                 : t
             );
           }
           
-          if (newStatus === 'running' && current.status !== 'running') {
+          if (newState === 'online' && current.state !== 'online') {
             installProgress = { ...installProgress };
             delete installProgress[current.provider];
           }
@@ -95,17 +93,17 @@ export function useTunnels() {
       
       const tunnel = tunnels[idx];
       
-      tunnels = tunnels.map((t, i) => i === idx ? { ...t, status: 'starting' } : t);
+      tunnels = tunnels.map((t, i) => i === idx ? { ...t, state: 'starting' } : t);
       
       try {
         const res = await fetch(`/api/tunnels/${id}/start`, { method: 'POST' });
         const data = await res.json();
         
         if (data.status === 'installing') {
-          tunnels = tunnels.map((t, i) => i === idx ? { ...t, status: 'installing' } : t);
+          tunnels = tunnels.map((t, i) => i === idx ? { ...t, state: 'installing' } : t);
         }
       } catch (e) {
-        tunnels = tunnels.map((t, i) => i === idx ? { ...t, status: 'error', error: e.message } : t);
+        tunnels = tunnels.map((t, i) => i === idx ? { ...t, state: 'error', errorMessage: e.message } : t);
       }
     },
     
@@ -113,7 +111,7 @@ export function useTunnels() {
       await fetch(`/api/tunnels/${id}/stop`, { method: 'POST' });
       const idx = tunnels.findIndex(t => t.id === id);
       if (idx >= 0) {
-        tunnels = tunnels.map((t, i) => i === idx ? { ...t, status: 'stopped', publicUrl: null } : t);
+        tunnels = tunnels.map((t, i) => i === idx ? { ...t, state: 'stopped', publicUrl: null } : t);
       }
     },
     
