@@ -35,12 +35,16 @@ web-svelte/.svelte-kit/
 web-svelte/dist/
 internal/web/static/*
 !internal/web/static/.gitkeep
-
-# Tauri generated files
-desktop/src-tauri/gen/
+node_modules
 
 # Logs
 .logs/
 
 # lazyload
 .lazyload/
+
+# Desktop app (Wails)
+desktop/build/
+desktop/frontend/
+*.app
+*.dmg

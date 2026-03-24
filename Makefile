@@ -1,31 +1,43 @@
-.PHONY: build run clean test install release build-web tauri tauri-dev
+.PHONY: build run clean test install release build-web wails wails-dev desktop desktop-package
 
 VERSION := 0.5.2
 BINARY := ftm
 CMD := ./cmd/ftm
-TAURI_DIR := desktop/src-tauri
+DESKTOP_DIR := ./desktop
 
 build-web:
 	cd web-svelte && bun install && bun run build
 	rm -rf internal/web/static/*
 	cp -r web-svelte/dist/* internal/web/static/
 	touch internal/web/static/.gitkeep
+	rm -rf $(DESKTOP_DIR)/frontend/dist
+	mkdir -p $(DESKTOP_DIR)/frontend/dist
+	cp -r web-svelte/dist/* $(DESKTOP_DIR)/frontend/dist/
+	mkdir -p $(DESKTOP_DIR)/build
+	cp $(DESKTOP_DIR)/icon.png $(DESKTOP_DIR)/build/appicon.png
 
 build: build-web
 	go build -ldflags "-X main.Version=$(VERSION)" -o $(BINARY) $(CMD)
 
-tauri: build-web
-	cd $(TAURI_DIR) && bunx @tauri-apps/cli build
+wails: build-web
+	cd $(DESKTOP_DIR) && wails build -s
 
-tauri-dev: build-web
-	cd $(TAURI_DIR) && bunx @tauri-apps/cli dev
+wails-dev: build-web
+	cd $(DESKTOP_DIR) && wails dev
+
+desktop: build-web
+	cd $(DESKTOP_DIR) && wails build -s -nopackage
+
+desktop-package: build-web
+	cd $(DESKTOP_DIR) && wails build -s
 
 run:
 	go run $(CMD)
 
 clean:
 	rm -f $(BINARY) ftm-*
-	cd $(TAURI_DIR) && cargo clean
+	rm -rf $(DESKTOP_DIR)/build/bin/*
+	rm -rf $(DESKTOP_DIR)/frontend/dist
 
 test:
 	go test ./...
