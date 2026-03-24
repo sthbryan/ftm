@@ -1,6 +1,6 @@
 [package]
 name = "ftm-desktop"
-version = "0.5.1"
+version = "0.5.2"
 description = "Foundry Tunnel Manager - Desktop App"
 authors = ["you"]
 license = "MIT"

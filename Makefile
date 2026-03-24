@@ -1,6 +1,6 @@
 .PHONY: build run clean test install release build-web tauri tauri-dev
 
-VERSION := 0.5.1
+VERSION := 0.5.2
 BINARY := ftm
 CMD := ./cmd/ftm
 TAURI_DIR := desktop/src-tauri
