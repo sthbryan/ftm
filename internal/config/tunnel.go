@@ -11,6 +11,20 @@ const (
 	ProviderPinggy       Provider = "pinggy"
 )
 
+type TunnelState string
+
+const (
+	TunnelStateNone       TunnelState = ""
+	TunnelStateDownload   TunnelState = "downloading"
+	TunnelStateInstall    TunnelState = "installing"
+	TunnelStateStarting   TunnelState = "starting"
+	TunnelStateConnecting TunnelState = "connecting"
+	TunnelStateOnline     TunnelState = "online"
+	TunnelStateStopping   TunnelState = "stopping"
+	TunnelStateStopped    TunnelState = "stopped"
+	TunnelStateError      TunnelState = "error"
+)
+
 type TunnelConfig struct {
 	ID         string   `yaml:"id"`
 	Name       string   `yaml:"name"`
@@ -22,18 +36,16 @@ type TunnelConfig struct {
 }
 
 type TunnelStatus struct {
-	ID         string
-	Name       string
-	Provider   Provider
-	LocalPort  int
-	PublicURL  string
-	Running    bool
-	Starting   bool
-	Stopping   bool
-	Error      string
-	LogLines   []string
-	Players    int
-	MaxPlayers int
+	ID           string
+	Name         string
+	Provider     Provider
+	LocalPort    int
+	PublicURL    string
+	State        TunnelState
+	ErrorMessage string
+	LogLines     []string
+	Players      int
+	MaxPlayers   int
 }
 
 func (tc *TunnelConfig) Status() TunnelStatus {
@@ -43,5 +55,6 @@ func (tc *TunnelConfig) Status() TunnelStatus {
 		Provider:   tc.Provider,
 		LocalPort:  tc.LocalPort,
 		MaxPlayers: 8,
+		State:      TunnelStateStopped,
 	}
 }

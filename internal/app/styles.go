@@ -9,10 +9,11 @@ const (
 	ColorText    = "#e8e6e1"
 	ColorTextDim = "#9a9590"
 
-	ColorOnline   = "#1e3a2f"
-	ColorOffline  = "#2a2824"
-	ColorStarting = "#3a3020"
-	ColorError    = "#3a2020"
+	ColorOnline     = "#1e3a2f"
+	ColorOffline    = "#2a2824"
+	ColorConnecting = "#3a3020"
+	ColorError      = "#3a2020"
+	ColorStopped    = "#3a3a3a"
 )
 
 var TitleStyle = lipgloss.NewStyle().
@@ -28,7 +29,7 @@ var StatusOfflineStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color(ColorText))
 
 var StatusStartingStyle = lipgloss.NewStyle().
-	Background(lipgloss.Color(ColorStarting)).
+	Background(lipgloss.Color(ColorConnecting)).
 	Foreground(lipgloss.Color(ColorText))
 
 var StatusErrorStyle = lipgloss.NewStyle().

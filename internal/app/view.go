@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
+	"foundry-tunnel/internal/config"
 	"foundry-tunnel/internal/version"
 )
 
@@ -246,18 +247,25 @@ func (m *Model) renderTunnelListItem(idx int, item TunnelItem, width int) string
 	selected := idx == m.Cursor
 
 	var statusEmoji, statusColor, bgColor string
-	if item.Status.Running {
-		if item.Status.Starting {
-			statusEmoji = "🟡"
-			statusColor = ColorText
-			bgColor = ColorStarting
-		} else {
-			statusEmoji = "🟢"
-			statusColor = ColorText
-			bgColor = ColorOnline
-		}
-	} else {
+	switch item.Status.State {
+	case config.TunnelStateStarting, config.TunnelStateConnecting:
+		statusEmoji = "🟡"
+		statusColor = ColorText
+		bgColor = ColorConnecting
+	case config.TunnelStateOnline:
+		statusEmoji = "🟢"
+		statusColor = ColorText
+		bgColor = ColorOnline
+	case config.TunnelStateError:
 		statusEmoji = "🔴"
+		statusColor = ColorText
+		bgColor = ColorError
+	case config.TunnelStateStopped:
+		statusEmoji = "⚪"
+		statusColor = ColorTextDim
+		bgColor = ColorStopped
+	default:
+		statusEmoji = "⚪"
 		statusColor = ColorTextDim
 		bgColor = ColorOffline
 	}
@@ -278,13 +286,18 @@ func (m *Model) renderTunnelListItem(idx int, item TunnelItem, width int) string
 	parts = append(parts, nameStyle.Render(truncate(item.Tunnel.Name, 20)))
 
 	var statusText string
-	if item.Status.Running {
-		if item.Status.Starting {
-			statusText = "Starting..."
-		} else {
-			statusText = "Online"
-		}
-	} else {
+	switch item.Status.State {
+	case config.TunnelStateStarting:
+		statusText = "Starting..."
+	case config.TunnelStateConnecting:
+		statusText = "Connecting..."
+	case config.TunnelStateOnline:
+		statusText = "Online"
+	case config.TunnelStateError:
+		statusText = "Error"
+	case config.TunnelStateStopped:
+		statusText = "Offline"
+	default:
 		statusText = "Offline"
 	}
 	statusStyle := lipgloss.NewStyle().
@@ -343,16 +356,24 @@ func (m *Model) renderDetailPanel(width int) string {
 	b.WriteString("\n\n")
 
 	var statusEmoji, statusText string
-	if item.Status.Running {
-		if item.Status.Starting {
-			statusEmoji = "🟡"
-			statusText = "STARTING"
-		} else {
-			statusEmoji = "🟢"
-			statusText = "ONLINE"
-		}
-	} else {
+	switch item.Status.State {
+	case config.TunnelStateStarting:
+		statusEmoji = "🟡"
+		statusText = "STARTING"
+	case config.TunnelStateConnecting:
+		statusEmoji = "🟡"
+		statusText = "CONNECTING"
+	case config.TunnelStateOnline:
+		statusEmoji = "🟢"
+		statusText = "ONLINE"
+	case config.TunnelStateError:
 		statusEmoji = "🔴"
+		statusText = "ERROR"
+	case config.TunnelStateStopped:
+		statusEmoji = "⚪"
+		statusText = "OFFLINE"
+	default:
+		statusEmoji = "⚪"
 		statusText = "OFFLINE"
 	}
 
@@ -361,7 +382,7 @@ func (m *Model) renderDetailPanel(width int) string {
 	b.WriteString(fmt.Sprintf("%s %s", statusEmoji, statusText))
 	b.WriteString("\n\n")
 
-	if item.Status.Running && !item.Status.Starting && item.Status.PublicURL != "" {
+	if item.Status.State == config.TunnelStateOnline && item.Status.PublicURL != "" {
 		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDim)).Render("Public URL:"))
 		b.WriteString("\n")
 
@@ -377,7 +398,8 @@ func (m *Model) renderDetailPanel(width int) string {
 	}
 
 	var actions []string
-	if item.Status.Running {
+	isActive := item.Status.State == config.TunnelStateOnline || item.Status.State == config.TunnelStateStarting || item.Status.State == config.TunnelStateConnecting
+	if isActive {
 		actions = append(actions, ButtonStyle.Render("[s] Stop"))
 	} else {
 		actions = append(actions, ButtonStyle.Render("[s] Start"))

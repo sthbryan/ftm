@@ -126,13 +126,14 @@ type TunnelItem struct {
 func (i TunnelItem) FilterValue() string { return i.Tunnel.Name }
 func (i TunnelItem) Title() string       { return i.Tunnel.Name }
 func (i TunnelItem) Description() string {
-	status := "● OFFLINE"
-	if i.Status.Running {
-		if i.Status.Starting {
-			status = "⟳ STARTING"
-		} else {
-			status = "▶ ONLINE"
-		}
+	status := "OFFLINE"
+	switch i.Status.State {
+	case config.TunnelStateStarting:
+		status = "STARTING"
+	case config.TunnelStateConnecting:
+		status = "CONNECTING"
+	case config.TunnelStateOnline:
+		status = "ONLINE"
 	}
 	return fmt.Sprintf("%s | Port %d | %s", i.Tunnel.Provider, i.Tunnel.LocalPort, status)
 }
@@ -228,7 +229,7 @@ func (m *Model) startTunnel(item TunnelItem) tea.Cmd {
 		if err != nil {
 			return statusUpdateMsg{
 				tunnelID: item.Tunnel.ID,
-				status:   config.TunnelStatus{Error: err.Error()},
+				status:   config.TunnelStatus{ErrorMessage: err.Error(), State: config.TunnelStateError},
 			}
 		}
 
@@ -242,7 +243,7 @@ func (m *Model) installProvider(providerType config.Provider) tea.Cmd {
 		if err != nil {
 			return statusUpdateMsg{
 				tunnelID: "",
-				status:   config.TunnelStatus{Error: "Install failed: " + err.Error()},
+				status:   config.TunnelStatus{ErrorMessage: "Install failed: " + err.Error(), State: config.TunnelStateError},
 			}
 		}
 		return downloadProgressMsg{Done: true, Percent: 100}

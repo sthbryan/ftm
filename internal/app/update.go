@@ -57,8 +57,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case statusUpdateMsg:
 		m.refreshItems()
-		if msg.status.Error != "" {
-			m.showMessage("Error: " + msg.status.Error)
+		if msg.status.ErrorMessage != "" {
+			m.showMessage("Error: " + msg.status.ErrorMessage)
 		}
 		return m, nil
 	}

@@ -28,10 +28,9 @@ type TunnelView struct {
 	Provider     string
 	ProviderName string
 	Port         int
-	Running      bool
-	Starting     bool
+	State        string
 	PublicURL    string
-	Error        string
+	ErrorMessage string
 }
 
 type Server struct {
@@ -177,17 +176,16 @@ func (s *Server) broadcastLoop() {
 		for _, tunnel := range s.config.Tunnels {
 			if status, ok := s.manager.GetStatus(tunnel.ID); ok {
 
-				stateKey := fmt.Sprintf("%s|%v|%v|%s", tunnel.ID, status.Running, status.Starting, status.PublicURL)
+				stateKey := fmt.Sprintf("%s|%s|%s", tunnel.ID, status.State, status.PublicURL)
 
 				if lastStates[tunnel.ID] != stateKey {
 					lastStates[tunnel.ID] = stateKey
 
 					update := map[string]interface{}{
-						"id":        tunnel.ID,
-						"running":   status.Running,
-						"starting":  status.Starting,
-						"publicUrl": status.PublicURL,
-						"error":     status.Error,
+						"id":           tunnel.ID,
+						"state":        string(status.State),
+						"publicUrl":    status.PublicURL,
+						"errorMessage": status.ErrorMessage,
 					}
 					data, _ := json.Marshal(update)
 					s.broadcast(string(data))
@@ -296,12 +294,8 @@ func (s *Server) listTunnels(w http.ResponseWriter) {
 
 		if status, ok := s.manager.GetStatus(t.ID); ok {
 			item["publicUrl"] = status.PublicURL
-			item["error"] = status.Error
-			if status.Starting {
-				item["status"] = "starting"
-			} else if status.Running {
-				item["status"] = "running"
-			}
+			item["errorMessage"] = status.ErrorMessage
+			item["state"] = string(status.State)
 		}
 
 		if needsInstall, canInstall := s.manager.CheckInstallation(t.Provider); needsInstall && canInstall {
@@ -538,12 +532,8 @@ func (s *Server) writeTunnelJSON(w http.ResponseWriter, t config.TunnelConfig) {
 
 	if tunnelStatus, ok := s.manager.GetStatus(t.ID); ok {
 		publicURL = tunnelStatus.PublicURL
-		errorMsg = tunnelStatus.Error
-		if tunnelStatus.Starting {
-			status = "starting"
-		} else if tunnelStatus.Running {
-			status = "running"
-		}
+		errorMsg = tunnelStatus.ErrorMessage
+		status = string(tunnelStatus.State)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

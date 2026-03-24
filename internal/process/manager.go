@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	"foundry-tunnel/internal/config"
 	"foundry-tunnel/internal/providers"
@@ -185,14 +186,27 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 		OnUpdate:  onUpdate,
 		Status:    tunnel.Status(),
 	}
-	mp.Status.Running = true
-	mp.Status.Starting = true
+	mp.Status.State = config.TunnelStateStarting
 
 	m.processes[tunnel.ID] = mp
 
 	if onUpdate != nil {
 		onUpdate(mp.Status)
 	}
+
+	go func() {
+		time.Sleep(5 * time.Second)
+		m.mu.Lock()
+		if mp, ok := m.processes[tunnel.ID]; ok {
+			if mp.Status.PublicURL == "" && mp.Status.State != config.TunnelStateOnline {
+				mp.Status.State = config.TunnelStateConnecting
+				if mp.OnUpdate != nil {
+					mp.OnUpdate(mp.Status)
+				}
+			}
+		}
+		m.mu.Unlock()
+	}()
 
 	return nil
 }
@@ -210,8 +224,7 @@ func (m *Manager) Stop(tunnelID string) error {
 		mp.Process.Cancel()
 	}
 
-	mp.Status.Running = false
-	mp.Status.Stopping = false
+	mp.Status.State = config.TunnelStateStopping
 	mp.Status.PublicURL = ""
 
 	delete(m.processes, tunnelID)
@@ -253,8 +266,7 @@ func (m *Manager) updateURL(tunnelID, url string) {
 
 	mp.PublicURL = url
 	mp.Status.PublicURL = url
-	mp.Status.Starting = false
-	mp.Status.Running = true
+	mp.Status.State = config.TunnelStateOnline
 
 	if mp.OnUpdate != nil {
 		mp.OnUpdate(mp.Status)
@@ -278,7 +290,7 @@ func (m *Manager) IsRunning(tunnelID string) bool {
 	defer m.mu.RUnlock()
 
 	mp, ok := m.processes[tunnelID]
-	return ok && mp.Status.Running
+	return ok && (mp.Status.State == config.TunnelStateOnline || mp.Status.State == config.TunnelStateConnecting || mp.Status.State == config.TunnelStateStarting)
 }
 
 type urlCaptureWriter struct {
