@@ -1,6 +1,6 @@
 .PHONY: build run clean test install release build-web wails wails-dev desktop desktop-package
 
-VERSION := 0.6.0d
+VERSION := 0.6.0e
 BINARY := ftm
 CMD := ./cmd/ftm
 DESKTOP_DIR := ./desktop
