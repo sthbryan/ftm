@@ -131,10 +131,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ftm-desktop-${{ matrix.suffix }}
-          path: |
-            desktop/build/bin/ftm.app
-            desktop/build/bin/ftm
-            desktop/build/bin/ftm.exe
+          path: desktop/build/bin/*
 
   release:
     name: Create Release
