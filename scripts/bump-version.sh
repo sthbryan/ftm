@@ -32,18 +32,11 @@ if [ -f "web-svelte/package.json" ]; then
     echo "✓ Updated web-svelte/package.json"
 fi
 
-# Update desktop/src-tauri/Cargo.toml
-if [ -f "desktop/src-tauri/Cargo.toml" ]; then
-    sed -i.bak "s/^version = .*/version = \"$VERSION_NO_V\"/" desktop/src-tauri/Cargo.toml
-    rm -f desktop/src-tauri/Cargo.toml.bak
-    echo "✓ Updated desktop/src-tauri/Cargo.toml"
-fi
-
-# Update desktop/src-tauri/tauri.conf.json
-if [ -f "desktop/src-tauri/tauri.conf.json" ]; then
-    sed -i.bak "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NO_V\"/" desktop/src-tauri/tauri.conf.json
-    rm -f desktop/src-tauri/tauri.conf.json.bak
-    echo "✓ Updated desktop/src-tauri/tauri.conf.json"
+# Update desktop/wails.json
+if [ -f "desktop/wails.json" ]; then
+    sed -i.bak "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION_NO_V\"/" desktop/wails.json
+    rm -f desktop/wails.json.bak
+    echo "✓ Updated desktop/wails.json"
 fi
 
 # Commit changes
