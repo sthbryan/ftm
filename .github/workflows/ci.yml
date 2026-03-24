@@ -34,7 +34,7 @@ jobs:
           cp -r dist/* ../internal/web/static/
       
       - name: Build
-        run: go build -v $(go list ./... | grep -v /desktop/)
+        run: go build -v $(go list ./... | grep -v '/desktop')
       
       - name: Test
-        run: go test -v $(go list ./... | grep -v /desktop/)
+        run: go test -v $(go list ./... | grep -v '/desktop')
