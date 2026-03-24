@@ -10,8 +10,8 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"foundry-tunnel/internal/config"
-	"foundry-tunnel/internal/providers"
+	"github.com/deadbryam/ftm/internal/config"
+	"github.com/deadbryam/ftm/internal/providers"
 )
 
 type viewState int

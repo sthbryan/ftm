@@ -1,4 +1,4 @@
-module foundry-tunnel
+module github.com/deadbryam/ftm
 
 go 1.21
 

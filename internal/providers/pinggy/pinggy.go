@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"strings"
 
-	"foundry-tunnel/internal/config"
-	"foundry-tunnel/internal/providers"
+	"github.com/deadbryam/ftm/internal/config"
+	"github.com/deadbryam/ftm/internal/providers"
 )
 
 type PinggyCliProvider struct {

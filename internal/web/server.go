@@ -16,10 +16,10 @@ import (
 	"sync"
 	"time"
 
-	"foundry-tunnel/internal/clipboard"
-	"foundry-tunnel/internal/config"
-	"foundry-tunnel/internal/process"
-	"foundry-tunnel/internal/version"
+	"github.com/deadbryam/ftm/internal/clipboard"
+	"github.com/deadbryam/ftm/internal/config"
+	"github.com/deadbryam/ftm/internal/process"
+	"github.com/deadbryam/ftm/internal/version"
 )
 
 type TunnelView struct {

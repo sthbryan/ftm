@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"foundry-tunnel/internal/app"
-	"foundry-tunnel/internal/version"
+	"github.com/deadbryam/ftm/internal/app"
+	"github.com/deadbryam/ftm/internal/version"
 )
 
 var BuildVersion string

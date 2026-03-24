@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 
-	"foundry-tunnel/internal/config"
+	"github.com/deadbryam/ftm/internal/config"
 )
 
 type Installer struct {

@@ -6,8 +6,8 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"foundry-tunnel/internal/config"
-	"foundry-tunnel/internal/version"
+	"github.com/deadbryam/ftm/internal/config"
+	"github.com/deadbryam/ftm/internal/version"
 )
 
 func (m *Model) View() string {

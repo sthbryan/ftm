@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"foundry-tunnel/internal/providers"
+	"github.com/deadbryam/ftm/internal/providers"
 )
 
 type Installer struct {
