@@ -256,7 +256,7 @@ func (m *Model) renderTunnelListItem(idx int, item TunnelItem, width int) string
 		statusEmoji = "🟢"
 		statusColor = ColorText
 		bgColor = ColorOnline
-	case config.TunnelStateError:
+	case config.TunnelStateError, config.TunnelStateTimeout:
 		statusEmoji = "🔴"
 		statusColor = ColorText
 		bgColor = ColorError
@@ -295,6 +295,8 @@ func (m *Model) renderTunnelListItem(idx int, item TunnelItem, width int) string
 		statusText = "Online"
 	case config.TunnelStateError:
 		statusText = "Error"
+	case config.TunnelStateTimeout:
+		statusText = "Timeout"
 	case config.TunnelStateStopped:
 		statusText = "Offline"
 	default:
@@ -394,6 +396,17 @@ func (m *Model) renderDetailPanel(width int) string {
 			Foreground(lipgloss.Color(ColorBronze)).
 			Render("Press 'c' to copy")
 		b.WriteString(copyHint)
+		b.WriteString("\n\n")
+	}
+
+	if item.Status.ErrorMessage != "" {
+		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(ColorTextDim)).Render("Error:"))
+		b.WriteString("\n")
+
+		errorBox := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#ff6b6b")).
+			Width(width - 2).Render(item.Status.ErrorMessage)
+		b.WriteString(errorBox)
 		b.WriteString("\n\n")
 	}
 

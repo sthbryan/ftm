@@ -208,6 +208,25 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 		m.mu.Unlock()
 	}()
 
+	go func() {
+		time.Sleep(30 * time.Second)
+		m.mu.Lock()
+		if mp, ok := m.processes[tunnel.ID]; ok {
+			if mp.Status.State == config.TunnelStateConnecting || mp.Status.State == config.TunnelStateStarting {
+				mp.Status.State = config.TunnelStateTimeout
+				mp.Status.ErrorMessage = "Connection timed out after 30 seconds"
+				if mp.Process != nil && mp.Process.Cancel != nil {
+					mp.Process.Cancel()
+					mp.Process = nil
+				}
+				if mp.OnUpdate != nil {
+					mp.OnUpdate(mp.Status)
+				}
+			}
+		}
+		m.mu.Unlock()
+	}()
+
 	return nil
 }
 

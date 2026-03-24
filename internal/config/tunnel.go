@@ -22,6 +22,7 @@ const (
 	TunnelStateOnline     TunnelState = "online"
 	TunnelStateStopping   TunnelState = "stopping"
 	TunnelStateStopped    TunnelState = "stopped"
+	TunnelStateTimeout    TunnelState = "timeout"
 	TunnelStateError      TunnelState = "error"
 )
 
