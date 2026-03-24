@@ -1,0 +1,148 @@
+package pinggy
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
+
+	"foundry-tunnel/internal/providers"
+)
+
+type Installer struct {
+	BaseDir string
+}
+
+func NewInstaller(baseDir string) *Installer {
+	return &Installer{BaseDir: baseDir}
+}
+
+func (i *Installer) PinggyBin() string {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(i.BaseDir, "pinggy.exe")
+	}
+	return filepath.Join(i.BaseDir, "pinggy")
+}
+
+func (i *Installer) IsInstalled() bool {
+	_, err := os.Stat(i.PinggyBin())
+	return err == nil
+}
+
+func (i *Installer) Install(progress chan<- providers.DownloadProgress) error {
+	if err := os.MkdirAll(i.BaseDir, 0755); err != nil {
+		return fmt.Errorf("failed to create base dir: %w", err)
+	}
+
+	if i.IsInstalled() {
+		return nil
+	}
+
+	url := i.pinggyURL()
+	if url == "" {
+		return fmt.Errorf("unsupported platform: %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	if progress != nil {
+		progress <- providers.DownloadProgress{
+			Percent: 10,
+			Current: 0,
+			Total:   100,
+		}
+	}
+
+	dest := i.PinggyBin() + ".tmp"
+	if err := i.download(url, dest, progress); err != nil {
+		os.Remove(dest)
+		return fmt.Errorf("failed to download pinggy: %w", err)
+	}
+
+	if err := os.Chmod(dest, 0755); err != nil {
+		os.Remove(dest)
+		return fmt.Errorf("failed to set executable permission: %w", err)
+	}
+
+	if err := os.Rename(dest, i.PinggyBin()); err != nil {
+		os.Remove(dest)
+		return fmt.Errorf("failed to move binary to final location: %w", err)
+	}
+
+	if progress != nil {
+		progress <- providers.DownloadProgress{
+			Percent: 100,
+			Done:    true,
+		}
+	}
+
+	return nil
+}
+
+func (i *Installer) pinggyURL() string {
+	switch runtime.GOOS {
+	case "darwin":
+		if runtime.GOARCH == "arm64" {
+			return "https://github.com/Pinggy-io/cli-js/releases/download/v0.3.9/pinggy-macos-arm64"
+		}
+		return "https://github.com/Pinggy-io/cli-js/releases/download/v0.3.9/pinggy-macos-x64"
+	case "linux":
+		if runtime.GOARCH == "arm64" {
+			return "https://github.com/Pinggy-io/cli-js/releases/download/v0.3.9/pinggy-linux-arm64"
+		}
+		return "https://github.com/Pinggy-io/cli-js/releases/download/v0.3.9/pinggy-linux-x64"
+	case "windows":
+		if runtime.GOARCH == "arm64" {
+			return "https://github.com/Pinggy-io/cli-js/releases/download/v0.3.9/pinggy-win-arm64.exe"
+		}
+		return "https://github.com/Pinggy-io/cli-js/releases/download/v0.3.9/pinggy-win-x64.exe"
+	default:
+		return ""
+	}
+}
+
+func (i *Installer) download(url, dest string, progress chan<- providers.DownloadProgress) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("http.Get failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	out, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	total := resp.ContentLength
+	downloaded := int64(0)
+	buf := make([]byte, 32*1024)
+
+	for {
+		n, err := resp.Body.Read(buf)
+		if n > 0 {
+			out.Write(buf[:n])
+			downloaded += int64(n)
+			if total > 0 && progress != nil {
+				percent := 10 + float64(downloaded)/float64(total)*80
+				progress <- providers.DownloadProgress{
+					Percent: percent,
+					Current: downloaded,
+					Total:   total,
+				}
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

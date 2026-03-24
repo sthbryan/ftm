@@ -14,89 +14,72 @@ import (
 	"foundry-tunnel/internal/providers"
 )
 
-type PinggyProvider struct {
-	sshKeyPath string
+type PinggyCliProvider struct {
+	installer *Installer
 }
 
 func New() providers.Provider {
-	return &PinggyProvider{}
+	configDir, _ := os.UserHomeDir()
+	if configDir == "" {
+		configDir = "."
+	}
+	baseDir := filepath.Join(configDir, ".config", "foundry-tunnel", "bin")
+
+	return &PinggyCliProvider{
+		installer: NewInstaller(baseDir),
+	}
 }
 
-func (p *PinggyProvider) Name() string {
+func (p *PinggyCliProvider) Name() string {
 	return "pinggy"
 }
 
-func (p *PinggyProvider) BinaryName() string {
-	return "ssh"
+func (p *PinggyCliProvider) BinaryName() string {
+	return "pinggy"
 }
 
-func (p *PinggyProvider) InstallURL() string {
-	return ""
+func (p *PinggyCliProvider) InstallURL() string {
+	return "https://pinggy.io/cli/"
 }
 
-func (p *PinggyProvider) RequiresAuth() bool {
+func (p *PinggyCliProvider) RequiresAuth() bool {
 	return false
 }
 
-func (p *PinggyProvider) FindBinary() string {
-	if path, err := exec.LookPath("ssh"); err == nil {
+func (p *PinggyCliProvider) IsInstalled() bool {
+	if _, err := exec.LookPath("pinggy"); err == nil {
+		return true
+	}
+	return p.installer.IsInstalled()
+}
+
+func (p *PinggyCliProvider) Install(progress chan<- providers.DownloadProgress) error {
+	return p.installer.Install(progress)
+}
+
+func (p *PinggyCliProvider) FindBinary() string {
+	if path, err := exec.LookPath("pinggy"); err == nil {
 		return path
 	}
+
+	if p.installer.IsInstalled() {
+		return p.installer.PinggyBin()
+	}
+
 	return ""
 }
 
-func (p *PinggyProvider) ensureSSHKey() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-
-	keyPath := filepath.Join(home, ".ssh", "id_rsa")
-
-	if _, err := os.Stat(keyPath); err == nil {
-		return keyPath, nil
-	}
-
-	sshDir := filepath.Join(home, ".ssh")
-	if err := os.MkdirAll(sshDir, 0700); err != nil {
-		return "", fmt.Errorf("failed to create .ssh directory: %w", err)
-	}
-
-	cmd := exec.Command("ssh-keygen", "-t", "rsa", "-b", "2048", "-f", keyPath, "-N", "", "-C", "foundry-tunnel")
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("failed to generate SSH key: %w", err)
-	}
-
-	return keyPath, nil
-}
-
-func (p *PinggyProvider) Start(ctx context.Context, tunnel config.TunnelConfig, logWriter io.Writer) (*providers.Process, error) {
+func (p *PinggyCliProvider) Start(ctx context.Context, tunnel config.TunnelConfig, logWriter io.Writer) (*providers.Process, error) {
 	binary := p.FindBinary()
 	if binary == "" {
-		return nil, fmt.Errorf("ssh not found. Install OpenSSH")
-	}
-
-	keyPath, err := p.ensureSSHKey()
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("installing")
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
 
 	args := []string{
-		"-p", "443",
-		"-i", keyPath,
-		"-o", "StrictHostKeyChecking=no",
-		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "IdentitiesOnly=yes",
-		"-o", "ServerAliveInterval=30",
-		"-o", "ServerAliveCountMax=3",
-		"-o", "ConnectTimeout=10",
-		"-o", "LogLevel=ERROR",
-		"-R", fmt.Sprintf("0:localhost:%d", tunnel.LocalPort),
-		"a.pinggy.io",
+		"-l", fmt.Sprintf("http://localhost:%d", tunnel.LocalPort),
 	}
-
 	if len(tunnel.CustomArgs) > 0 {
 		args = append(args, tunnel.CustomArgs...)
 	}
@@ -107,7 +90,7 @@ func (p *PinggyProvider) Start(ctx context.Context, tunnel config.TunnelConfig, 
 
 	if err := cmd.Start(); err != nil {
 		cancel()
-		return nil, fmt.Errorf("failed to start pinggy tunnel: %w", err)
+		return nil, fmt.Errorf("failed to start pinggy: %w", err)
 	}
 
 	return &providers.Process{
@@ -115,31 +98,31 @@ func (p *PinggyProvider) Start(ctx context.Context, tunnel config.TunnelConfig, 
 	}, nil
 }
 
-var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
-
-func stripANSI(s string) string {
-	return ansiEscape.ReplaceAllString(s, "")
-}
-
 var pinggyRegex = regexp.MustCompile(`https?://[a-z0-9-]+\.[a-z]+\.pinggy\.(io|link)`)
 
-func (p *PinggyProvider) ParseURL(line string) string {
-	clean := stripANSI(line)
-	cleanLower := strings.ToLower(clean)
+func (p *PinggyCliProvider) ParseURL(line string) string {
+	lineLower := strings.ToLower(line)
 
-	if strings.Contains(cleanLower, "dashboard.pinggy.io") {
+	if strings.Contains(lineLower, "dashboard.pinggy.io") {
 		return ""
 	}
 
-	matches := pinggyRegex.FindStringSubmatch(cleanLower)
+	matches := pinggyRegex.FindStringSubmatch(lineLower)
 	if len(matches) > 0 {
 		return matches[0]
 	}
 
-	if strings.Contains(cleanLower, "pinggy.link") ||
-		(strings.Contains(cleanLower, ".pinggy.io") && !strings.Contains(cleanLower, "dashboard")) {
-		if idx := strings.Index(cleanLower, "https://"); idx != -1 {
-			rest := clean[idx:]
+	if strings.Contains(lineLower, "pinggy.link") ||
+		(strings.Contains(lineLower, ".pinggy.io") && !strings.Contains(lineLower, "dashboard")) {
+		if idx := strings.Index(lineLower, "https://"); idx != -1 {
+			rest := line[idx:]
+			if endIdx := strings.IndexAny(rest, " \t\n\r,"); endIdx != -1 {
+				return rest[:endIdx]
+			}
+			return rest
+		}
+		if idx := strings.Index(lineLower, "http://"); idx != -1 {
+			rest := line[idx:]
 			if endIdx := strings.IndexAny(rest, " \t\n\r,"); endIdx != -1 {
 				return rest[:endIdx]
 			}
@@ -150,11 +133,10 @@ func (p *PinggyProvider) ParseURL(line string) string {
 	return ""
 }
 
-func (p *PinggyProvider) IsReady(line string) bool {
-	clean := stripANSI(line)
-	cleanLower := strings.ToLower(clean)
+func (p *PinggyCliProvider) IsReady(line string) bool {
+	lineLower := strings.ToLower(line)
 
-	return strings.Contains(cleanLower, "pinggy.link") ||
-		(strings.Contains(cleanLower, ".pinggy.io") && !strings.Contains(cleanLower, "dashboard")) ||
-		strings.Contains(cleanLower, "connected")
+	return strings.Contains(lineLower, "pinggy.link") ||
+		(strings.Contains(lineLower, ".pinggy.io") && !strings.Contains(lineLower, "dashboard")) ||
+		strings.Contains(lineLower, "connected")
 }
