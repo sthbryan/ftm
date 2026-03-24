@@ -5,7 +5,7 @@ Share your Foundry VTT world with players anywhere. No port forwarding needed.
 ## Features
 
 - **6 tunnel providers**: Cloudflared, Playit.gg, localhost.run, Serveo, Pinggy, Tunnelmole
-- **3 interfaces**: TUI, Web dashboard, Desktop app (Tauri v2)
+- **2 interfaces**: TUI, Web dashboard
 - **Auto-install**: Downloads providers automatically
 - **Drag & drop**: Reorder connections
 - **Real-time updates**: Live status changes
@@ -22,7 +22,7 @@ ftm              # TUI
 ftm --web        # Web dashboard only
 ```
 
-**TUI shortcuts:** `↑/↓` navigate, `s` start/stop, `l` logs, `c` copy URL, `w` web, `a` add, `d` delete, `q` quit
+**TUI shortcuts:** `↑/↓` navigate, `s` start/stop, `l` logs, `c` copy URL, `w` web, `o` open config, `a` add, `d` delete, `q` quit
 
 ## Interfaces
 
@@ -34,20 +34,13 @@ ftm --web        # Web dashboard only
 
 Access at `http://localhost:40500` 
 
-### Desktop App (Tauri v2)
-
-```bash
-cd desktop
-npm install
-npm run tauri build
-```
+> **Desktop App (Tauri)**: Temporarily removed from build pipeline. Use the TUI or Web dashboard instead.
 
 ## Build from Source
 
 **Requirements:**
 - Go 1.21+
-- Node.js 18+ (for Tauri desktop)
-- Rust (for Tauri desktop)
+- Bun 1.3+ (for building web frontend)
 
 ```bash
 # Clone
@@ -56,11 +49,6 @@ cd ftm
 
 # Build CLI & Web
 go build -o ftm ./cmd/ftm
-
-# Build Desktop App (optional)
-cd desktop
-npm install
-npm run tauri build
 ```
 
 ## Contributing
