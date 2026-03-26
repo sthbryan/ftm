@@ -75,11 +75,33 @@ install() {
     fi
 
     if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-        echo ""
-        echo "⚠️  Added $INSTALL_DIR to your PATH"
-        echo "   Add this line to your shell config (~/.bashrc, ~/.zshrc, etc.):"
-        echo "   export PATH=\"\$PATH:$INSTALL_DIR\""
-        echo ""
+        local shell_config=""
+        local shell_name="${SHELL##*/}"  # e.g., zsh, bash, fish
+        
+        case "$shell_name" in
+            zsh)  shell_config="$HOME/.zshrc" ;;
+            bash) shell_config="$HOME/.bashrc" ;;
+            fish) shell_config="$HOME/.config/fish/config.fish" ;;
+            *)    shell_config="$HOME/.bashrc" ;;
+        esac
+        
+        if [ "$shell_name" = "fish" ]; then
+            mkdir -p "$(dirname "$shell_config")"
+        fi
+        
+        local export_line="export PATH=\"\$PATH:$INSTALL_DIR\""
+        
+        if ! grep -qF "$INSTALL_DIR" "$shell_config" 2>/dev/null; then
+            echo "" >> "$shell_config"
+            echo "# Added by $BINARY_NAME installer" >> "$shell_config"
+            echo "$export_line" >> "$shell_config"
+            echo ""
+            echo "✓ Added $INSTALL_DIR to PATH in $shell_config"
+            echo "  Restart your terminal or run: source $shell_config"
+        else
+            echo ""
+            echo "✓ $INSTALL_DIR already in PATH"
+        fi
     fi
 
     echo "✓ Installed $BINARY_NAME $OS-$arch"
