@@ -101,15 +101,17 @@ jobs:
         run: brew install wails
 
       - name: Install Wails (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Install Wails (Windows)
         if: matrix.os == 'windows-latest'
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
       - name: Install Linux deps
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-22.04'
         run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.0-dev libgtk-3-dev
 
       - name: Build Svelte
