@@ -23,7 +23,6 @@ func NewDownloadingView() *DownloadingView {
 func (d *DownloadingView) Render(progressBarView string) string {
 	var b strings.Builder
 
-	bg := ui.ThemeDefault.Bg
 	gold := ui.ThemeDefault.Gold
 	text := ui.ThemeDefault.Text
 	textDim := ui.ThemeDefault.TextDim
@@ -31,7 +30,6 @@ func (d *DownloadingView) Render(progressBarView string) string {
 	header := lipgloss.NewStyle().
 		Foreground(gold).
 		Bold(true).
-		Background(bg).
 		Render("⬇️  Installing")
 
 	b.WriteString(header)
@@ -52,10 +50,7 @@ func (d *DownloadingView) Render(progressBarView string) string {
 		step = "Complete!"
 	}
 
-	stepStyle := lipgloss.NewStyle().
-		Foreground(text).
-		Background(bg)
-
+	stepStyle := lipgloss.NewStyle().Foreground(text)
 	b.WriteString(stepStyle.Render(step))
 	b.WriteString("\n\n")
 
@@ -64,7 +59,6 @@ func (d *DownloadingView) Render(progressBarView string) string {
 
 	progressContainer := lipgloss.NewStyle().
 		Width(barWidth).
-		Background(bg).
 		Render("[" + progressBarView + "]")
 
 	b.WriteString(strings.Repeat(" ", padding))
@@ -72,9 +66,7 @@ func (d *DownloadingView) Render(progressBarView string) string {
 	b.WriteString("\n")
 
 	if d.Total > 0 && d.Percent < 50 {
-		sizeStyle := lipgloss.NewStyle().
-			Foreground(textDim).
-			Background(bg)
+		sizeStyle := lipgloss.NewStyle().Foreground(textDim)
 		b.WriteString(sizeStyle.Render(fmt.Sprintf("%.1f MB / %.1f MB",
 			float64(d.Current)/(1024*1024),
 			float64(d.Total)/(1024*1024))))
@@ -84,7 +76,6 @@ func (d *DownloadingView) Render(progressBarView string) string {
 	b.WriteString("\n")
 	b.WriteString(lipgloss.NewStyle().
 		Foreground(textDim).
-		Background(bg).
 		Render("esc: cancel"))
 
 	return b.String()

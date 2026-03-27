@@ -50,7 +50,6 @@ func (l *ListView) Render() string {
 func (l *ListView) twoColumn() string {
 	var b strings.Builder
 
-	bg := ui.ThemeDefault.Bg
 	gold := ui.ThemeDefault.Gold
 	bronze := ui.ThemeDefault.Bronze
 	text := ui.ThemeDefault.Text
@@ -75,13 +74,11 @@ func (l *ListView) twoColumn() string {
 	leftHeader := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(text).
-		Background(bg).
 		Render("Your Connections")
 
 	rightHeader := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(text).
-		Background(bg).
 		Render("Selected Tunnel")
 
 	b.WriteString(leftHeader)
@@ -114,7 +111,7 @@ func (l *ListView) twoColumn() string {
 			rightLine = detailLines[i]
 		}
 
-		leftLine = lipgloss.NewStyle().Width(leftWidth).Background(bg).Render(leftLine)
+		leftLine = lipgloss.NewStyle().Width(leftWidth).Render(leftLine)
 
 		b.WriteString(leftLine)
 		b.WriteString(" │ ")
@@ -125,10 +122,7 @@ func (l *ListView) twoColumn() string {
 	b.WriteString("\n")
 
 	if l.Message != "" {
-		msgStyle := lipgloss.NewStyle().
-			Foreground(gold).
-			Bold(true).
-			Background(bg)
+		msgStyle := lipgloss.NewStyle().Foreground(gold).Bold(true)
 		b.WriteString(msgStyle.Render("✓ " + l.Message))
 		b.WriteString("\n")
 	}
@@ -141,7 +135,6 @@ func (l *ListView) twoColumn() string {
 func (l *ListView) singleColumn() string {
 	var b strings.Builder
 
-	bg := ui.ThemeDefault.Bg
 	gold := ui.ThemeDefault.Gold
 	textDim := ui.ThemeDefault.TextDim
 
@@ -159,9 +152,7 @@ func (l *ListView) singleColumn() string {
 	b.WriteString("\n\n")
 
 	if l.Dashboard != "" {
-		urlStyle := lipgloss.NewStyle().
-			Foreground(gold).
-			Background(bg)
+		urlStyle := lipgloss.NewStyle().Foreground(gold)
 		b.WriteString(urlStyle.Render("🌐  Dashboard: " + l.Dashboard + " (press 'w')"))
 		b.WriteString("\n\n")
 	}
@@ -170,10 +161,7 @@ func (l *ListView) singleColumn() string {
 	b.WriteString("\n")
 
 	if l.Message != "" {
-		msgStyle := lipgloss.NewStyle().
-			Foreground(gold).
-			Bold(true).
-			Background(bg)
+		msgStyle := lipgloss.NewStyle().Foreground(gold).Bold(true)
 		b.WriteString(msgStyle.Render("✓ " + l.Message))
 		b.WriteString("\n")
 	}

@@ -31,7 +31,6 @@ func (f *FormView) Render() string {
 	header := lipgloss.NewStyle().
 		Foreground(gold).
 		Bold(true).
-		Background(bg).
 		Render("➕  Add New Tunnel")
 
 	b.WriteString(header)
@@ -53,7 +52,6 @@ func (f *FormView) Render() string {
 	b.WriteString("\n\n")
 	b.WriteString(lipgloss.NewStyle().
 		Foreground(textDim).
-		Background(bg).
 		Render("tab: next • enter: submit • esc: cancel"))
 
 	return b.String()
@@ -76,9 +74,7 @@ func (f *FormView) nameField(inputWidth int, gold, bronze, text, textDim, bg lip
 	b += nameStyle.Render(f.Name)
 
 	if nameHint != "" {
-		hintStyle := lipgloss.NewStyle().
-			Foreground(bronze).
-			Background(bg)
+		hintStyle := lipgloss.NewStyle().Foreground(bronze)
 		b += " " + hintStyle.Render(nameHint)
 	}
 
@@ -104,9 +100,8 @@ func (f *FormView) providerField(inputWidth int, gold, bronze, text, textDim, bg
 	b += providerStyle.Render(providerValue)
 
 	if providerHint != "" {
-		hintStyle := lipgloss.NewStyle().
-			Foreground(bronze).
-			Background(bg)
+		hintStyle := lipgloss.NewStyle().Foreground(bronze)
+
 		b += " " + hintStyle.Render(providerHint)
 	}
 
@@ -130,9 +125,8 @@ func (f *FormView) portField(inputWidth int, gold, bronze, text, textDim, bg lip
 	b += portStyle.Render(f.Port)
 
 	if portHint != "" {
-		hintStyle := lipgloss.NewStyle().
-			Foreground(bronze).
-			Background(bg)
+		hintStyle := lipgloss.NewStyle().Foreground(bronze)
+
 		b += " " + hintStyle.Render(portHint)
 	}
 
@@ -155,17 +149,13 @@ func (f *FormView) submitButton(inputWidth int, gold, bronze, text, bg lipgloss.
 
 	placeholder := lipgloss.NewStyle().
 		Width(inputWidth).
-		Background(bg).
 		Render("")
 
 	return placeholder + buttonStyle.Render(" Submit ")
 }
 
 func (f *FormView) labelStyle(field int, gold, textDim, bg lipgloss.Color) lipgloss.Style {
-	style := lipgloss.NewStyle().
-		Width(15).
-		Foreground(textDim).
-		Background(bg)
+	style := lipgloss.NewStyle().Width(15).Foreground(textDim)
 
 	if f.Focus == field {
 		style = style.Bold(true).Foreground(gold)
@@ -178,8 +168,7 @@ func (f *FormView) inputStyle(field, width int, gold, bronze, text, textDim, bg 
 	style := lipgloss.NewStyle().
 		Width(width).
 		Padding(0, 1).
-		BorderStyle(lipgloss.RoundedBorder()).
-		Background(bg)
+		BorderStyle(lipgloss.RoundedBorder())
 
 	if f.Focus == field {
 		style = style.

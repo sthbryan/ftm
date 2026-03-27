@@ -20,7 +20,6 @@ func NewLogsView() *LogsView {
 func (l *LogsView) Render() string {
 	var b strings.Builder
 
-	bg := ui.ThemeDefault.Bg
 	gold := ui.ThemeDefault.Gold
 	bronze := ui.ThemeDefault.Bronze
 	text := ui.ThemeDefault.Text
@@ -29,17 +28,12 @@ func (l *LogsView) Render() string {
 	header := lipgloss.NewStyle().
 		Foreground(gold).
 		Bold(true).
-		Background(bg).
 		Render("📋  Tunnel Logs")
 
 	b.WriteString(header)
 	b.WriteString("\n\n")
 
-	nameStyle := lipgloss.NewStyle().
-		Foreground(text).
-		Bold(true).
-		Background(bg)
-
+	nameStyle := lipgloss.NewStyle().Foreground(text).Bold(true)
 	b.WriteString(nameStyle.Render(l.TunnelName))
 	b.WriteString("\n")
 
@@ -52,7 +46,6 @@ func (l *LogsView) Render() string {
 
 	b.WriteString(lipgloss.NewStyle().
 		Foreground(textDim).
-		Background(bg).
 		Render("esc/b: back • ↑/↓: scroll"))
 
 	return b.String()
