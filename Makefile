@@ -6,13 +6,7 @@ CMD := ./cmd/ftm
 DESKTOP_DIR := ./desktop
 
 build-web:
-	cd web-svelte && bun install && bun run build
-	rm -rf internal/web/static/*
-	cp -r web-svelte/dist/* internal/web/static/
-	touch internal/web/static/.gitkeep
-	rm -rf $(DESKTOP_DIR)/frontend/dist
-	mkdir -p $(DESKTOP_DIR)/frontend/dist
-	cp -r web-svelte/dist/* $(DESKTOP_DIR)/frontend/dist/
+	./scripts/build-web-assets.sh
 	mkdir -p $(DESKTOP_DIR)/build
 	cp $(DESKTOP_DIR)/icon.png $(DESKTOP_DIR)/build/appicon.png
 

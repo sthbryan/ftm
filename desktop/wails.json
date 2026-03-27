@@ -4,7 +4,7 @@
   "outputfilename": "ftm-desktop",
   "frontend": "../web-svelte",
   "frontend:install": "cd ../web-svelte && bun install",
-  "frontend:build": "cd ../web-svelte && bun run build && cp -r ../web-svelte/dist/* ../desktop/frontend/dist/",
+  "frontend:build": "../scripts/build-web-assets.sh",
   "author": {
     "name": "Bryan Villafuerte",
     "email": "bryamu.u@gmail.com"
