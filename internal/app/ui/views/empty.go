@@ -11,7 +11,6 @@ import (
 type EmptyState struct {
 	Height    int
 	Width     int
-	AnimTick  int
 	Dashboard string
 }
 
@@ -22,18 +21,11 @@ func NewEmptyState() *EmptyState {
 func (e *EmptyState) Render() string {
 	var b strings.Builder
 
-	icons := []string{"🌐", "🎲", "⚔️", "🛡️", "🎲"}
-	iconFrame := icons[e.AnimTick%len(icons)]
-
 	bg := ui.ThemeDefault.Bg
 	gold := ui.ThemeDefault.Gold
 	bronze := ui.ThemeDefault.Bronze
 	text := ui.ThemeDefault.Text
 	textDim := ui.ThemeDefault.TextDim
-
-	icon := lipgloss.NewStyle().
-		Foreground(gold).
-		Render(iconFrame)
 
 	title := lipgloss.NewStyle().
 		Foreground(gold).
@@ -70,7 +62,6 @@ func (e *EmptyState) Render() string {
 	}
 
 	b.WriteString(strings.Repeat("\n", paddingTop))
-	b.WriteString(ui.Center(icon, e.Width) + "\n\n")
 	b.WriteString(ui.Center(title, e.Width) + "\n\n")
 	b.WriteString(ui.Center(subtitle, e.Width) + "\n")
 	b.WriteString(ui.Center(desc, e.Width) + "\n\n")

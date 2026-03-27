@@ -31,11 +31,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tickMsg:
 		m.refreshItems()
 
-		m.AnimTick++
-		if m.AnimTick > 100 {
-			m.AnimTick = 0
-		}
-
 		if m.MessageTimer > 0 {
 			m.MessageTimer--
 			if m.MessageTimer == 0 {

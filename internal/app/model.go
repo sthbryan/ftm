@@ -118,7 +118,6 @@ type Model struct {
 	PendingTunnel       *config.TunnelConfig
 
 	ProgressBar progress.Model
-	AnimTick    int
 }
 
 type FormData struct {

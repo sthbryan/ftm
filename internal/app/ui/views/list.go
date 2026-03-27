@@ -25,7 +25,6 @@ type ListView struct {
 	Items          []TunnelViewData
 	Cursor         int
 	Message        string
-	AnimTick       int
 	Dashboard      string
 	TwoColumnLimit int
 }

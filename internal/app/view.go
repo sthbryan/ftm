@@ -35,7 +35,6 @@ func (m *Model) viewList() string {
 	view.Items = m.collectTunnelData()
 	view.Cursor = m.Cursor
 	view.Message = m.Message
-	view.AnimTick = m.AnimTick
 	view.Dashboard = m.App.WebServer.URL()
 	view.TwoColumnLimit = TwoColumnThreshold
 
@@ -100,7 +99,6 @@ func (m *Model) viewEmptyState() string {
 	view := views.NewEmptyState()
 	view.Height = m.Height
 	view.Width = m.Width
-	view.AnimTick = m.AnimTick
 	view.Dashboard = m.App.WebServer.URL()
 
 	return view.Render()
