@@ -21,7 +21,6 @@ func NewEmptyState() *EmptyState {
 func (e *EmptyState) Render() string {
 	var b strings.Builder
 
-	bg := ui.ThemeDefault.Bg
 	gold := ui.ThemeDefault.Gold
 	bronze := ui.ThemeDefault.Bronze
 	text := ui.ThemeDefault.Text
@@ -42,7 +41,6 @@ func (e *EmptyState) Render() string {
 
 	cta := lipgloss.NewStyle().
 		Background(gold).
-		Foreground(bg).
 		Bold(true).
 		Padding(0, 2).
 		Render("[ Create First Tunnel ]")

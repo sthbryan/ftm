@@ -27,13 +27,11 @@ func (d *DetailPanel) Render() string {
 	var b strings.Builder
 
 	b.WriteString(lipgloss.NewStyle().
-		Background(ui.ThemeDefault.Bg).
 		Render(""))
 
 	nameStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(ui.ThemeDefault.Gold).
-		Background(ui.ThemeDefault.Bg).
 		Width(d.Width)
 	b.WriteString(nameStyle.Render(d.Name))
 	b.WriteString("\n\n")
@@ -63,7 +61,6 @@ func (d *DetailPanel) Render() string {
 		urlBox := lipgloss.NewStyle().
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(ui.ThemeDefault.Gold).
-			Background(ui.ThemeDefault.Bg).
 			Foreground(ui.ThemeDefault.Text).
 			Padding(0, 1).
 			Width(d.Width - 2).
@@ -73,7 +70,6 @@ func (d *DetailPanel) Render() string {
 
 		copyHint := lipgloss.NewStyle().
 			Foreground(ui.ThemeDefault.Bronze).
-			Background(ui.ThemeDefault.Bg).
 			Render("Press 'c' to copy")
 		b.WriteString(copyHint)
 		b.WriteString("\n\n")
@@ -85,7 +81,6 @@ func (d *DetailPanel) Render() string {
 
 		errorBox := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#ff6b6b")).
-			Background(ui.ThemeDefault.Bg).
 			Width(d.Width - 2).
 			Render(d.ErrorMsg)
 		b.WriteString(errorBox)
@@ -106,7 +101,6 @@ func (d *DetailPanel) actions() string {
 
 	buttonStyle := lipgloss.NewStyle().
 		Background(ui.ThemeDefault.Bronze).
-		Foreground(ui.ThemeDefault.Bg).
 		Padding(0, 2)
 
 	if isActive {

@@ -28,6 +28,5 @@ func (h *HelpBar) Render() string {
 
 	return lipgloss.NewStyle().
 		Foreground(ui.ThemeDefault.TextDim).
-		Background(ui.ThemeDefault.Bg).
 		Render(content)
 }

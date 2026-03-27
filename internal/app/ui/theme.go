@@ -3,17 +3,16 @@ package ui
 import "github.com/charmbracelet/lipgloss"
 
 type Theme struct {
-	Gold        lipgloss.Color
-	Bronze      lipgloss.Color
-	Text        lipgloss.Color
-	TextDim     lipgloss.Color
-	Bg          lipgloss.Color
-	Online      lipgloss.Color
-	Offline     lipgloss.Color
-	Connecting  lipgloss.Color
-	Error       lipgloss.Color
-	Stopped     lipgloss.Color
-	Success     lipgloss.Color
+	Gold       lipgloss.Color
+	Bronze     lipgloss.Color
+	Text       lipgloss.Color
+	TextDim    lipgloss.Color
+	Online     lipgloss.Color
+	Offline    lipgloss.Color
+	Connecting lipgloss.Color
+	Error      lipgloss.Color
+	Stopped    lipgloss.Color
+	Success    lipgloss.Color
 }
 
 func DefaultTheme() *Theme {
@@ -22,7 +21,6 @@ func DefaultTheme() *Theme {
 		Bronze:     lipgloss.Color("#8b7355"),
 		Text:       lipgloss.Color("#ffffff"),
 		TextDim:    lipgloss.Color("#9a9590"),
-		Bg:         lipgloss.Color("#1a1814"),
 		Online:     lipgloss.Color("#1e3a2f"),
 		Offline:    lipgloss.Color("#2a2824"),
 		Connecting: lipgloss.Color("#3a3020"),
