@@ -1,6 +1,6 @@
 .PHONY: build run clean test install release build-web wails wails-dev desktop desktop-package desktop-all desktop-all-full desktop-darwin-universal desktop-darwin-arm64 desktop-darwin-amd64 desktop-linux-amd64 desktop-windows-amd64 dev fmt vet
 
-VERSION := 0.6.0f
+VERSION := 0.7.0
 BINARY := ftm
 CMD := ./cmd/ftm
 DESKTOP_DIR := ./desktop
