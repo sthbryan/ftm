@@ -52,7 +52,7 @@ func main() {
 		Width:  1200,
 		Height: 800,
 		AssetServer: &assetserver.Options{
-			Assets:  nil,
+			Assets:  assets,
 			Handler: proxyHandler,
 		},
 		Mac: &mac.Options{
