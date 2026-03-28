@@ -225,7 +225,6 @@ func (s *Server) broadcast(msg string) {
 	}
 }
 
-// BroadcastTunnelUpdate sends a tunnel update to all connected SSE clients
 func (s *Server) BroadcastTunnelUpdate(t config.TunnelConfig) {
 	state := "stopped"
 	var publicURL, errorMessage string
@@ -545,9 +544,9 @@ func (s *Server) startTunnel(w http.ResponseWriter, id string) {
 		go func() {
 			if err := s.manager.InstallProvider(tunnel.Provider); err != nil {
 				update := map[string]interface{}{
-					"id":            tunnel.ID,
-					"state":         "error",
-					"errorMessage":  "Installation failed: " + err.Error(),
+					"id":           tunnel.ID,
+					"state":        "error",
+					"errorMessage": "Installation failed: " + err.Error(),
 				}
 				data, _ := json.Marshal(update)
 				s.broadcast(string(data))
@@ -556,9 +555,9 @@ func (s *Server) startTunnel(w http.ResponseWriter, id string) {
 
 			if err := s.manager.Start(*tunnel, func(status config.TunnelStatus) {}); err != nil {
 				update := map[string]interface{}{
-					"id":            tunnel.ID,
-					"state":         "error",
-					"errorMessage":  err.Error(),
+					"id":           tunnel.ID,
+					"state":        "error",
+					"errorMessage": err.Error(),
 				}
 				data, _ := json.Marshal(update)
 				s.broadcast(string(data))
@@ -611,13 +610,13 @@ func (s *Server) writeTunnelJSON(w http.ResponseWriter, t config.TunnelConfig) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"id":            t.ID,
-		"name":          t.Name,
-		"provider":      string(t.Provider),
-		"port":          t.LocalPort,
-		"state":         state,
-		"publicUrl":     publicURL,
-		"errorMessage":  errorMessage,
+		"id":           t.ID,
+		"name":         t.Name,
+		"provider":     string(t.Provider),
+		"port":         t.LocalPort,
+		"state":        state,
+		"publicUrl":    publicURL,
+		"errorMessage": errorMessage,
 	})
 }
 
@@ -722,21 +721,18 @@ func (s *Server) handleReorder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Expect request body to contain a JSON array of tunnel IDs in desired order
 	var newOrder []string
 	if err := json.NewDecoder(r.Body).Decode(&newOrder); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// Build lookup of existing tunnels by ID
 	existing := s.config.Tunnels
 	tunnelByID := make(map[string]config.TunnelConfig, len(existing))
 	for i := range existing {
 		tunnelByID[existing[i].ID] = existing[i]
 	}
 
-	// Rebuild tunnel slice in requested order
 	reordered := make([]config.TunnelConfig, 0, len(existing))
 	seen := make(map[string]bool, len(existing))
 	for _, id := range newOrder {
@@ -746,7 +742,6 @@ func (s *Server) handleReorder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Append any tunnels not explicitly ordered, preserving relative order
 	for i := range existing {
 		if !seen[existing[i].ID] {
 			reordered = append(reordered, existing[i])

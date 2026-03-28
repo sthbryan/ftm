@@ -316,7 +316,6 @@ func (m *Model) submitForm() {
 				m.App.Config.Tunnels[i].Provider = config.Provider(m.FormValues.Provider)
 				m.App.Config.Tunnels[i].LocalPort = parsePort(m.FormValues.Port)
 
-				// Broadcast SSE update to web clients
 				if m.App.WebServer != nil {
 					m.App.WebServer.BroadcastTunnelUpdate(m.App.Config.Tunnels[i])
 				}

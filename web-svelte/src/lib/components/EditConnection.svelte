@@ -26,7 +26,7 @@
   const selectedProvider = $derived(providerOptions.find(p => p.value === formData.provider));
 
   $effect(() => {
-    // depend on tunnels list so this re-runs when tunnels are loaded/updated
+    
     const tunnels = store.tunnels;
 
     if (!tunnelId) {
@@ -35,12 +35,12 @@
 
     const tunnel = store.getById(tunnelId);
     if (!tunnel) {
-      // tunnel data not yet available; wait for tunnels to update
+      
       return;
     }
 
     if (currentTunnelId === tunnelId) {
-      // already initialized formData for this tunnel; avoid overwriting user edits
+      
       return;
     }
 
