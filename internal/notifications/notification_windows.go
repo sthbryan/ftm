@@ -24,8 +24,8 @@ func (n *windowsNotifier) Notify(title, body string) error {
 $template = '<toast><visual><binding template="ToastText02"><text id="1">%s</text><text id="2">%s</text></binding></visual></toast>'
 $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
 $xml.LoadXml($template)
-[Windows.UI.Notifications.ToastNotification]::new($xml)
-[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('ftm').Show($xml)
+$toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('ftm').Show($toast)
 `, escapePowerShell(title), escapePowerShell(body))
 	return exec.Command("powershell", "-Command", script).Run()
 }
