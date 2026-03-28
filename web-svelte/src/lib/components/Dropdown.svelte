@@ -1,65 +1,165 @@
-<script>
-  import { ChevronDown } from 'lucide-svelte';
+<script lang="ts">
+  import { cn } from "$lib/utils/cn";
+  import { ChevronDown } from "lucide-svelte";
+  import { animate, spring } from "motion";
+  import type { DropdownOption } from "$lib/types";
+  import type { Snippet } from "svelte";
 
-  let { 
-    options = [], 
-    onSelect, 
-    align = 'right',
-    ariaLabel = 'Options',
-    class: className = '',
-    id = '',
-    label = ''
-  } = $props();
+  interface DropdownProps {
+    options?: DropdownOption[];
+    onSelect?: (option: DropdownOption) => void;
+    align?: "left" | "right" | "top" | "center";
+    ariaLabel?: string;
+    label?: string;
+    class?: string;
+    id?: string;
+    children?: Snippet;
+  };
+
+  const POSITION_MAP: Record<NonNullable<DropdownProps["align"]>, string> = {
+    left: "left-auto right-0",
+    right: "right-auto left-0",
+    top: "bottom-full mb-1.5 left-0 right-auto",
+    center: "left-1/2 -translate-x-1/2",
+  };
+
+  let {
+    options = [],
+    onSelect,
+    align = "left",
+    ariaLabel = "Options",
+    label = "Options",
+    class: className = "",
+    id = "",
+    children,
+  }: DropdownProps = $props();
 
   let isOpen = $state(false);
+  let isAnimating = $state(false);
+  let menuEl: HTMLDivElement | undefined = $state();
+
+  const isVisible = $derived(isOpen || isAnimating);
+  const menuPosition = $derived.by(() => {
+    const vert = align === "top" ? "" : "top-full mt-1.5";
+    return `${POSITION_MAP[align]} ${vert}`;
+  });
+
+  function open() {
+    if (isOpen) return;
+    isOpen = true;
+    isAnimating = true;
+    requestAnimationFrame(() => {
+      if (!menuEl) return;
+      // @ts-ignore
+      animate(menuEl, { opacity: 1, scale: 1, y: 0 }, spring()).finished.then(
+        () => {
+          isAnimating = false;
+        },
+      );
+    });
+  }
+
+  function close() {
+    if (!isOpen || !menuEl) {
+      isOpen = false;
+      isAnimating = false;
+      return;
+    }
+    isOpen = false;
+    isAnimating = true;
+    // @ts-ignore
+    animate(menuEl, { opacity: 0, scale: 1, y: -4 }, spring()).finished.then(
+      () => {
+        isAnimating = false;
+      },
+    );
+  }
 
   function toggle() {
-    isOpen = !isOpen;
+    isOpen ? close() : open();
   }
 
-  function select(option) {
-    isOpen = false;
-    onSelect?.(option);
-  }
-
-  function handleClickOutside(e) {
-    if (!e.target.closest('.dropdown')) {
-      isOpen = false;
-    }
+  function handleOutsideClick(e: MouseEvent) {
+    if (!(e.target as HTMLElement).closest(".dropdown-container")) close();
   }
 
   $effect(() => {
-    if (isOpen) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
+    if (!isOpen) return;
+    document.addEventListener("click", handleOutsideClick);
+    document.addEventListener("keydown", handleKeydown);
+    return () => {
+      document.removeEventListener("click", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeydown);
+    };
   });
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape") close();
+  }
 </script>
 
-<div class="dropdown {className}">
-  <button type="button" class="dropdown-trigger" id={id || undefined} onclick={toggle} aria-label={ariaLabel}>
-    <span class="trigger-text">
-      {label || 'Options'}
-    </span>
-    <ChevronDown class="chevron {isOpen ? 'open' : ''}" size={16} />
+<div class="dropdown-container h-fit relative {className}">
+  <button
+    type="button"
+    {id}
+    onclick={() => toggle()}
+    aria-label={ariaLabel}
+    aria-expanded={isOpen}
+    aria-haspopup="true"
+    class={cn(
+      "flex items-center gap-1.5 px-3 py-2 text-xs h-9 rounded-lg border min-h-9 cursor-pointer",
+      "bg-card border-border text-text hover:bg-hover",
+    )}
+  >
+    {#if children}
+      {@render children()}
+    {:else}
+      <span class="flex-1 text-left text-sm">{label}</span>
+      <ChevronDown
+        size={16}
+        class={cn("transition-transform duration-200", isOpen && "rotate-180")}
+      />
+    {/if}
   </button>
 
-  {#if isOpen}
-    <div class="dropdown-menu" class:align-left={align === 'left'}>
+  {#if isVisible}
+    <div
+      bind:this={menuEl}
+      id={id ? `${id}-menu` : undefined}
+      role="menu"
+      aria-orientation="vertical"
+      style="opacity: 0; scale: 0.95; transform: translateY(-4px);"
+      class={cn(
+        "absolute min-w-[150px] max-h-[300px] rounded-lg border p-1 z-50 overflow-y-auto cursor-default",
+        menuPosition,
+        "bg-card border-border",
+      )}
+    >
       {#each options as option}
-        {#if option.label === 'separator'}
-          <div class="divider"></div>
+        {#if option.label === "separator"}
+          <div class="h-px my-1 mx-2 bg-border"></div>
         {:else}
-          <button 
-            type="button" 
-            class="dropdown-item"
-            class:disabled={option.disabled}
-            class:danger={option.danger}
+          <button
+            type="button"
+            role="menuitem"
             disabled={option.disabled}
-            onclick={() => select(option)}
+            onclick={() => {
+              close();
+              onSelect?.(option);
+            }}
+            class={cn(
+              "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-lg text-left cursor-pointer",
+              "text-text bg-transparent border-none hover:bg-hover",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              option.danger && "text-red-500 hover:bg-red-500/10",
+            )}
           >
             {#if option.icon}
-              <option.icon size={16} />
+              {@const IconComponent =
+                option.icon as import("svelte").Component<{
+                  size?: number;
+                }>}
+              <IconComponent size={16} />
             {/if}
             <span>{option.label}</span>
           </button>
@@ -68,116 +168,3 @@
     </div>
   {/if}
 </div>
-
-<style>
-  .dropdown {
-    position: relative;
-    display: flex;
-  }
-
-  .dropdown-trigger {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    font-size: 13px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background: var(--card-bg);
-    color: var(--text-color);
-    cursor: pointer;
-    transition: all 0.15s;
-    flex: 1;
-    min-height: 36px;
-    box-sizing: border-box;
-  }
-
-  .dropdown-trigger:hover {
-    background: var(--hover-bg);
-  }
-
-  .trigger-text {
-    font-size: 13px;
-    text-align: left;
-    flex: 1;
-  }
-
-  :global(.chevron) {
-    transition: transform 0.2s;
-  }
-
-  :global(.chevron.open) {
-    transform: rotate(180deg);
-  }
-
-  .dropdown-menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 5px);
-    min-width: 150px;
-    max-height: 300px;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-    padding: 4px;
-    z-index: 100;
-    overflow-y: auto;
-    animation: fadeIn 0.1s ease;
-  }
-
-  .dropdown-menu.align-left {
-    right: auto;
-    left: 0;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 8px 12px;
-    font-size: 13px;
-    border: none;
-    border-radius: 8px;
-    background: none;
-    color: var(--text-color);
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.1s;
-  }
-
-  .dropdown-item:hover:not(:disabled) {
-    background: var(--hover-bg);
-  }
-
-  .dropdown-item.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .dropdown-item.danger {
-    color: var(--btn-danger-bg, #ef4444);
-  }
-
-  .dropdown-item.danger:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--btn-danger-bg, #ef4444) 10%, transparent);
-  }
-
-  .divider {
-    height: 1px;
-    background: var(--border-color);
-    margin: 4px 8px;
-  }
-</style>
