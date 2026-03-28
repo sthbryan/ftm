@@ -20,10 +20,10 @@ func (h *HelpBar) Render() string {
 		"a add",
 		"e edit",
 		"d delete",
+		"s settings",
 		"l logs",
 		"w web",
-		"o open config",
-		"? help",
+		"o config",
 		"q quit",
 	}
 
