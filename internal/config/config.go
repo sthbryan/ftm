@@ -17,12 +17,28 @@ type Config struct {
 	Version int            `yaml:"version"`
 	Tunnels []TunnelConfig `yaml:"tunnels"`
 	WebPort int            `yaml:"web_port,omitempty"`
+
+	NotificationsEnabled bool `yaml:"notifications_enabled"`
+	NotificationSound    bool `yaml:"notification_sound"`
+
+	ExpirationThresholds      []int          `yaml:"expiration_thresholds"`
+	ProviderExpirationMinutes map[string]int `yaml:"provider_expiration_minutes"`
 }
 
 func DefaultConfig() *Config {
 	return &Config{
-		Version: 1,
-		Tunnels: []TunnelConfig{},
+		Version:              1,
+		Tunnels:              []TunnelConfig{},
+		NotificationsEnabled: false,
+		NotificationSound:    true,
+		ExpirationThresholds: []int{30, 15, 10, 5, 1},
+		ProviderExpirationMinutes: map[string]int{
+			"pinggy":       60,
+			"serveo":       0,
+			"cloudflared":  0,
+			"tunnelmole":   0,
+			"localhostrun": 0,
+		},
 	}
 }
 
