@@ -9,7 +9,7 @@
   const toast = useToast();
   const providerStore = useProviders();
 
-  let formData = $state({ name: '', provider: 'cloudflared', localPort: 30000, autoStart: false });
+  let formData = $state({ name: '', provider: 'cloudflared', localPort: 30000});
 
   const providerOptions = $derived(providerStore.providers.map(p => ({
     label: p.name,
@@ -27,15 +27,11 @@
     formData.provider = option.value;
   }
 
-  function toggleAutoStart() {
-    formData.autoStart = !formData.autoStart;
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     const name = formData.name;
     await store.create({ ...formData });
-    formData = { name: '', provider: 'cloudflared', localPort: formData.localPort, autoStart: false };
+    formData = { name: '', provider: 'cloudflared', localPort: formData.localPort };
     toast.success(`Connection "${name}" created`);
   }
 </script>
