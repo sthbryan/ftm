@@ -15,10 +15,11 @@
   let loadingLogs = $state(false);
   let justStarted = $state(false);
   let logStream = $state(null);
+  let hasStartedOnce = $state(false);
   
   $effect(() => {
-    const currentStatus = tunnel.state;
-    if (currentStatus === 'online') {
+    if (tunnel.state === 'online' && !hasStartedOnce) {
+      hasStartedOnce = true;
       justStarted = true;
       setTimeout(() => justStarted = false, 600);
     }
@@ -41,6 +42,8 @@
     timeout: { class: 'error', text: 'Timeout' },
     error: { class: 'error', text: 'Error' }
   };
+
+  const statusInfo = $derived(statusMap[tunnel.state] || statusMap.error);
   
   const isRunning = $derived(
     tunnel.state === 'online' || 
@@ -54,13 +57,7 @@
     tunnel.state === 'installing' || tunnel.state === 'downloading'
   );
   
-  function getStatusClass() {
-    return statusMap[tunnel.state]?.class || 'stopped';
-  }
-  
-  function getStatusText() {
-    return statusMap[tunnel.state]?.text || 'Stopped';
-  }
+
   
   function copyUrl(url) {
     navigator.clipboard.writeText(url);
@@ -122,19 +119,13 @@
     { label: 'Delete', action: 'delete', icon: Trash2, danger: true }
   ]);
   
-  function getInstallPercent() {
-    if (!installProgress) return 0;
-    return installProgress.percent || 0;
-  }
-  
-  function getInstallStep() {
-    if (!installProgress) return 'Installing...';
-    return installProgress.step || 'Installing...';
-  }
+  const installPercent = $derived(installProgress?.percent || 0);
+  const installStep = $derived(installProgress?.step || 'Installing...');
 </script>
 
 <div 
-  class="connection-item {getStatusClass()}" 
+  class="connection-item {statusInfo.class}" 
+  class:animate={!hasStartedOnce}
   style="--stagger-delay: {index * 50}ms; z-index: {zIndex}"
 >
   <div class="connection-content">
@@ -142,18 +133,18 @@
       <div class="connection-info">
         <div class="connection-name">{tunnel.name}</div>
         <div class="connection-meta">{providerNames[tunnel.provider] || tunnel.provider} — Port {tunnel.port}</div>
-        <div class="connection-status status-{getStatusClass()}" class:just-started={justStarted}>
+        <div class="connection-status status-{statusInfo.class}" class:just-started={justStarted}>
           <span class="status-dot"></span>
-          <span class="status-text">{getStatusText()}</span>
-          {#if tunnel.status === 'installing' && installProgress}
-            <span class="install-percent">{getInstallPercent()}%</span>
+          <span class="status-text">{statusInfo.text}</span>
+          {#if tunnel.state === 'installing' && installProgress}
+            <span class="install-percent">{installPercent}%</span>
           {/if}
         </div>
-        {#if tunnel.status === 'installing' && installProgress}
+        {#if tunnel.state === 'installing' && installProgress}
           <div class="install-bar">
-            <div class="install-progress" style="width: {getInstallPercent()}%"></div>
+            <div class="install-progress" style="width: {installPercent}%"></div>
           </div>
-          <div class="install-step">{getInstallStep()}</div>
+          <div class="install-step">{installStep}</div>
         {/if}
       </div>
       <div class="connection-actions">
@@ -209,6 +200,9 @@
     transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
     opacity: 0;
     transform: translateY(20px);
+  }
+
+  .connection-item.animate {
     animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     animation-delay: var(--stagger-delay, 0ms);
   }
