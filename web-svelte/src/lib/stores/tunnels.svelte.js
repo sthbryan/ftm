@@ -8,8 +8,6 @@ let error = $state(null);
 let socket = $state(null);
 let installProgress = $state({});
 
-let messageQueue = [];
-let processTimeout = null;
 let previousStates = {};
 
 const notifications = useNotifications();
@@ -17,73 +15,52 @@ const expirationMonitor = useExpirationMonitor();
 
 const tunnels = $derived.by(() => Object.values(tunnelsById));
 
-function queueMessage(msg) {
-  messageQueue.push(msg);
-  if (!processTimeout) {
-    processTimeout = setTimeout(processQueue, 100);
+function processStateMessage(msg) {
+  if (msg.type === 'install') {
+    installProgress = { ...installProgress, [msg.provider]: msg };
+    return;
   }
-}
 
-function processQueue() {
-  processTimeout = null;
-  if (messageQueue.length === 0) return;
+  if (!msg.id) return;
 
-  const updates = {};
-  const stateChanges = [];
+  const tunnel = tunnelsById[msg.id];
+  if (!tunnel) return;
 
-  messageQueue.forEach(msg => {
-    if (msg.type === 'install') {
-      installProgress = { ...installProgress, [msg.provider]: msg };
-      return;
+  const newState = msg.state ?? tunnel.state;
+  const newUrl = msg.publicUrl ?? tunnel.publicUrl ?? '';
+  const newError = msg.errorMessage ?? tunnel.errorMessage ?? '';
+
+  if (tunnel.state === newState && tunnel.publicUrl === newUrl && tunnel.errorMessage === newError) {
+    return;
+  }
+
+  const updated = { ...tunnel, state: newState, publicUrl: newUrl, errorMessage: newError };
+  if (msg.name !== undefined) updated.name = msg.name;
+  if (msg.provider !== undefined) updated.provider = msg.provider;
+  if (msg.port !== undefined) updated.port = msg.port;
+  if (msg.expiresAt !== undefined) updated.expiresAt = msg.expiresAt;
+
+  tunnelsById = { ...tunnelsById, [msg.id]: updated };
+
+  const prevState = previousStates[msg.id] ?? {};
+  if (prevState.state !== newState || prevState.publicUrl !== newUrl || prevState.errorMessage !== newError) {
+    previousStates[msg.id] = { state: newState, publicUrl: newUrl, errorMessage: newError };
+
+    if (newState === 'online') {
+      notifications.notifyOnline(updated.name, updated.publicUrl);
+      if (updated.expiresAt) expirationMonitor.start(updated);
+      const { [updated.provider]: _, ...rest } = installProgress;
+      installProgress = rest;
+    } else if (newState === 'stopped') {
+      expirationMonitor.stop(msg.id);
+      notifications.notify('Tunnel Stopped', `${updated.name} has been stopped`, 'info');
+    } else if (newState === 'error') {
+      notifications.notifyError(updated.name, updated.errorMessage);
+    } else if (newState === 'timeout') {
+      notifications.notify('Timeout', `${updated.name} could not connect`, 'error');
+    } else if (newState === 'installing') {
+      notifications.notify('Installing', `Installing tunnel for ${updated.provider}...`, 'info');
     }
-
-    if (!msg.id) return;
-
-    const tunnel = tunnelsById[msg.id];
-    if (!tunnel) return;
-
-    const newState = msg.state ?? tunnel.state;
-    const newUrl = msg.publicUrl ?? tunnel.publicUrl;
-    const newError = msg.errorMessage ?? tunnel.errorMessage;
-
-    if (tunnel.state !== newState || tunnel.publicUrl !== newUrl || tunnel.errorMessage !== newError) {
-      const updated = { ...tunnel, state: newState, publicUrl: newUrl, errorMessage: newError };
-      if (msg.name !== undefined) updated.name = msg.name;
-      if (msg.provider !== undefined) updated.provider = msg.provider;
-      if (msg.port !== undefined) updated.port = msg.port;
-      if (msg.expiresAt !== undefined) updated.expiresAt = msg.expiresAt;
-      updates[msg.id] = updated;
-
-      const prevState = previousStates[msg.id] ?? {};
-      if (prevState.state !== newState || prevState.publicUrl !== newUrl || prevState.errorMessage !== newError) {
-        stateChanges.push({ id: msg.id, tunnel: updated, oldState: prevState.state, newState });
-      }
-      previousStates[msg.id] = { state: newState, publicUrl: newUrl, errorMessage: newError };
-    }
-  });
-
-  messageQueue = [];
-
-  if (Object.keys(updates).length > 0) {
-    tunnelsById = { ...tunnelsById, ...updates };
-
-    stateChanges.forEach(({ id, tunnel, oldState, newState }) => {
-      if (newState === 'online') {
-        notifications.notifyOnline(tunnel.name, tunnel.publicUrl);
-        if (tunnel.expiresAt) expirationMonitor.start(tunnel);
-        const { [tunnel.provider]: _, ...rest } = installProgress;
-        installProgress = rest;
-      } else if (newState === 'stopped') {
-        expirationMonitor.stop(id);
-        notifications.notify('Tunnel Stopped', `${tunnel.name} has been stopped`, 'info');
-      } else if (newState === 'error') {
-        notifications.notifyError(tunnel.name, tunnel.errorMessage);
-      } else if (newState === 'timeout') {
-        notifications.notify('Timeout', `${tunnel.name} could not connect`, 'error');
-      } else if (newState === 'installing') {
-        notifications.notify('Installing', `Installing tunnel for ${tunnel.provider}...`, 'info');
-      }
-    });
   }
 }
 
@@ -121,7 +98,8 @@ function connect() {
 
   ws.onmessage = (e) => {
     try {
-      queueMessage(JSON.parse(e.data));
+      const msg = JSON.parse(e.data);
+      processStateMessage(msg);
     } catch (err) {
       console.error('[WS] Parse error:', err);
     }

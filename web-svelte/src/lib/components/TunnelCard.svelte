@@ -15,15 +15,18 @@
   let loadingLogs = $state(false);
   let justStarted = $state(false);
   let logStream = $state(null);
-  let hasStartedOnce = $state(false);
+  let shouldAnimate = $state(true);
   
   $effect(() => {
-    if (tunnel.state === 'online' && !hasStartedOnce) {
-      hasStartedOnce = true;
+    if (tunnel.state === 'online' && shouldAnimate) {
       justStarted = true;
       setTimeout(() => justStarted = false, 600);
     }
   });
+  
+  function onSlideInEnd() {
+    shouldAnimate = false;
+  }
   
   const providerNames = {
     cloudflared: 'Cloudflared',
@@ -34,11 +37,14 @@
   };
   
   const statusMap = {
-    online: { class: 'running', text: 'Running' },
+    online: { class:  'running', text: 'Online' },
     starting: { class: 'starting', text: 'Starting...' },
     connecting: { class: 'starting', text: 'Connecting...' },
     installing: { class: 'installing', text: 'Installing...' },
-    downloading: { class: 'installing', text: 'Installing...' },
+    downloading: { class: 'installing', text: 'Downloading...' },
+    stopping: { class: 'starting', text: 'Stopping...' },
+    stopped: { class: 'stopped', text: 'Stopped' },
+    offline: { class: 'stopped', text: 'Offline' },
     timeout: { class: 'error', text: 'Timeout' },
     error: { class: 'error', text: 'Error' }
   };
@@ -125,8 +131,9 @@
 
 <div 
   class="connection-item {statusInfo.class}" 
-  class:animate={!hasStartedOnce}
+  class:animate={shouldAnimate}
   style="--stagger-delay: {index * 50}ms; z-index: {zIndex}"
+  onanimationend={onSlideInEnd}
 >
   <div class="connection-content">
     <div class="connection-main">
@@ -198,11 +205,11 @@
     border: 1px solid var(--border-color, #e7e5e4);
     border-radius: 12px;
     transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
-    opacity: 0;
-    transform: translateY(20px);
   }
 
   .connection-item.animate {
+    opacity: 0;
+    transform: translateY(20px);
     animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     animation-delay: var(--stagger-delay, 0ms);
   }
@@ -625,7 +632,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .connection-item,
+    .connection-item.animate,
     .btn,
     .connection-status,
     .connection-url-row,
@@ -633,7 +640,7 @@
       animation: none;
       transition: none;
     }
-    .connection-item {
+    .connection-item.animate {
       opacity: 1;
       transform: none;
     }
