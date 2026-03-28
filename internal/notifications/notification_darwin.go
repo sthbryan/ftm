@@ -7,21 +7,30 @@ import (
 	"os/exec"
 )
 
-type darwinNotifier struct{}
+type darwinNotifier struct {
+	useAlerter bool
+}
 
 func newDarwinNotifier() Notifier {
-	cmd := exec.Command("which", "osascript")
-	if err := cmd.Run(); err != nil {
+	if err := exec.Command("which", "alerter").Run(); err == nil {
+		return &darwinNotifier{useAlerter: true}
+	}
+	if err := exec.Command("which", "osascript").Run(); err != nil {
 		return nil
 	}
-	return &darwinNotifier{}
+	return &darwinNotifier{useAlerter: false}
 }
 
-func (n *darwinNotifier) IsAvailable() bool {
-	return true
-}
+func (n *darwinNotifier) IsAvailable() bool { return true }
 
 func (n *darwinNotifier) Notify(title, body string) error {
+	if n.useAlerter {
+		return exec.Command("alerter",
+			"-title", title,
+			"-message", body,
+		).Run()
+	}
+
 	script := fmt.Sprintf(`display notification "%s" with title "%s"`, escapeAppleScript(body), escapeAppleScript(title))
 	return exec.Command("osascript", "-e", script).Run()
 }
@@ -46,8 +55,7 @@ type darwinSoundPlayer struct {
 }
 
 func newDarwinSoundPlayer() SoundPlayer {
-	cmd := exec.Command("which", "afplay")
-	if err := cmd.Run(); err != nil {
+	if err := exec.Command("which", "afplay").Run(); err != nil {
 		return nil
 	}
 	return &darwinSoundPlayer{
@@ -62,9 +70,7 @@ func newDarwinSoundPlayer() SoundPlayer {
 	}
 }
 
-func (s *darwinSoundPlayer) IsAvailable() bool {
-	return true
-}
+func (s *darwinSoundPlayer) IsAvailable() bool { return true }
 
 func (s *darwinSoundPlayer) PlaySound(t SoundType) error {
 	path, ok := s.sounds[t]
