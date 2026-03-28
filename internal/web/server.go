@@ -225,6 +225,30 @@ func (s *Server) broadcast(msg string) {
 	}
 }
 
+// BroadcastTunnelUpdate sends a tunnel update to all connected SSE clients
+func (s *Server) BroadcastTunnelUpdate(t config.TunnelConfig) {
+	state := "stopped"
+	var publicURL, errorMessage string
+
+	if status, ok := s.manager.GetStatus(t.ID); ok {
+		state = string(status.State)
+		publicURL = status.PublicURL
+		errorMessage = status.ErrorMessage
+	}
+
+	update := map[string]interface{}{
+		"id":           t.ID,
+		"name":         t.Name,
+		"provider":     string(t.Provider),
+		"port":         t.LocalPort,
+		"state":        state,
+		"publicUrl":    publicURL,
+		"errorMessage": errorMessage,
+	}
+	data, _ := json.Marshal(update)
+	s.broadcast(string(data))
+}
+
 func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
