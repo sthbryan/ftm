@@ -1,11 +1,9 @@
 package process
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"strings"
 	"sync"
 	"time"
 
@@ -36,62 +34,6 @@ func (m *Manager) SetProgressChannel(ch chan providers.DownloadProgress) {
 	}
 }
 
-type ManagedProcess struct {
-	Config    config.TunnelConfig
-	Provider  providers.Provider
-	Process   *providers.Process
-	LogBuffer *LogBuffer
-	Status    config.TunnelStatus
-	PublicURL string
-	OnUpdate  func(config.TunnelStatus)
-	LogStream chan string
-}
-
-type LogBuffer struct {
-	mu        sync.RWMutex
-	lines     []string
-	maxLen    int
-	OnNewLine func(string)
-}
-
-func NewLogBuffer() *LogBuffer {
-	return &LogBuffer{
-		lines:  make([]string, 0, 100),
-		maxLen: 500,
-	}
-}
-
-func (lb *LogBuffer) Write(p []byte) (n int, err error) {
-	lb.mu.Lock()
-	defer lb.mu.Unlock()
-
-	lines := strings.Split(string(p), "\n")
-	for _, line := range lines {
-		if line = strings.TrimSpace(line); line != "" {
-			lb.lines = append(lb.lines, line)
-
-			if lb.OnNewLine != nil {
-				go lb.OnNewLine(line)
-			}
-		}
-	}
-
-	if len(lb.lines) > lb.maxLen {
-		lb.lines = lb.lines[len(lb.lines)-lb.maxLen:]
-	}
-
-	return len(p), nil
-}
-
-func (lb *LogBuffer) GetLines() []string {
-	lb.mu.RLock()
-	defer lb.mu.RUnlock()
-
-	result := make([]string, len(lb.lines))
-	copy(result, lb.lines)
-	return result
-}
-
 func NewManager() *Manager {
 	return &Manager{
 		processes: make(map[string]*ManagedProcess),
@@ -100,7 +42,7 @@ func NewManager() *Manager {
 			config.ProviderTunnelmole:   tunnelmole.New(),
 			config.ProviderLocalhostRun: ssh.NewLocalhostRun(),
 			config.ProviderServeo:       ssh.NewServeo(),
-			config.ProviderPinggy:       pinggy.New(),
+			config.ProviderPinggy:        pinggy.New(),
 		},
 	}
 }
@@ -126,7 +68,6 @@ func (m *Manager) CheckInstallation(providerType config.Provider) (needsInstall 
 
 	installer, ok := provider.(providers.AutoInstaller)
 	if !ok {
-
 		return false, false
 	}
 
@@ -174,14 +115,10 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 		select {
 		case logStream <- line:
 		default:
-
 		}
 	}
 
-	urlCapture := &urlCaptureWriter{
-		provider: provider,
-		onURL:    func(url string) { m.updateURL(tunnel.ID, url) },
-	}
+	urlCapture := newURLCapture(provider, func(url string) { m.updateURL(tunnel.ID, url) })
 	writer := io.MultiWriter(logBuffer, urlCapture)
 
 	ctx := context.Background()
@@ -208,40 +145,41 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 		onUpdate(mp.Status)
 	}
 
-	go func() {
-		time.Sleep(5 * time.Second)
-		m.mu.Lock()
-		if mp, ok := m.processes[tunnel.ID]; ok {
-			if mp.Status.PublicURL == "" && mp.Status.State != config.TunnelStateOnline {
-				mp.Status.State = config.TunnelStateConnecting
-				if mp.OnUpdate != nil {
-					mp.OnUpdate(mp.Status)
-				}
-			}
-		}
-		m.mu.Unlock()
-	}()
-
-	go func() {
-		time.Sleep(30 * time.Second)
-		m.mu.Lock()
-		if mp, ok := m.processes[tunnel.ID]; ok {
-			if mp.Status.State == config.TunnelStateConnecting || mp.Status.State == config.TunnelStateStarting {
-				mp.Status.State = config.TunnelStateTimeout
-				mp.Status.ErrorMessage = "Connection timed out after 30 seconds"
-				if mp.Process != nil && mp.Process.Cancel != nil {
-					mp.Process.Cancel()
-					mp.Process = nil
-				}
-				if mp.OnUpdate != nil {
-					mp.OnUpdate(mp.Status)
-				}
-			}
-		}
-		m.mu.Unlock()
-	}()
+	go m.startupTimeoutMonitor(tunnel.ID)
 
 	return nil
+}
+
+func (m *Manager) startupTimeoutMonitor(tunnelID string) {
+	time.Sleep(5 * time.Second)
+	m.mu.Lock()
+	if mp, ok := m.processes[tunnelID]; ok {
+		if mp.Status.PublicURL == "" && mp.Status.State != config.TunnelStateOnline {
+			mp.Status.State = config.TunnelStateConnecting
+			if mp.OnUpdate != nil {
+				mp.OnUpdate(mp.Status)
+			}
+		}
+	}
+	m.mu.Unlock()
+
+	time.Sleep(25 * time.Second)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if mp, ok := m.processes[tunnelID]; ok {
+		if mp.Status.State == config.TunnelStateConnecting || mp.Status.State == config.TunnelStateStarting {
+			mp.Status.State = config.TunnelStateTimeout
+			mp.Status.ErrorMessage = "Connection timed out after 30 seconds"
+			if mp.Process != nil && mp.Process.Cancel != nil {
+				mp.Process.Cancel()
+				mp.Process = nil
+			}
+			if mp.OnUpdate != nil {
+				mp.OnUpdate(mp.Status)
+			}
+		}
+	}
 }
 
 func (m *Manager) Stop(tunnelID string) error {
@@ -337,7 +275,6 @@ func (m *Manager) SubscribeLogs(tunnelID string) <-chan string {
 			select {
 			case logCh <- line:
 			default:
-
 			}
 		}
 		close(logCh)
@@ -363,30 +300,4 @@ func (m *Manager) StopAll() {
 		}
 	}
 	m.processes = make(map[string]*ManagedProcess)
-}
-
-type urlCaptureWriter struct {
-	provider providers.Provider
-	onURL    func(string)
-	buf      bytes.Buffer
-}
-
-func (w *urlCaptureWriter) Write(p []byte) (n int, err error) {
-	w.buf.Write(p)
-
-	lines := strings.Split(w.buf.String(), "\n")
-	w.buf.Reset()
-
-	if len(lines) > 0 && !strings.HasSuffix(string(p), "\n") {
-		w.buf.WriteString(lines[len(lines)-1])
-		lines = lines[:len(lines)-1]
-	}
-
-	for _, line := range lines {
-		if url := w.provider.ParseURL(line); url != "" {
-			w.onURL(url)
-		}
-	}
-
-	return len(p), nil
 }
