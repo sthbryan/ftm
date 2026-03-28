@@ -15,8 +15,11 @@ const THEMES = [
   'solarized-light',
   'dracula',
   'red',
+  'red-light',
   'blue',
-  'purple'
+  'blue-light',
+  'purple',
+  'purple-light'
 ] as const;
 
 type Theme = typeof THEMES[number];

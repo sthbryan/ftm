@@ -18,8 +18,11 @@
 @import './themes/_solarized-light.css';
 @import './themes/_dracula.css';
 @import './themes/_red.css';
+@import './themes/_red-light.css';
 @import './themes/_blue.css';
+@import './themes/_blue-light.css';
 @import './themes/_purple.css';
+@import './themes/_purple-light.css';
 
 @theme {
   --color-bg: var(--color-bg);
