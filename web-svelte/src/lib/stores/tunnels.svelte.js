@@ -89,7 +89,7 @@ function connect() {
     });
 
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const ws = new WebSocket(`${wsProtocol}//${window.location.host}/api/tunnels/ws`);
+  const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/events`);
 
   ws.onopen = () => {
     console.log('[WS] Connected');
