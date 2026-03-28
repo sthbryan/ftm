@@ -578,14 +578,3 @@ type TunnelView struct {
 	ErrorMessage string
 }
 
-type ticker struct {
-	C <-chan time.Time
-}
-
-func NewTicker(d time.Duration) *ticker {
-	return &ticker{C: time.NewTicker(d).C}
-}
-
-func (t *ticker) Stop() {
-	time.NewTicker(1).Stop()
-}
