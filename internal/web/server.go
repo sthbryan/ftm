@@ -102,7 +102,11 @@ func (s *Server) Start() error {
 		case r.URL.Path == "/api/copy-url":
 			s.handleCopyURL(w, r)
 		case strings.HasPrefix(r.URL.Path, "/api/logs/"):
-			s.handleLogs(w, r)
+			if strings.HasSuffix(r.URL.Path, "/stream") {
+				s.handleLogsStream(w, r)
+			} else {
+				s.handleLogs(w, r)
+			}
 		case r.URL.Path == "/api/tunnels/reorder":
 			s.handleReorder(w, r)
 		case r.URL.Path == "/api/status":
@@ -163,8 +167,6 @@ func (s *Server) broadcastLoop() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	lastStates := make(map[string]string)
-
 	for range ticker.C {
 		s.clientsMu.RLock()
 		if len(s.clients) == 0 {
@@ -174,23 +176,26 @@ func (s *Server) broadcastLoop() {
 		s.clientsMu.RUnlock()
 
 		for _, tunnel := range s.config.Tunnels {
-			if status, ok := s.manager.GetStatus(tunnel.ID); ok {
-
-				stateKey := fmt.Sprintf("%s|%s|%s", tunnel.ID, status.State, status.PublicURL)
-
-				if lastStates[tunnel.ID] != stateKey {
-					lastStates[tunnel.ID] = stateKey
-
-					update := map[string]interface{}{
-						"id":           tunnel.ID,
-						"state":        string(status.State),
-						"publicUrl":    status.PublicURL,
-						"errorMessage": status.ErrorMessage,
-					}
-					data, _ := json.Marshal(update)
-					s.broadcast(string(data))
+			status, ok := s.manager.GetStatus(tunnel.ID)
+			if !ok {
+				update := map[string]interface{}{
+					"id":        tunnel.ID,
+					"state":     "stopped",
+					"publicUrl": "",
 				}
+				data, _ := json.Marshal(update)
+				s.broadcast(string(data))
+				continue
 			}
+
+			update := map[string]interface{}{
+				"id":           tunnel.ID,
+				"state":        string(status.State),
+				"publicUrl":    status.PublicURL,
+				"errorMessage": status.ErrorMessage,
+			}
+			data, _ := json.Marshal(update)
+			s.broadcast(string(data))
 		}
 	}
 }
@@ -518,6 +523,15 @@ func (s *Server) stopTunnel(w http.ResponseWriter, id string) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	update := map[string]interface{}{
+		"id":        id,
+		"state":     "stopped",
+		"publicUrl": "",
+	}
+	data, _ := json.Marshal(update)
+	s.broadcast(string(data))
+
 	for _, t := range s.config.Tunnels {
 		if t.ID == id {
 			s.writeTunnelJSON(w, t)
@@ -596,6 +610,51 @@ func (s *Server) handleLogs(w http.ResponseWriter, r *http.Request) {
 	logs := s.manager.GetLogs(id)
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte(strings.Join(logs, "\n")))
+}
+
+func (s *Server) handleLogsStream(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	path := strings.TrimPrefix(r.URL.Path, "/api/logs/")
+	path = strings.TrimSuffix(path, "/stream")
+	parts := strings.Split(path, "/")
+	if len(parts) < 1 {
+		http.Error(w, "invalid path", http.StatusBadRequest)
+		return
+	}
+	id := parts[0]
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming not supported", http.StatusInternalServerError)
+		return
+	}
+
+	initialLogs := s.manager.GetLogs(id)
+	for _, line := range initialLogs {
+		fmt.Fprintf(w, "data: %s\n\n", line)
+		flusher.Flush()
+	}
+
+	logChan := s.manager.SubscribeLogs(id)
+	if logChan == nil {
+
+		fmt.Fprintf(w, "data: [tunnel stopped]\n\n")
+		flusher.Flush()
+		return
+	}
+
+	for line := range logChan {
+		fmt.Fprintf(w, "data: %s\n\n", line)
+		flusher.Flush()
+	}
 }
 
 func (s *Server) handleReorder(w http.ResponseWriter, r *http.Request) {

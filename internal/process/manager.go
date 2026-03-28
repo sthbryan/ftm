@@ -44,12 +44,14 @@ type ManagedProcess struct {
 	Status    config.TunnelStatus
 	PublicURL string
 	OnUpdate  func(config.TunnelStatus)
+	LogStream chan string
 }
 
 type LogBuffer struct {
-	mu     sync.RWMutex
-	lines  []string
-	maxLen int
+	mu        sync.RWMutex
+	lines     []string
+	maxLen    int
+	OnNewLine func(string)
 }
 
 func NewLogBuffer() *LogBuffer {
@@ -67,6 +69,10 @@ func (lb *LogBuffer) Write(p []byte) (n int, err error) {
 	for _, line := range lines {
 		if line = strings.TrimSpace(line); line != "" {
 			lb.lines = append(lb.lines, line)
+
+			if lb.OnNewLine != nil {
+				go lb.OnNewLine(line)
+			}
 		}
 	}
 
@@ -163,6 +169,14 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	}
 
 	logBuffer := NewLogBuffer()
+	logStream := make(chan string, 100)
+	logBuffer.OnNewLine = func(line string) {
+		select {
+		case logStream <- line:
+		default:
+
+		}
+	}
 
 	urlCapture := &urlCaptureWriter{
 		provider: provider,
@@ -173,6 +187,7 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	ctx := context.Background()
 	proc, err := provider.Start(ctx, tunnel, writer)
 	if err != nil {
+		close(logStream)
 		return err
 	}
 
@@ -183,6 +198,7 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 		LogBuffer: logBuffer,
 		OnUpdate:  onUpdate,
 		Status:    tunnel.Status(),
+		LogStream: logStream,
 	}
 	mp.Status.State = config.TunnelStateStarting
 
@@ -246,6 +262,10 @@ func (m *Manager) Stop(tunnelID string) error {
 
 	delete(m.processes, tunnelID)
 
+	if mp.LogStream != nil {
+		close(mp.LogStream)
+	}
+
 	if mp.OnUpdate != nil {
 		mp.OnUpdate(mp.Status)
 	}
@@ -300,6 +320,29 @@ func (m *Manager) GetLogs(tunnelID string) []string {
 	}
 
 	return mp.LogBuffer.GetLines()
+}
+
+func (m *Manager) SubscribeLogs(tunnelID string) <-chan string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	mp, ok := m.processes[tunnelID]
+	if !ok || mp.LogStream == nil {
+		return nil
+	}
+
+	logCh := make(chan string, 50)
+	go func() {
+		for line := range mp.LogStream {
+			select {
+			case logCh <- line:
+			default:
+
+			}
+		}
+		close(logCh)
+	}()
+	return logCh
 }
 
 func (m *Manager) IsRunning(tunnelID string) bool {

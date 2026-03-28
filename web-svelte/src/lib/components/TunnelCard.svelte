@@ -1,6 +1,7 @@
 <script>
   import { useToast } from '$lib/stores/toast.svelte';
   import { Copy, AlertCircle } from 'lucide-svelte';
+  import { createLogStream, getLogs } from '$lib/api';
   
   let { tunnel, onStart, onStop, onShowDelete, index = 0, installProgress = null } = $props();
   
@@ -11,6 +12,7 @@
   let loadingLogs = $state(false);
   let justStarted = $state(false);
   let prevStatus = $state('');
+  let logStream = $state(null);
   
   $effect(() => {
     const currentStatus = tunnel.state;
@@ -59,18 +61,38 @@
     toast.info('URL copied to clipboard');
   }
   
-  async function loadLogs() {
-    showLogs = !showLogs;
-    if (!showLogs) return;
-    
-    loadingLogs = true;
-    try {
-      const res = await fetch(`/api/logs/${tunnel.id}`);
-      logs = await res.text();
-    } catch (e) {
-      logs = 'Failed to load logs';
+  function loadLogs() {
+    if (showLogs) {
+      if (logStream) {
+        logStream.close();
+        logStream = null;
+      }
+      showLogs = false;
+      return;
     }
-    loadingLogs = false;
+    
+    showLogs = true;
+    loadingLogs = true;
+    logs = '';
+    
+    getLogs(tunnel.id)
+      .then(initial => {
+        logs = initial;
+        loadingLogs = false;
+      })
+      .catch(() => {
+        logs = 'Failed to load logs';
+        loadingLogs = false;
+      });
+    
+    logStream = createLogStream(tunnel.id, {
+      onLine: (line) => {
+        logs = logs + '\n' + line;
+      },
+      onClose: () => {
+        logStream = null;
+      }
+    });
   }
   
   function getInstallPercent() {
