@@ -8,16 +8,18 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/notifications"
 	"github.com/sthbryan/ftm/internal/process"
 	"github.com/sthbryan/ftm/internal/providers"
 	"github.com/sthbryan/ftm/internal/web"
 )
 
 type App struct {
-	Config           *config.Config
-	Manager          *process.Manager
-	WebServer        *web.Server
-	DownloadProgress chan providers.DownloadProgress
+	Config            *config.Config
+	Manager           *process.Manager
+	WebServer         *web.Server
+	DownloadProgress   chan providers.DownloadProgress
+	ExpirationMonitor *notifications.ExpirationMonitor
 }
 
 func New() (*App, error) {
@@ -35,6 +37,43 @@ func New() (*App, error) {
 	}
 
 	app.Manager.SetProgressChannel(app.DownloadProgress)
+	notifications.Init()
+
+	expConfig := notifications.ExpirationConfig{
+		Thresholds:                 cfg.ExpirationThresholds,
+		ProviderExpirationMinutes:  cfg.ProviderExpirationMinutes,
+	}
+	app.ExpirationMonitor = notifications.NewExpirationMonitor(expConfig, func(name string, mins int) {
+		if !cfg.NotificationsEnabled {
+			return
+		}
+		if mins == 0 {
+			notifications.NotifyTunnelExpired(name)
+		} else {
+			notifications.NotifyTunnelExpiring(name, mins)
+		}
+	})
+
+	app.Manager.SetNotificationHandler(func(status config.TunnelStatus) {
+		if !cfg.NotificationsEnabled {
+			return
+		}
+		switch status.State {
+		case config.TunnelStateOnline:
+			notifications.NotifyTunnelOnline(status.Name, status.PublicURL)
+		case config.TunnelStateError:
+			notifications.NotifyTunnelError(status.Name, status.ErrorMessage)
+		case config.TunnelStateTimeout:
+			notifications.NotifyTunnelTimeout(status.Name)
+		case config.TunnelStateStopping:
+			notifications.NotifyTunnelStopped(status.Name)
+		}
+	})
+
+	app.Manager.SetExpirationCallbacks(
+		app.ExpirationMonitor.Start,
+		func(id string) { app.ExpirationMonitor.Stop(id) },
+	)
 
 	return app, nil
 }
@@ -115,5 +154,8 @@ func (a *App) Shutdown() {
 	}
 	if a.Manager != nil {
 		a.Manager.StopAll()
+	}
+	if a.ExpirationMonitor != nil {
+		a.ExpirationMonitor.StopAll()
 	}
 }
