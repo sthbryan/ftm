@@ -35,12 +35,17 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+type connWrapper struct {
+	conn *websocket.Conn
+	mu   sync.Mutex
+}
+
 type Server struct {
 	manager       *process.Manager
 	config        *config.Config
 	httpServer    *http.Server
 	port          int
-	clients       map[*websocket.Conn]bool
+	clients       map[*websocket.Conn]*connWrapper
 	clientsMu     sync.RWMutex
 	handlers      *Handlers
 	StatusChannel chan config.TunnelStatus
@@ -50,7 +55,7 @@ func NewServer(manager *process.Manager, cfg *config.Config) *Server {
 	s := &Server{
 		manager:       manager,
 		config:        cfg,
-		clients:       make(map[*websocket.Conn]bool),
+		clients:       make(map[*websocket.Conn]*connWrapper),
 		StatusChannel: make(chan config.TunnelStatus, 10),
 	}
 	s.handlers = NewHandlers(manager, cfg, s)
@@ -129,15 +134,16 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cw := &connWrapper{conn: conn}
 	s.clientsMu.Lock()
-	s.clients[conn] = true
+	s.clients[conn] = cw
 	s.clientsMu.Unlock()
 
 	defer func() {
 		s.clientsMu.Lock()
 		delete(s.clients, conn)
 		s.clientsMu.Unlock()
-		conn.Close()
+		cw.conn.Close()
 	}()
 
 	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
@@ -200,18 +206,20 @@ func (s *Server) statusUpdateLoop() {
 
 func (s *Server) broadcast(msg string) {
 	s.clientsMu.RLock()
-	clients := make([]*websocket.Conn, 0, len(s.clients))
-	for conn := range s.clients {
-		clients = append(clients, conn)
+	clients := make([]*connWrapper, 0, len(s.clients))
+	for _, cw := range s.clients {
+		clients = append(clients, cw)
 	}
 	s.clientsMu.RUnlock()
 
-	for _, conn := range clients {
-		err := conn.WriteMessage(websocket.TextMessage, []byte(msg))
+	for _, cw := range clients {
+		cw.mu.Lock()
+		err := cw.conn.WriteMessage(websocket.TextMessage, []byte(msg))
+		cw.mu.Unlock()
 		if err != nil {
 			s.clientsMu.Lock()
-			conn.Close()
-			delete(s.clients, conn)
+			cw.conn.Close()
+			delete(s.clients, cw.conn)
 			s.clientsMu.Unlock()
 		}
 	}
