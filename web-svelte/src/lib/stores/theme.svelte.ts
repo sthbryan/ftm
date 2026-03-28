@@ -17,16 +17,19 @@ const THEMES = [
   'red',
   'blue',
   'purple'
-];
+] as const;
+
+type Theme = typeof THEMES[number];
+
 const STORAGE_KEY = 'ftm-theme';
 
-let currentTheme = $state('dracula');
+let currentTheme = $state<Theme>('dracula');
 
-function getInitialTheme() {
+function getInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'dracula';
   
   const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved && THEMES.includes(saved)) return saved;
+  if (saved && THEMES.includes(saved as Theme)) return saved as Theme;
   
   return 'dracula';
 }
@@ -34,16 +37,16 @@ function getInitialTheme() {
 export function useTheme() {
   return {
     get current() { return currentTheme; },
-    get themes() { return THEMES; },
+    get themes() { return [...THEMES]; },
     
     init() {
       currentTheme = getInitialTheme();
       document.documentElement.setAttribute('data-theme', currentTheme);
     },
     
-    set(theme) {
-      if (!THEMES.includes(theme)) return;
-      currentTheme = theme;
+    set(theme: string) {
+      if (!THEMES.includes(theme as Theme)) return;
+      currentTheme = theme as Theme;
       document.documentElement.setAttribute('data-theme', theme);
       localStorage.setItem(STORAGE_KEY, theme);
     },

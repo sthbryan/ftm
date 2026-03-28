@@ -1,18 +1,19 @@
-import { useNotifications } from './notification.svelte.js';
+import { useNotifications } from './notification.svelte';
+import type { Tunnel } from '$lib/types';
 
 const DEFAULT_THRESHOLDS = [30, 15, 10, 5, 1];
-const timers = new Map();
+const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
-function getThresholds() {
+function getThresholds(): number[] {
   const saved = localStorage.getItem('ftm-expiration-thresholds');
   return saved ? JSON.parse(saved) : DEFAULT_THRESHOLDS;
 }
 
-function setThresholds(thresholds) {
+function setThresholdsFn(thresholds: number[]) {
   localStorage.setItem('ftm-expiration-thresholds', JSON.stringify(thresholds));
 }
 
-function start(tunnel) {
+function start(tunnel: Tunnel) {
   const notifications = useNotifications();
   if (!tunnel.expiresAt || !notifications.enabled) return;
   
@@ -34,7 +35,7 @@ function start(tunnel) {
   });
 }
 
-function stop(tunnelId) {
+function stop(tunnelId: string) {
   for (const [key, timer] of timers) {
     if (key.startsWith(tunnelId + '-')) {
       clearTimeout(timer);
@@ -51,5 +52,5 @@ function stopAll() {
 }
 
 export function useExpirationMonitor() {
-  return { start, stop, stopAll, getThresholds, setThresholds };
+  return { start, stop, stopAll, getThresholds, setThresholds: setThresholdsFn };
 }

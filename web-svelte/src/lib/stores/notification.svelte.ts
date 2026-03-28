@@ -1,19 +1,20 @@
-import { useToast } from './toast.svelte.js';
+import { useToast } from './toast.svelte';
+import type { ToastType } from '$lib/types';
 
-let permission = $state('default');
+let permission = $state<NotificationPermission>('default');
 let useOSNotifications = $state(false);
 let enabled = $state(false);
 let soundEnabled = $state(true);
 
 const toast = useToast();
 
-let audioContext = null;
+let audioContext: AudioContext | null = null;
 
 async function initAudio() {
   if (typeof window === 'undefined') return;
   if (audioContext) return;
 
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  const AudioContextClass = (window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
   if (!AudioContextClass) return;
 
   try {
@@ -21,12 +22,12 @@ async function initAudio() {
     if (audioContext.state === 'suspended') {
       await audioContext.resume();
     }
-  } catch (err) {
+  } catch {
     audioContext = null;
   }
 }
 
-async function playSound(type) {
+async function playSound(type: string) {
   if (!soundEnabled || typeof window === 'undefined') return;
 
   await initAudio();
@@ -80,12 +81,12 @@ const notificationStore = {
   get useOSNotifications() { return useOSNotifications; },
   get enabled() { return enabled; },
   get soundEnabled() { return soundEnabled; },
-  set soundEnabled(value) {
+  set soundEnabled(value: boolean) {
     soundEnabled = value;
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('ftm-sound-enabled', value ? 'true' : 'false');
-      } catch (e) {}
+      } catch {}
     }
   },
 
@@ -99,7 +100,7 @@ const notificationStore = {
     soundEnabled = localStorage.getItem('ftm-sound-enabled') !== 'false';
   },
 
-  async requestPermission() {
+  async requestPermission(): Promise<boolean> {
     if (!('Notification' in window)) {
       useOSNotifications = false;
       return false;
@@ -130,7 +131,7 @@ const notificationStore = {
     localStorage.setItem('ftm-notifications-enabled', 'false');
   },
 
-  notify(title, body, type = 'info') {
+  notify(title: string, body: string, type: ToastType = 'info') {
     if (soundEnabled) {
       playSound(type);
     }
@@ -144,21 +145,21 @@ const notificationStore = {
     }
   },
 
-  notifyOnline(name, url) {
+  notifyOnline(name: string, url: string) {
     this.notify('Tunnel Active', `${name} - ${url}`, 'success');
   },
 
-  notifyError(name, err) {
+  notifyError(name: string, err: string) {
     this.notify('Tunnel Error', `${name}: ${err}`, 'error');
   },
 
-  notifyExpiring(name, mins) {
+  notifyExpiring(name: string, mins: number) {
     const title = mins <= 1 ? 'Last Minute!' : 'Tunnel Expiring';
     const type = mins <= 1 ? 'alert' : 'warning';
-    this.notify(title, `${name}: ${mins} min remaining`, type);
+    this.notify(title, `${name}: ${mins} min remaining`, type as ToastType);
   },
 
-  notifyExpired(name) {
+  notifyExpired(name: string) {
     this.notify('Tunnel Expired', `${name} session ended`, 'error');
   }
 };

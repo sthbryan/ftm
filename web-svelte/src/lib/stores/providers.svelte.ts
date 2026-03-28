@@ -1,9 +1,13 @@
-import { providersApi } from '$lib/api';
-import { api } from '$lib/api';
+import { providersApi, api } from '$lib/api';
 
-let providers = $state([]);
+interface Provider {
+  id: string;
+  name: string;
+}
+
+let providers: Provider[] = $state([]);
 let loading = $state(false);
-let error = $state(null);
+let error: string | null = $state(null);
 
 export function useProviders() {
   return {
@@ -17,7 +21,7 @@ export function useProviders() {
       try {
         providers = await providersApi.getAll();
       } catch (e) {
-        error = e.message;
+        error = (e as Error).message;
       } finally {
         loading = false;
       }
@@ -25,9 +29,9 @@ export function useProviders() {
   };
 }
 
-export async function detectPort() {
+export async function detectPort(): Promise<number> {
   try {
-    const data = await api.get('detect-port').json();
+    const data = await api.get('detect-port').json<{ suggested?: number }>();
     return data.suggested || 30000;
   } catch {
     return 30000;
