@@ -3,6 +3,9 @@ package app
 import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/sthbryan/ftm/internal/app/ui/views"
+	"github.com/sthbryan/ftm/internal/config"
 )
 
 func (m *Model) handleSettingsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -53,7 +56,7 @@ func (m *Model) handleSettingsSelect() {
 }
 
 func (m *Model) openSettings() {
-	m.SettingsView = ui.NewSettingsView()
+	m.SettingsView = views.NewSettingsView()
 	m.SettingsView.NotificationsEnabled = m.App.Config.NotificationsStatus == config.NotificationGranted
 	m.SettingsView.NotificationSound = m.App.Config.NotificationSound
 	m.SettingsView.Theme = m.App.Config.Theme

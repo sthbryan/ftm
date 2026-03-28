@@ -19,6 +19,10 @@ func (m *Model) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, m.Keys.Down):
 		m.moveCursorDown()
 
+	case key.Matches(msg, m.Keys.Settings):
+		m.openSettings()
+		return m, nil
+
 	case key.Matches(msg, m.Keys.Enter), key.Matches(msg, m.Keys.Toggle):
 		return m.handleListToggle()
 
