@@ -289,7 +289,7 @@ func (s *Server) listTunnels(w http.ResponseWriter) {
 			"name":     t.Name,
 			"provider": string(t.Provider),
 			"port":     t.LocalPort,
-			"status":   "stopped",
+			"state":    "stopped",
 		}
 
 		if status, ok := s.manager.GetStatus(t.ID); ok {
@@ -299,7 +299,7 @@ func (s *Server) listTunnels(w http.ResponseWriter) {
 		}
 
 		if needsInstall, canInstall := s.manager.CheckInstallation(t.Provider); needsInstall && canInstall {
-			item["status"] = "installing"
+			item["state"] = "installing"
 			item["installProgress"] = 0
 		}
 
@@ -503,7 +503,7 @@ func (s *Server) startTunnel(w http.ResponseWriter, id string) {
 	if needsInstall, canInstall := s.manager.CheckInstallation(tunnel.Provider); needsInstall && canInstall {
 		update := map[string]interface{}{
 			"id":       tunnel.ID,
-			"status":   "installing",
+			"state":    "installing",
 			"provider": string(tunnel.Provider),
 		}
 		data, _ := json.Marshal(update)
@@ -515,15 +515,15 @@ func (s *Server) startTunnel(w http.ResponseWriter, id string) {
 			"name":     tunnel.Name,
 			"provider": string(tunnel.Provider),
 			"port":     tunnel.LocalPort,
-			"status":   "installing",
+			"state":    "installing",
 		})
 
 		go func() {
 			if err := s.manager.InstallProvider(tunnel.Provider); err != nil {
 				update := map[string]interface{}{
-					"id":     tunnel.ID,
-					"status": "error",
-					"error":  "Installation failed: " + err.Error(),
+					"id":            tunnel.ID,
+					"state":         "error",
+					"errorMessage":  "Installation failed: " + err.Error(),
 				}
 				data, _ := json.Marshal(update)
 				s.broadcast(string(data))
@@ -532,9 +532,9 @@ func (s *Server) startTunnel(w http.ResponseWriter, id string) {
 
 			if err := s.manager.Start(*tunnel, func(status config.TunnelStatus) {}); err != nil {
 				update := map[string]interface{}{
-					"id":     tunnel.ID,
-					"status": "error",
-					"error":  err.Error(),
+					"id":            tunnel.ID,
+					"state":         "error",
+					"errorMessage":  err.Error(),
 				}
 				data, _ := json.Marshal(update)
 				s.broadcast(string(data))
@@ -576,24 +576,24 @@ func (s *Server) stopTunnel(w http.ResponseWriter, id string) {
 }
 
 func (s *Server) writeTunnelJSON(w http.ResponseWriter, t config.TunnelConfig) {
-	status := "stopped"
-	var publicURL, errorMsg string
+	state := "stopped"
+	var publicURL, errorMessage string
 
 	if tunnelStatus, ok := s.manager.GetStatus(t.ID); ok {
 		publicURL = tunnelStatus.PublicURL
-		errorMsg = tunnelStatus.ErrorMessage
-		status = string(tunnelStatus.State)
+		errorMessage = tunnelStatus.ErrorMessage
+		state = string(tunnelStatus.State)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"id":        t.ID,
-		"name":      t.Name,
-		"provider":  string(t.Provider),
-		"port":      t.LocalPort,
-		"status":    status,
-		"publicUrl": publicURL,
-		"error":     errorMsg,
+		"id":            t.ID,
+		"name":          t.Name,
+		"provider":      string(t.Provider),
+		"port":          t.LocalPort,
+		"state":         state,
+		"publicUrl":     publicURL,
+		"errorMessage":  errorMessage,
 	})
 }
 
