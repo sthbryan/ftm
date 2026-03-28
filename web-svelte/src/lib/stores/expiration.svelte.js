@@ -36,7 +36,7 @@ function start(tunnel) {
 
 function stop(tunnelId) {
   for (const [key, timer] of timers) {
-    if (key.startsWith(tunnelId)) {
+    if (key.startsWith(tunnelId + '-')) {
       clearTimeout(timer);
       timers.delete(key);
     }

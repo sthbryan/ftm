@@ -82,7 +82,11 @@ const notificationStore = {
   get soundEnabled() { return soundEnabled; },
   set soundEnabled(value) {
     soundEnabled = value;
-    localStorage.setItem('ftm-sound-enabled', value ? 'true' : 'false');
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('ftm-sound-enabled', value ? 'true' : 'false');
+      } catch (e) {}
+    }
   },
 
   init() {
