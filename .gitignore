@@ -48,3 +48,6 @@ desktop/build/
 desktop/frontend/
 *.app
 *.dmg
+
+# MD files
+*.md
