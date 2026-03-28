@@ -27,6 +27,8 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleFormKey(msg)
 	case viewDownloading:
 		return m.handleDownloadingKey(msg)
+	case viewSettings:
+		return m.handleSettingsKey(msg)
 	}
 
 	return m, nil
@@ -41,6 +43,9 @@ func (m *Model) handleQuit() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) handleBack() (tea.Model, tea.Cmd) {
+	if m.State == viewSettings {
+		m.saveSettings()
+	}
 	if m.State != viewList {
 		m.State = viewList
 		m.editingTunnelID = ""

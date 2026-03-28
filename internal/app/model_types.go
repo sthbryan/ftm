@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/viewport"
 
+	"github.com/sthbryan/ftm/internal/app/ui"
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/providers"
 )
@@ -22,25 +23,33 @@ const (
 	viewEditForm
 	viewConfirm
 	viewDownloading
+	viewSettings
 )
+
+type Settings struct {
+	NotificationsEnabled bool
+	NotificationSound   bool
+	Theme                string
+}
 
 const TwoColumnThreshold = 100
 
 type KeyMap struct {
-	Up     key.Binding
-	Down   key.Binding
-	Enter  key.Binding
-	Toggle key.Binding
-	Logs   key.Binding
-	Copy   key.Binding
-	Web    key.Binding
-	Add    key.Binding
-	Edit   key.Binding
-	Delete key.Binding
-	Config key.Binding
-	Back   key.Binding
-	Quit   key.Binding
-	Help   key.Binding
+	Up       key.Binding
+	Down     key.Binding
+	Enter    key.Binding
+	Toggle   key.Binding
+	Logs     key.Binding
+	Copy     key.Binding
+	Web      key.Binding
+	Add      key.Binding
+	Edit     key.Binding
+	Delete   key.Binding
+	Config   key.Binding
+	Settings key.Binding
+	Back     key.Binding
+	Quit     key.Binding
+	Help     key.Binding
 }
 
 var DefaultKeys = KeyMap{
@@ -88,6 +97,10 @@ var DefaultKeys = KeyMap{
 		key.WithKeys("o"),
 		key.WithHelp("o", "open config"),
 	),
+	Settings: key.NewBinding(
+		key.WithKeys("s"),
+		key.WithHelp("s", "settings"),
+	),
 	Back: key.NewBinding(
 		key.WithKeys("esc", "b"),
 		key.WithHelp("esc/b", "back"),
@@ -122,6 +135,7 @@ type Model struct {
 	DownloadingProvider string
 	PendingTunnel       *config.TunnelConfig
 	ProgressBar         progress.Model
+	SettingsView        *ui.SettingsView
 }
 
 type FormData struct {

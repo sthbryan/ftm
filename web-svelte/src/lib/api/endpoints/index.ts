@@ -6,3 +6,5 @@ export { getStatus } from './status';
 export type { StatusResponse } from './status';
 export { updateNotificationsStatus } from './notifications';
 export type { NotificationsUpdateRequest, NotificationsUpdateResponse } from './notifications';
+export { getSettings, updateSettings } from './settings';
+export type { Settings } from './settings';

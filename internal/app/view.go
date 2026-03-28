@@ -21,6 +21,8 @@ func (m *Model) View() string {
 		return m.viewAddForm(true)
 	case viewDownloading:
 		return m.viewDownloading()
+	case viewSettings:
+		return m.viewSettings()
 	default:
 		return m.viewList()
 	}
