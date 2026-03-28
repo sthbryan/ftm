@@ -44,7 +44,7 @@
   const SIZE_CLASSES: Record<ButtonSize, string> = {
     sm: "h-8 px-2.5 text-xs gap-1.5",
     md: "h-9 px-3.5 text-sm gap-2",
-    lg: "h-11 px-5 text-base gap-2.5",
+    lg: "h-11 px-5 text-sm gap-2",
   };
 
   let {
@@ -65,7 +65,7 @@
   const showIconLeft = $derived(hasIcon && iconPosition === "left");
   const showIconRight = $derived(hasIcon && iconPosition === "right");
   const showChildren = $derived(!!children);
-  const iconSize = $derived(size === "sm" ? 12 : size === "md" ? 14 : 16);
+  const iconSize = $derived(size === "sm" ? 12 : 14);
 
 </script>
 
