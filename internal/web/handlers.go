@@ -40,8 +40,6 @@ func (h *Handlers) Route(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.URL.Path == "/api/tunnels" || r.URL.Path == "/api/tunnels/":
 		h.handleTunnels(w, r)
-	case r.URL.Path == "/api/events":
-		h.handleSSE(w, r)
 	case r.URL.Path == "/api/copy-url":
 		h.handleCopyURL(w, r)
 	case strings.HasPrefix(r.URL.Path, "/api/logs/"):
@@ -69,42 +67,6 @@ func (h *Handlers) setCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-}
-
-func (h *Handlers) handleSSE(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
-		return
-	}
-
-	ch := h.server.getClientChan()
-	h.server.addClient(ch)
-
-	defer func() {
-		h.server.removeClient(ch)
-		close(ch)
-	}()
-
-	ctx := r.Context()
-
-	for {
-		select {
-		case msg, ok := <-ch:
-			if !ok {
-				return
-			}
-			fmt.Fprintf(w, "data: %s\n\n", msg)
-			flusher.Flush()
-		case <-ctx.Done():
-			return
-		}
-	}
 }
 
 func (h *Handlers) handleTunnels(w http.ResponseWriter, r *http.Request) {

@@ -11,17 +11,30 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/process"
 )
+
+//go:embed static/*
+var staticFiles embed.FS
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 type Server struct {
 	manager       *process.Manager
 	config        *config.Config
 	httpServer    *http.Server
 	port          int
-	clients       map[chan string]bool
+	clients       map[*websocket.Conn]bool
 	clientsMu     sync.RWMutex
 	handlers      *Handlers
 	StatusChannel chan config.TunnelStatus
@@ -31,7 +44,7 @@ func NewServer(manager *process.Manager, cfg *config.Config) *Server {
 	s := &Server{
 		manager:       manager,
 		config:        cfg,
-		clients:       make(map[chan string]bool),
+		clients:       make(map[*websocket.Conn]bool),
 		StatusChannel: make(chan config.TunnelStatus, 10),
 	}
 	s.handlers = NewHandlers(manager, cfg, s)
@@ -62,7 +75,6 @@ func (s *Server) Start() error {
 	s.config.Save()
 
 	mux := s.setupRoutes()
-	s.setupMiddleware(mux)
 
 	s.httpServer = &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
@@ -80,6 +92,8 @@ func (s *Server) setupRoutes() *http.ServeMux {
 
 	mux.HandleFunc("/api/", s.handlers.Route)
 
+	mux.HandleFunc("/ws/events", s.handleWebSocket)
+
 	webDist := filepath.Join("web-svelte", "dist")
 	var staticFS fs.FS
 	if _, err := os.Stat(webDist); err == nil {
@@ -90,7 +104,7 @@ func (s *Server) setupRoutes() *http.ServeMux {
 	fileServer := http.FileServer(http.FS(staticFS))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/") {
+		if strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/ws/") {
 			return
 		}
 		path := r.URL.Path
@@ -103,7 +117,35 @@ func (s *Server) setupRoutes() *http.ServeMux {
 	return mux
 }
 
-func (s *Server) setupMiddleware(mux *http.ServeMux) {
+func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+
+	s.clientsMu.Lock()
+	s.clients[conn] = true
+	s.clientsMu.Unlock()
+
+	defer func() {
+		s.clientsMu.Lock()
+		delete(s.clients, conn)
+		s.clientsMu.Unlock()
+		conn.Close()
+	}()
+
+	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
+	for {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+	}
 }
 
 func (s *Server) Stop() error {
@@ -141,7 +183,7 @@ func (s *Server) statusUpdateLoop() {
 	for status := range s.StatusChannel {
 		update := map[string]interface{}{
 			"id":           status.ID,
-			"state":        string(status.State),
+			"state":       string(status.State),
 			"publicUrl":    status.PublicURL,
 			"errorMessage": status.ErrorMessage,
 		}
@@ -154,24 +196,13 @@ func (s *Server) broadcast(msg string) {
 	s.clientsMu.RLock()
 	defer s.clientsMu.RUnlock()
 
-	for ch := range s.clients {
-		select {
-		case ch <- msg:
-		default:
+	for conn := range s.clients {
+		err := conn.WriteMessage(websocket.TextMessage, []byte(msg))
+		if err != nil {
+			conn.Close()
+			delete(s.clients, conn)
 		}
 	}
-}
-
-func (s *Server) addClient(ch chan string) {
-	s.clientsMu.Lock()
-	s.clients[ch] = true
-	s.clientsMu.Unlock()
-}
-
-func (s *Server) removeClient(ch chan string) {
-	s.clientsMu.Lock()
-	delete(s.clients, ch)
-	s.clientsMu.Unlock()
 }
 
 func (s *Server) BroadcastTunnelUpdate(t config.TunnelConfig) {
@@ -197,10 +228,6 @@ func (s *Server) BroadcastTunnelUpdate(t config.TunnelConfig) {
 	s.broadcast(string(data))
 }
 
-func (s *Server) getClientChan() chan string {
-	return make(chan string, 10)
-}
-
 func (s *Server) getTunnel(id string) *config.TunnelConfig {
 	for i := range s.config.Tunnels {
 		if s.config.Tunnels[i].ID == id {
@@ -213,6 +240,3 @@ func (s *Server) getTunnel(id string) *config.TunnelConfig {
 func (s *Server) updateConfig() {
 	s.config.Save()
 }
-
-//go:embed static/*
-var staticFiles embed.FS

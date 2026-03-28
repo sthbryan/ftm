@@ -5,13 +5,13 @@ import { useExpirationMonitor } from './expiration.svelte.js';
 let tunnels = $state([]);
 let loading = $state(true);
 let error = $state(null);
-let eventSource = $state(null);
+let socket = $state(null);
 let installProgress = $state({});
 
 const notifications = useNotifications();
 const expirationMonitor = useExpirationMonitor();
 
-function handleSSEEvent(msg) {
+function handleMessage(msg) {
   if (msg.type === 'install') {
     installProgress = { ...installProgress, [msg.provider]: msg };
     return;
@@ -71,7 +71,7 @@ function handleSSEEvent(msg) {
 }
 
 function connect() {
-  if (eventSource) return;
+  if (socket) return;
   
   loading = true;
   notifications.init();
@@ -91,31 +91,31 @@ function connect() {
       loading = false;
     });
   
-  const es = new EventSource('/api/events');
+  const ws = new WebSocket(`ws://${window.location.host}/ws/events`);
   
-  es.onmessage = (e) => {
+  ws.onmessage = (e) => {
     try {
-      handleSSEEvent(JSON.parse(e.data));
+      handleMessage(JSON.parse(e.data));
     } catch {}
   };
   
-  es.onerror = () => {
-    error = 'Connection lost. Retrying...';
-    setTimeout(() => {
-      if (es.readyState === EventSource.CLOSED) {
-        eventSource = null;
-        connect();
-      }
-    }, 3000);
+  ws.onclose = () => {
+    error = 'Connection closed. Reconnecting...';
+    socket = null;
+    setTimeout(connect, 3000);
   };
   
-  eventSource = es;
+  ws.onerror = () => {
+    error = 'Connection error';
+  };
+  
+  socket = ws;
 }
 
 function disconnect() {
-  if (eventSource) {
-    eventSource.close();
-    eventSource = null;
+  if (socket) {
+    socket.close();
+    socket = null;
   }
   expirationMonitor.stopAll();
 }
