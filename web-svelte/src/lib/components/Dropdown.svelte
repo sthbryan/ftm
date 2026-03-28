@@ -98,7 +98,7 @@
   }
 </script>
 
-<div class="dropdown-container h-fit relative {className}">
+<div class="dropdown-container h-fit relative flex {className}">
   <button
     type="button"
     {id}
@@ -108,7 +108,7 @@
     aria-haspopup="true"
     class={cn(
       "flex items-center gap-1.5 px-3 py-2 text-xs h-9 rounded-lg border min-h-9 cursor-pointer",
-      "bg-card border-border text-text hover:bg-hover",
+      "bg-card border-border text-text hover:bg-hover flex-1",
     )}
   >
     {#if children}
