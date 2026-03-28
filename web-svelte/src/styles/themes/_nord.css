@@ -12,6 +12,7 @@
   --color-border: #4c566a;
   --color-border-light: #434c5e;
   --color-primary: #88c0d0;
+  --color-btn-text: #2e3440;
   --color-primary-hover: #81a1c1;
   --color-hover: #434c5e;
   --color-btn-primary: #88c0d0;
@@ -61,6 +62,7 @@
   --color-border: #d8dee9;
   --color-border-light: #e5e9f0;
   --color-primary: #5e81ac;
+  --color-btn-text: #ffffff;
   --color-primary-hover: #4c566a;
   --color-hover: #d8dee9;
   --color-btn-primary: #5e81ac;
