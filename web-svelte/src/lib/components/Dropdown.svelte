@@ -36,8 +36,8 @@
   });
 </script>
 
-<div class="dropdown {className}" id={id}>
-  <button type="button" class="dropdown-trigger" onclick={toggle} aria-label={ariaLabel}>
+<div class="dropdown {className}">
+  <button type="button" class="dropdown-trigger" id={id || undefined} onclick={toggle} aria-label={ariaLabel}>
     <span class="trigger-text">
       {label || 'Options'}
     </span>
