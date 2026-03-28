@@ -14,7 +14,13 @@ export type TunnelState = 'stopped' | 'starting' | 'installing' | 'online' | 'er
 export interface CreateTunnelInput {
   name: string;
   provider: string;
-  port: number;
+  localPort: number;
+}
+
+export interface UpdateTunnelInput {
+  name?: string;
+  provider?: string;
+  localPort?: number;
 }
 
 export interface StartResponse {

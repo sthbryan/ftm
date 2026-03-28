@@ -16,7 +16,9 @@ func (m *Model) View() string {
 	case viewLogs:
 		return m.viewLogs()
 	case viewAddForm:
-		return m.viewAddForm()
+		return m.viewAddForm(false)
+	case viewEditForm:
+		return m.viewAddForm(true)
 	case viewDownloading:
 		return m.viewDownloading()
 	default:
@@ -134,10 +136,11 @@ func (m *Model) getTunnelName(id string) string {
 	return ""
 }
 
-func (m *Model) viewAddForm() string {
+func (m *Model) viewAddForm(isEdit bool) string {
 	view := views.NewFormView()
 	view.Width = m.Width
 	view.Focus = m.FormFocus
+	view.IsEditMode = isEdit
 	view.Name = m.FormValues.Name
 	view.Provider = m.FormValues.Provider
 	view.Port = m.FormValues.Port

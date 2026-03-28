@@ -10,6 +10,8 @@
   import Toasts from '$lib/components/Toasts.svelte';
   import ConnectionsPanel from '$lib/components/ConnectionsPanel.svelte';
   import NewConnection from '$lib/components/NewConnection.svelte';
+  import EditConnection from '$lib/components/EditConnection.svelte';
+  import '$lib/styles/components.css';
   
   const store = useTunnels();
   const toast = useToast();
@@ -17,6 +19,7 @@
   const theme = useTheme();
 
   let deleteTunnel = $state(null);
+  let editingTunnelId = $state(null);
 
   onMount(async () => {
     theme.init();
@@ -28,8 +31,15 @@
     store.disconnect();
   });
   
-  function handleShowDelete(tunnel) {
-    deleteTunnel = tunnel;
+  function handleAction(action, data) {
+    switch (action) {
+      case 'edit':
+        editingTunnelId = data;
+        break;
+      case 'delete':
+        deleteTunnel = data;
+        break;
+    }
   }
   
   function handleConfirmDelete() {
@@ -44,6 +54,14 @@
   function handleCancelDelete() {
     deleteTunnel = null;
   }
+
+  function handleEditCancel() {
+    editingTunnelId = null;
+  }
+
+  function handleEditSaved() {
+    editingTunnelId = null;
+  }
 </script>
 
 <svelte:head>
@@ -56,9 +74,17 @@
   <Header />
 
   <main class="app-main">
-    <NewConnection />
+    {#if editingTunnelId}
+      <EditConnection 
+        tunnelId={editingTunnelId} 
+        onCancel={handleEditCancel}
+        onSaved={handleEditSaved}
+      />
+    {:else}
+      <NewConnection />
+    {/if}
 
-    <ConnectionsPanel onShowDelete={handleShowDelete} />
+    <ConnectionsPanel onAction={handleAction} />
   </main>
 
   <Footer />

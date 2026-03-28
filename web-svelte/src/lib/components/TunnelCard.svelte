@@ -1,9 +1,12 @@
 <script>
   import { useToast } from '$lib/stores/toast.svelte';
-  import { Copy, AlertCircle } from 'lucide-svelte';
+  import { Copy, AlertCircle, FileText, Pencil, Trash2 } from 'lucide-svelte';
   import { createLogStream, getLogs } from '$lib/api';
+  import Dropdown from './Dropdown.svelte';
   
-  let { tunnel, onStart, onStop, onShowDelete, index = 0, installProgress = null } = $props();
+  let { tunnel, onStart, onStop, onAction, index = 0, totalItems = 1, installProgress = null } = $props();
+
+  let zIndex = $derived(totalItems - index);
   
   const toast = useToast();
   
@@ -47,6 +50,18 @@
     timeout: { class: 'error', text: 'Timeout' },
     error: { class: 'error', text: 'Error' }
   };
+  
+  const isRunning = $derived(
+    tunnel.state === 'online' || 
+    tunnel.state === 'starting' || 
+    tunnel.state === 'connecting' || 
+    tunnel.state === 'installing' || 
+    tunnel.state === 'downloading'
+  );
+
+  const isInstalling = $derived(
+    tunnel.state === 'installing' || tunnel.state === 'downloading'
+  );
   
   function getStatusClass() {
     return statusMap[tunnel.state]?.class || 'stopped';
@@ -95,6 +110,27 @@
     });
   }
   
+  function handleDropdownAction(option) {
+    switch (option.action) {
+      case 'edit':
+        onAction?.('edit', tunnel.id);
+        break;
+      case 'logs':
+        loadLogs();
+        break;
+      case 'delete':
+        onAction?.('delete', tunnel);
+        break;
+    }
+  }
+
+  const dropdownOptions = $derived([
+    { label: 'Edit', action: 'edit', icon: Pencil, disabled: isRunning },
+    { label: 'Logs', action: 'logs', icon: FileText },
+    { label: 'separator', action: 'separator' },
+    { label: 'Delete', action: 'delete', icon: Trash2, danger: true }
+  ]);
+  
   function getInstallPercent() {
     if (!installProgress) return 0;
     return installProgress.percent || 0;
@@ -108,7 +144,7 @@
 
 <div 
   class="connection-item {getStatusClass()}" 
-  style="--stagger-delay: {index * 50}ms"
+  style="--stagger-delay: {index * 50}ms; z-index: {zIndex}"
 >
   <div class="connection-content">
     <div class="connection-main">
@@ -130,17 +166,20 @@
         {/if}
       </div>
       <div class="connection-actions">
-        {#if tunnel.state === 'online' || tunnel.state === 'starting' || tunnel.state === 'connecting' || tunnel.state === 'installing' || tunnel.state === 'downloading'}
-          <button type="button" class="btn btn-stop" onclick={() => onStop(tunnel.id)} disabled={tunnel.state === 'installing' || tunnel.state === 'downloading'}>
-            {tunnel.state === 'installing' || tunnel.state === 'downloading' ? 'Wait...' : 'Stop'}
+        {#if isRunning}
+          <button type="button" class="btn btn-stop" onclick={() => onStop(tunnel.id)} disabled={isInstalling}>
+            {isInstalling ? 'Wait...' : 'Stop'}
           </button>
         {:else}
           <button type="button" class="btn btn-start" onclick={() => onStart(tunnel.id)}>Start</button>
         {/if}
-        <button type="button" class="btn" onclick={loadLogs}>
-          <span class="logs-label">{showLogs ? 'Hide' : 'Logs'}</span>
-        </button>
-        <button type="button" class="btn btn-danger" onclick={() => onShowDelete(tunnel)}>Delete</button>
+          <Dropdown 
+            options={dropdownOptions} 
+            onSelect={handleDropdownAction}
+            width="140px"
+          >
+            <span slot="trigger-text">Options</span>
+          </Dropdown>
       </div>
     </div>
     {#if tunnel.publicUrl}
@@ -176,7 +215,6 @@
     background: var(--card-bg, #ffffff);
     border: 1px solid var(--border-color, #e7e5e4);
     border-radius: 12px;
-    overflow: hidden;
     transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
     opacity: 0;
     transform: translateY(20px);
@@ -344,6 +382,8 @@
     display: flex;
     gap: 8px;
     flex-shrink: 0;
+    position: relative;
+    z-index: 10;
   }
 
   .btn {
@@ -407,6 +447,16 @@
 
   .btn-danger:hover:not(:disabled) {
     background: color-mix(in srgb, var(--btn-danger-bg) 20%, transparent);
+  }
+
+  .btn-edit {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  }
+
+  .btn-edit:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--primary-color) 20%, transparent);
   }
 
   .logs-label {

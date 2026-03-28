@@ -24,6 +24,7 @@
     transform: translateY(-20px);
     animation: headerIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     flex-shrink: 0;
+    z-index: 1;
   }
 
   @media (min-width: 768px) {

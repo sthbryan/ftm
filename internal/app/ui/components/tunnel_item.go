@@ -84,7 +84,7 @@ func (t *TunnelItem) Render() string {
 		parts = append(parts, lipgloss.NewStyle().
 			Foreground(ui.ThemeDefault.Gold).
 			Background(bgColor).
-			Render("➤"))
+			Render("▶"))
 	} else {
 		parts = append(parts, lipgloss.NewStyle().
 			Background(bgColor).

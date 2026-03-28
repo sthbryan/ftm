@@ -9,11 +9,12 @@ import (
 )
 
 type FormView struct {
-	Width    int
-	Focus    int
-	Name     string
-	Provider string
-	Port     string
+	Width      int
+	Focus      int
+	IsEditMode bool
+	Name       string
+	Provider   string
+	Port       string
 }
 
 func NewFormView() *FormView {
@@ -27,19 +28,26 @@ func (f *FormView) Render() string {
 	labelWidth := 17
 	totalWidth := labelWidth + 2 + inputWidth
 
-	header := lipgloss.NewStyle().
+	header := "✨ New Tunnel"
+	subheader := "Create a secure tunnel to your local service"
+	if f.IsEditMode {
+		header = "✏️ Edit Tunnel"
+		subheader = "Modify your tunnel settings"
+	}
+
+	headerStyle := lipgloss.NewStyle().
 		Foreground(t.Gold).
 		Bold(true).
-		Render("✨ New Tunnel")
+		Render(header)
 
-	subheader := lipgloss.NewStyle().
+	subheaderStyle := lipgloss.NewStyle().
 		Foreground(t.TextDim).
-		Render("Create a secure tunnel to your local service")
+		Render(subheader)
 
 	lines := []string{
-		header,
+		headerStyle,
 		"",
-		subheader,
+		subheaderStyle,
 		"",
 		f.nameField(t, inputWidth, labelWidth),
 		"",
@@ -129,25 +137,30 @@ func (f *FormView) portField(t *ui.Theme, inputWidth, labelWidth int) string {
 }
 
 func (f *FormView) submitButton(t *ui.Theme, inputWidth int) string {
+	btnText := "Create Tunnel"
+	if f.IsEditMode {
+		btnText = "Save Changes"
+	}
+
 	btnStyle := lipgloss.NewStyle().
 		Background(t.Bronze).
 		Foreground(t.Text).
 		Bold(true).
-		Padding(0, 3).
+		Padding(0, 6).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(t.Bronze).Width(inputWidth)
 
-	if f.Focus == 3 {
+	if f.Focus == 4 {
 		btnStyle = lipgloss.NewStyle().
 			Background(t.Gold).
 			Foreground(t.Offline).
 			Bold(true).
-			Padding(0, 3).
+			Padding(0, 6).
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(t.Gold).Width(inputWidth)
 	}
 
-	return btnStyle.Render("▶ Create Tunnel")
+	return btnStyle.Render(btnText)
 }
 
 func (f *FormView) labelStyle(t *ui.Theme, field, width int) lipgloss.Style {

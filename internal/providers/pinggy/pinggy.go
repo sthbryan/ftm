@@ -72,9 +72,6 @@ func (p *PinggyCliProvider) Start(ctx context.Context, tunnel config.TunnelConfi
 	args := []string{
 		"-l", fmt.Sprintf("http://localhost:%d", tunnel.LocalPort),
 	}
-	if len(tunnel.CustomArgs) > 0 {
-		args = append(args, tunnel.CustomArgs...)
-	}
 
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Stdout = logWriter

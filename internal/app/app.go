@@ -100,7 +100,6 @@ func (a *App) createDefaultTunnels() {
 			Name:      "Foundry VTT (Default)",
 			Provider:  config.ProviderCloudflared,
 			LocalPort: 30000,
-			AutoStart: false,
 		},
 	}
 	a.Config.Save()

@@ -7,7 +7,7 @@ let eventSource = $state(null);
 let installProgress = $state({});
 
 function handleSSEEvent(msg) {
-  // Evento de instalación
+  
   if (msg.type === 'install') {
     installProgress = {
       ...installProgress,
@@ -21,7 +21,7 @@ function handleSSEEvent(msg) {
     return;
   }
   
-  // Eventos de túnel tienen `id` directo
+  
   if (!msg.id) return;
   
   tunnels = tunnels.map(t => {
@@ -30,13 +30,16 @@ function handleSSEEvent(msg) {
     const newState = msg.state || 'stopped';
     return {
       ...t,
+      name: msg.name ?? t.name,
+      provider: msg.provider ?? t.provider,
+      port: msg.port ?? t.port,
       state: newState,
       publicUrl: msg.publicUrl ?? t.publicUrl,
       errorMessage: msg.errorMessage ?? t.errorMessage
     };
   });
   
-  // Limpiar progress cuando pasa a online
+  
   const tunnel = tunnels.find(t => t.id === msg.id);
   if (tunnel && tunnel.state === 'online') {
     const updated = { ...installProgress };
@@ -119,6 +122,17 @@ function add(data) {
   });
 }
 
+function update(id, data) {
+  return tunnelsApi.update(id, data).then(updated => {
+    tunnels = tunnels.map(t => t.id === id ? updated : t);
+    return updated;
+  });
+}
+
+function getById(id) {
+  return tunnels.find(t => t.id === id);
+}
+
 export function useTunnels() {
   return {
     get tunnels() { return tunnels; },
@@ -131,6 +145,8 @@ export function useTunnels() {
     start,
     stop,
     delete: remove,
-    create: add
+    create: add,
+    update,
+    getById
   };
 }

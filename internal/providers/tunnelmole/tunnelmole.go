@@ -105,9 +105,6 @@ func (p *TunnelmoleProvider) Start(ctx context.Context, tunnel config.TunnelConf
 	ctx, cancel := context.WithCancel(ctx)
 
 	args := []string{fmt.Sprintf("%d", tunnel.LocalPort)}
-	if len(tunnel.CustomArgs) > 0 {
-		args = append(args, tunnel.CustomArgs...)
-	}
 
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Stdout = logWriter

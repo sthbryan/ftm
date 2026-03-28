@@ -3,7 +3,7 @@
   import TunnelCard from './TunnelCard.svelte';
   import { Radio } from 'lucide-svelte';
 
-  let { onShowDelete } = $props();
+  let { onAction } = $props();
 
   const store = useTunnels();
 </script>
@@ -31,10 +31,10 @@
           <TunnelCard
             {tunnel}
             {index}
+            totalItems={store.tunnels.length}
             onStart={store.start}
             onStop={store.stop}
-            onDelete={store.delete}
-            {onShowDelete}
+            {onAction}
             installProgress={store.installProgress[tunnel.provider]}
           />
         {/each}

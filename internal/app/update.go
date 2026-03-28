@@ -82,6 +82,7 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, m.Keys.Back):
 		if m.State != viewList {
 			m.State = viewList
+			m.editingTunnelID = ""
 			return m, nil
 		}
 
@@ -95,7 +96,7 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleListKey(msg)
 	case viewLogs:
 		return m.handleLogsKey(msg)
-	case viewAddForm:
+	case viewAddForm, viewEditForm:
 		return m.handleFormKey(msg)
 	case viewDownloading:
 		if key.Matches(msg, m.Keys.Back) || key.Matches(msg, m.Keys.Quit) {
@@ -155,6 +156,24 @@ func (m *Model) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			Port:     "30000",
 		}
 
+	case key.Matches(msg, m.Keys.Edit):
+		if item, ok := m.selectedItem(); ok {
+
+			if item.Status.State != config.TunnelStateStopped {
+				m.showMessage("Stop tunnel first to edit")
+				return m, nil
+			}
+			m.State = viewEditForm
+			m.editingTunnelID = item.Tunnel.ID
+			m.FormFocus = 0
+			m.FormValues = FormData{
+				ID:       item.Tunnel.ID,
+				Name:     item.Tunnel.Name,
+				Provider: string(item.Tunnel.Provider),
+				Port:     fmt.Sprintf("%d", item.Tunnel.LocalPort),
+			}
+		}
+
 	case key.Matches(msg, m.Keys.Delete):
 		if item, ok := m.selectedItem(); ok {
 			m.App.Manager.Stop(item.Tunnel.ID)
@@ -192,28 +211,32 @@ func (m *Model) updateLogViewport() {
 func (m *Model) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "tab":
-		m.FormFocus = (m.FormFocus + 1) % 4
+		m.FormFocus = (m.FormFocus + 1) % 5
 
 	case "shift+tab":
-		m.FormFocus = (m.FormFocus - 1 + 4) % 4
+		m.FormFocus = (m.FormFocus - 1 + 5) % 5
 
 	case "enter":
-		if m.FormFocus == 3 {
+		switch m.FormFocus {
+		case 4:
 			m.submitForm()
-		} else {
+		default:
 			m.FormFocus++
 		}
 
 	case "esc":
 		m.State = viewList
+		m.editingTunnelID = ""
 
 	case "left":
-		if m.FormFocus == 1 {
+		switch m.FormFocus {
+		case 1:
 			m.handleFormInput("left")
 		}
 
 	case "right":
-		if m.FormFocus == 1 {
+		switch m.FormFocus {
+		case 1:
 			m.handleFormInput("right")
 		}
 
@@ -286,20 +309,36 @@ func (m *Model) submitForm() {
 		return
 	}
 
-	id := strings.ToLower(strings.ReplaceAll(m.FormValues.Name, " ", "-"))
+	if m.editingTunnelID != "" {
+		for i := range m.App.Config.Tunnels {
+			if m.App.Config.Tunnels[i].ID == m.editingTunnelID {
+				m.App.Config.Tunnels[i].Name = m.FormValues.Name
+				m.App.Config.Tunnels[i].Provider = config.Provider(m.FormValues.Provider)
+				m.App.Config.Tunnels[i].LocalPort = parsePort(m.FormValues.Port)
+				break
+			}
+		}
+		m.editingTunnelID = ""
+		m.App.SaveConfig()
+		m.refreshItems()
+		m.State = viewList
+		m.showMessage("Tunnel updated!")
+	} else {
+		id := strings.ToLower(strings.ReplaceAll(m.FormValues.Name, " ", "-"))
 
-	tunnel := config.TunnelConfig{
-		ID:        id,
-		Name:      m.FormValues.Name,
-		Provider:  config.Provider(m.FormValues.Provider),
-		LocalPort: parsePort(m.FormValues.Port),
+		tunnel := config.TunnelConfig{
+			ID:        id,
+			Name:      m.FormValues.Name,
+			Provider:  config.Provider(m.FormValues.Provider),
+			LocalPort: parsePort(m.FormValues.Port),
+		}
+
+		m.App.Config.AddTunnel(tunnel)
+		m.App.SaveConfig()
+		m.refreshItems()
+		m.State = viewList
+		m.showMessage("Tunnel added!")
 	}
-
-	m.App.Config.AddTunnel(tunnel)
-	m.App.SaveConfig()
-	m.refreshItems()
-	m.State = viewList
-	m.showMessage("Tunnel added!")
 }
 
 func parsePort(s string) int {

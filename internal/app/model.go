@@ -21,6 +21,7 @@ const (
 	viewList viewState = iota
 	viewLogs
 	viewAddForm
+	viewEditForm
 	viewConfirm
 	viewDownloading
 )
@@ -36,6 +37,7 @@ type KeyMap struct {
 	Copy   key.Binding
 	Web    key.Binding
 	Add    key.Binding
+	Edit   key.Binding
 	Delete key.Binding
 	Config key.Binding
 	Back   key.Binding
@@ -76,6 +78,10 @@ var DefaultKeys = KeyMap{
 		key.WithKeys("a"),
 		key.WithHelp("a", "add"),
 	),
+	Edit: key.NewBinding(
+		key.WithKeys("e"),
+		key.WithHelp("e", "edit"),
+	),
 	Delete: key.NewBinding(
 		key.WithKeys("d"),
 		key.WithHelp("d", "delete"),
@@ -111,6 +117,7 @@ type Model struct {
 	SelectedTunnel      string
 	FormFocus           int
 	FormValues          FormData
+	editingTunnelID     string
 	Message             string
 	MessageTimer        int
 	DownloadProgress    providers.DownloadProgress
@@ -121,6 +128,7 @@ type Model struct {
 }
 
 type FormData struct {
+	ID       string
 	Name     string
 	Provider string
 	Port     string

@@ -1,8 +1,10 @@
 <script>
   import { useTheme } from "$lib/stores/theme.svelte";
   import { useSound } from "$lib/stores/sound.svelte";
+  import Dropdown from './Dropdown.svelte';
 
   const theme = useTheme();
+  const sound = useSound();
 
   const themeLabels = {
     nord: "Nord",
@@ -25,34 +27,36 @@
     purple: "Purple",
   };
 
-  const sound = useSound();
+  const themeOptions = $derived(theme.themes.map(t => ({
+    label: themeLabels[t] || t,
+    value: t
+  })));
+
+  const selectedTheme = $derived(themeOptions.find(t => t.value === theme.current));
+
+  function selectTheme(option) {
+    theme.set(option.value);
+  }
 </script>
 
 <div class="theme-switcher" role="group" aria-label="Theme and sound controls">
-  <div class="theme-select">
-    <label for="theme-select" class="sr-only">Theme</label>
-    <select
-      id="theme-select"
-      onchange={(e) => theme.set(e.target.value)}
-      value={theme.current}
-      aria-label="Select theme"
-    >
-      {#each theme.themes as t}
-        <option value={t}>{themeLabels[t]}</option>
-      {/each}
-    </select>
-  </div>
+  <Dropdown 
+    options={themeOptions} 
+    onSelect={selectTheme}
+    align="left"
+    class="min-w-150"
+    ariaLabel="Select theme"
+    label={selectedTheme?.label || 'Theme'}
+  />
 
-  <div class="controls">
-    <button
-      class="sound-button"
-      onclick={() => sound.toggle()}
-      aria-pressed={sound.enabled}
-      title={sound.enabled ? "Sound on" : "Sound off"}
-    >
-      {sound.enabled ? "🔊" : "🔇"}
-    </button>
-  </div>
+  <button
+    class="sound-button"
+    onclick={() => sound.toggle()}
+    aria-pressed={sound.enabled}
+    title={sound.enabled ? "Sound on" : "Sound off"}
+  >
+    {sound.enabled ? "🔊" : "🔇"}
+  </button>
 </div>
 
 <style>
@@ -63,46 +67,21 @@
     margin-top: 10px;
   }
 
-  .theme-select select {
-    padding: 8px 10px;
-    height: 36px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    background: var(--card-bg);
-    color: var(--text-color);
-    appearance: none;
-    cursor: pointer;
-  }
-
-  .controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
   .sound-button {
     height: 36px;
     width: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid var(--border-color);
     background: var(--card-bg);
     color: var(--text-color);
     cursor: pointer;
-    aspect-ratio: 1 / 1;
+    font-size: 16px;
   }
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+  .sound-button:hover {
+    background: var(--hover-bg);
   }
 </style>

@@ -89,9 +89,6 @@ func (p *CloudflaredProvider) Start(ctx context.Context, tunnel config.TunnelCon
 		"tunnel",
 		"--url", fmt.Sprintf("http://localhost:%d", tunnel.LocalPort),
 	}
-	if len(tunnel.CustomArgs) > 0 {
-		args = append(args, tunnel.CustomArgs...)
-	}
 
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Stdout = logWriter

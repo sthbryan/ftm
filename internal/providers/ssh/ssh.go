@@ -98,13 +98,14 @@ func (p *SSHProvider) Start(ctx context.Context, tunnel config.TunnelConfig, log
 	}
 
 	var args []string
-	if p.host == "localhost.run" {
+	switch p.host {
+	case "localhost.run":
 		args = append(baseArgs,
 			"-o", "BatchMode=yes",
 			"-R", fmt.Sprintf("80:localhost:%d", tunnel.LocalPort),
 			"nokey@localhost.run",
 		)
-	} else if p.host == "serveo.net" {
+	case "serveo.net":
 		keyPath, err := p.ensureSSHKey()
 		if err != nil {
 			cancel()
@@ -117,10 +118,6 @@ func (p *SSHProvider) Start(ctx context.Context, tunnel config.TunnelConfig, log
 			"-R", fmt.Sprintf("80:localhost:%d", tunnel.LocalPort),
 			"serveo.net",
 		)
-	}
-
-	if len(tunnel.CustomArgs) > 0 {
-		args = append(args, tunnel.CustomArgs...)
 	}
 
 	cmd := exec.CommandContext(ctx, binary, args...)

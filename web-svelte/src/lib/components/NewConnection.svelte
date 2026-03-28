@@ -3,23 +3,39 @@
   import { useTunnels } from '$lib/stores/tunnels.svelte';
   import { useToast } from '$lib/stores/toast.svelte';
   import { useProviders, detectPort } from '$lib/stores/providers.svelte';
+  import Dropdown from './Dropdown.svelte';
 
   const store = useTunnels();
   const toast = useToast();
   const providerStore = useProviders();
 
-  let formData = $state({ name: '', provider: 'cloudflared', localPort: 30000 });
+  let formData = $state({ name: '', provider: 'cloudflared', localPort: 30000, autoStart: false });
+
+  const providerOptions = $derived(providerStore.providers.map(p => ({
+    label: p.name,
+    value: p.id
+  })));
+
+  const selectedProvider = $derived(providerOptions.find(p => p.value === formData.provider));
 
   onMount(async () => {
     const detectedPort = await detectPort();
     formData.localPort = detectedPort;
   });
 
+  function selectProvider(option) {
+    formData.provider = option.value;
+  }
+
+  function toggleAutoStart() {
+    formData.autoStart = !formData.autoStart;
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     const name = formData.name;
-    await store.create(formData);
-    formData = { name: '', provider: 'cloudflared', localPort: formData.localPort };
+    await store.create({ ...formData });
+    formData = { name: '', provider: 'cloudflared', localPort: formData.localPort, autoStart: false };
     toast.success(`Connection "${name}" created`);
   }
 </script>
@@ -41,18 +57,20 @@
           <input type="number" id="port" bind:value={formData.localPort} min="1" max="65535" required />
         </div>
         <div class="field-group">
-          <label for="provider">Provider</label>
-          <div class="select-wrap">
-            <select id="provider" bind:value={formData.provider} required>
-              {#each providerStore.providers as p}
-                <option value={p.id}>{p.name}</option>
-              {/each}
-            </select>
-          </div>
+          <label for="provider" class="field-label">Provider</label>
+          <Dropdown 
+            id="provider"
+            class="w-full"
+            options={providerOptions} 
+            onSelect={selectProvider}
+            align="left"
+            ariaLabel="Select provider"
+            label={selectedProvider?.label || 'Select'}
+          />
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary btn-full">
+      <button type="submit" class="btn btn-primary btn-full mt-20">
         Create Connection
       </button>
     </form>
@@ -60,168 +78,7 @@
 </section>
 
 <style>
-  .panel {
-    background: var(--card-bg);
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    border: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
-    opacity: 0;
-    transform: translateY(30px);
-    animation: panelIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    animation-delay: 0.1s;
-    min-height: 0;
-  }
-
-  .panel:hover {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
-    transform: translateY(-1px);
-  }
-
-  @keyframes panelIn {
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border-light);
-    background: var(--url-bg);
-    flex-shrink: 0;
-  }
-
-  .panel-header h2 {
-    font-family: 'Crimson Pro', Georgia, serif;
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--text-heading);
-    margin: 0;
-  }
-
-  .panel-body {
-    padding: 18px;
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-  }
-
-  .field-group {
-    margin-bottom: 14px;
-  }
-
-  .field-group input {
-    height: 42px;
-  }
-
-  .field-row {
-    display: grid;
-    grid-template-columns: 90px 1fr;
-    gap: 10px;
-  }
-
-  @media (max-width: 500px) {
-    .field-row {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
-    margin-bottom: 5px;
-  }
-
-  input, select {
-    width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px !important;
-    font-size: 13px;
-    font-family: inherit;
-    background: var(--card-bg);
-    color: var(--text-color);
-    box-sizing: border-box;
-  }
-
-  input::placeholder {
-    color: var(--input-placeholder, var(--text-muted));
-  }
-
-  input:disabled, select:disabled {
-    background: var(--input-disabled, var(--hover-bg));
-    color: var(--text-muted);
-  }
-
-  input:focus, select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
-  }
-
-  .select-wrap {
-    position: relative;
-  }
-
-  .select-wrap select {
-    height: 42px;
-    appearance: none;
-    cursor: pointer;
-  }
-
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid var(--border-color);
-    background: var(--card-bg);
-    color: var(--text-color);
-    transition: all 0.2s ease;
-  }
-
-  .btn:hover {
-    background: var(--hover-bg);
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, var(--btn-primary-bg) 0%, var(--btn-primary-hover-bg) 100%);
-    color: var(--badge-text);
-    border-color: var(--btn-primary-bg);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--btn-primary-bg) 30%, transparent), 0 2px 4px color-mix(in srgb, var(--btn-primary-bg) 20%, transparent);
-  }
-
-  .btn-primary:hover {
-    background: linear-gradient(135deg, var(--btn-primary-hover-bg) 0%, var(--btn-primary-bg) 100%);
-    border-color: var(--btn-primary-hover-bg);
-    box-shadow: 0 6px 16px color-mix(in srgb, var(--btn-primary-bg) 35%, transparent), 0 3px 6px color-mix(in srgb, var(--btn-primary-bg) 25%, transparent);
-    transform: translateY(-1px);
-  }
-
-  .btn-full {
-    width: 100%;
-    padding: 12px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .panel {
-      animation: none;
-      opacity: 1;
-      transform: none;
-    }
+  .mt-20 {
+    margin-top: 20px;
   }
 </style>
