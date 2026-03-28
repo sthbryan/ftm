@@ -1,6 +1,10 @@
+import { useToast } from './toast.svelte.js';
+
 let permission = $state('default');
 let useOSNotifications = $state(false);
 let enabled = $state(false);
+
+const toast = useToast();
 
 const notificationStore = {
   get permission() { return permission; },
@@ -17,7 +21,10 @@ const notificationStore = {
   },
   
   async requestPermission() {
-    if (!('Notification' in window)) return false;
+    if (!('Notification' in window)) {
+      useOSNotifications = false;
+      return false;
+    }
     
     if (permission === 'default') {
       const result = await Notification.requestPermission();
@@ -35,10 +42,8 @@ const notificationStore = {
   },
   
   enable() {
-    if (permission === 'granted') {
-      enabled = true;
-      localStorage.setItem('ftm-notifications-enabled', 'true');
-    }
+    enabled = true;
+    localStorage.setItem('ftm-notifications-enabled', 'true');
   },
   
   disable() {
@@ -46,18 +51,33 @@ const notificationStore = {
     localStorage.setItem('ftm-notifications-enabled', 'false');
   },
   
-  notify(title, body) {
+  notify(title, body, type = 'info') {
     if (!enabled) return;
     
     if (useOSNotifications && permission === 'granted') {
       new Notification(title, { body });
+      return;
     }
+    
+    toast.show(body, type);
   },
   
-  notifyOnline(name, url) { this.notify('Tunnel Active', `${name} - ${url}`); },
-  notifyError(name, err) { this.notify('Tunnel Error', `${name}: ${err}`); },
-  notifyExpiring(name, mins) { this.notify('Tunnel Expiring', `${name}: ${mins} min remaining`); },
-  notifyExpired(name) { this.notify('Tunnel Expired', `${name} session ended`); }
+  notifyOnline(name, url) {
+    this.notify('Tunnel Active', `${name} - ${url}`, 'success');
+  },
+  
+  notifyError(name, err) {
+    this.notify('Tunnel Error', `${name}: ${err}`, 'error');
+  },
+  
+  notifyExpiring(name, mins) {
+    const title = mins <= 1 ? 'Last Minute!' : 'Tunnel Expiring';
+    this.notify(title, `${name}: ${mins} min remaining`, mins <= 1 ? 'error' : 'info');
+  },
+  
+  notifyExpired(name) {
+    this.notify('Tunnel Expired', `${name} session ended`, 'error');
+  }
 };
 
 export function useNotifications() {

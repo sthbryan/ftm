@@ -14,23 +14,14 @@
   let logs = $state('');
   let loadingLogs = $state(false);
   let justStarted = $state(false);
-  let prevStatus = $state('');
   let logStream = $state(null);
   
   $effect(() => {
     const currentStatus = tunnel.state;
-    if (currentStatus === 'online' && prevStatus !== 'online' && prevStatus !== '') {
+    if (currentStatus === 'online') {
       justStarted = true;
-      toast.success(`Tunnel "${tunnel.name}" is now running!`);
       setTimeout(() => justStarted = false, 600);
     }
-    if (currentStatus === 'error' && prevStatus !== 'error') {
-      toast.error(`Tunnel "${tunnel.name}" failed to start`);
-    }
-    if (currentStatus === 'timeout' && prevStatus !== 'timeout') {
-      toast.error(`Tunnel "${tunnel.name}" timed out`);
-    }
-    prevStatus = currentStatus;
   });
   
   const providerNames = {
