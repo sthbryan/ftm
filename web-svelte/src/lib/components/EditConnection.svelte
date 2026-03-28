@@ -26,18 +26,30 @@
   const selectedProvider = $derived(providerOptions.find(p => p.value === formData.provider));
 
   $effect(() => {
-    if (tunnelId && tunnelId !== currentTunnelId) {
-      currentTunnelId = tunnelId;
-      
-      const tunnel = store.getById(tunnelId);
-      if (tunnel) {
-        formData = {
-          name: tunnel.name || '',
-          provider: tunnel.provider || 'cloudflared',
-          localPort: tunnel.port || 30000,
-        };
-      }
+    // depend on tunnels list so this re-runs when tunnels are loaded/updated
+    const tunnels = store.tunnels;
+
+    if (!tunnelId) {
+      return;
     }
+
+    const tunnel = store.getById(tunnelId);
+    if (!tunnel) {
+      // tunnel data not yet available; wait for tunnels to update
+      return;
+    }
+
+    if (currentTunnelId === tunnelId) {
+      // already initialized formData for this tunnel; avoid overwriting user edits
+      return;
+    }
+
+    currentTunnelId = tunnelId;
+    formData = {
+      name: tunnel.name || '',
+      provider: tunnel.provider || 'cloudflared',
+      localPort: tunnel.port || 30000,
+    };
   });
 
   function selectProvider(option) {
