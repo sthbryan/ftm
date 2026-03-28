@@ -11,14 +11,12 @@ type SettingsView struct {
 	Width                int
 	NotificationsEnabled bool
 	NotificationSound    bool
-	Theme                string
 	Focused              int
 }
 
 func NewSettingsView() *SettingsView {
 	return &SettingsView{
-		Theme:    "system",
-		Focused:  0,
+		Focused: 0,
 	}
 }
 
@@ -29,14 +27,11 @@ func (s *SettingsView) Render() string {
 	header := lipgloss.NewStyle().
 		Foreground(t.Gold).
 		Bold(true).
-		Render("⚙️  Settings")
+		Render("⚙ Settings")
 
 	b.WriteString(header)
 	b.WriteString("\n")
 	b.WriteString(strings.Repeat("─", 30))
-	b.WriteString("\n\n")
-
-	b.WriteString(lipgloss.NewStyle().Foreground(t.Text).Bold(true).Render("Notifications"))
 	b.WriteString("\n\n")
 
 	b.WriteString(s.renderToggle(
@@ -53,27 +48,11 @@ func (s *SettingsView) Render() string {
 		s.Focused == 1,
 		t,
 	))
-	b.WriteString("\n\n")
-
-	b.WriteString(lipgloss.NewStyle().Foreground(t.Text).Bold(true).Render("Appearance"))
-	b.WriteString("\n\n")
-
-	themes := []string{"light", "dark", "system"}
-	themeLabels := []string{"Light", "Dark", "System"}
-	for i, theme := range themes {
-		b.WriteString(s.renderOption(
-			themeLabels[i],
-			s.Theme == theme,
-			s.Focused == i+2,
-			t,
-		))
-		if i < len(themes)-1 {
-			b.WriteString("\n")
-		}
-	}
 
 	b.WriteString("\n\n")
-	b.WriteString(lipgloss.NewStyle().Foreground(t.TextDim).Render("j/k or ↑/↓: navigate  |  space/enter: toggle/select  |  esc: back"))
+	b.WriteString(lipgloss.NewStyle().
+		Foreground(t.TextDim).
+		Render("↑/↓ navigate  •  space toggle  •  esc back"))
 
 	return b.String()
 }
@@ -82,58 +61,24 @@ func (s *SettingsView) renderToggle(label string, enabled bool, focused bool, t 
 	var b strings.Builder
 
 	if focused {
-		b.WriteString(lipgloss.NewStyle().Foreground(t.Gold).Render(" ▸ "))
+		b.WriteString(lipgloss.NewStyle().Foreground(t.Gold).Render("▸ "))
 	} else {
-		b.WriteString("   ")
+		b.WriteString("  ")
 	}
 
-	icon := "○"
+	icon := "[ ]"
 	if enabled {
-		icon = "●"
+		icon = "✓"
 	}
 
-	iconStyle := lipgloss.NewStyle().Foreground(t.Success)
+	iconStyle := lipgloss.NewStyle().Foreground(t.Success).Bold(true)
 	if focused {
-		iconStyle = iconStyle.Bold(true)
+		iconStyle = iconStyle.Underline(true)
 	}
 
 	b.WriteString(iconStyle.Render(icon))
 	b.WriteString(" ")
 	b.WriteString(label)
-
-	if focused {
-		b.WriteString(lipgloss.NewStyle().Foreground(t.TextDim).Render(" [space to toggle]"))
-	}
-
-	return b.String()
-}
-
-func (s *SettingsView) renderOption(label string, selected bool, focused bool, t *ui.Theme) string {
-	var b strings.Builder
-
-	if focused {
-		b.WriteString(lipgloss.NewStyle().Foreground(t.Gold).Render(" ▸ "))
-	} else {
-		b.WriteString("   ")
-	}
-
-	icon := "○"
-	if selected {
-		icon = "●"
-	}
-
-	iconStyle := lipgloss.NewStyle().Foreground(t.Gold)
-	if selected {
-		iconStyle = iconStyle.Bold(true)
-	}
-
-	b.WriteString(iconStyle.Render(icon))
-	b.WriteString(" ")
-	b.WriteString(label)
-
-	if focused {
-		b.WriteString(lipgloss.NewStyle().Foreground(t.TextDim).Render(" [select]"))
-	}
 
 	return b.String()
 }

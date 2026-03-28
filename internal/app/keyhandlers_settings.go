@@ -23,12 +23,17 @@ func (m *Model) handleSettingsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case key.Matches(msg, m.Keys.Down):
-		if sv.Focused < 4 {
+		if sv.Focused < 1 {
 			sv.Focused++
 		}
 
 	case key.Matches(msg, m.Keys.Enter), key.Matches(msg, m.Keys.Toggle):
 		m.handleSettingsSelect()
+
+	case key.Matches(msg, m.Keys.Back), key.Matches(msg, m.Keys.Quit):
+		m.saveSettings()
+		m.SettingsView = nil
+		m.State = viewList
 	}
 
 	return m, nil
@@ -46,12 +51,6 @@ func (m *Model) handleSettingsSelect() {
 		sv.NotificationsEnabled = !sv.NotificationsEnabled
 	case 1:
 		sv.NotificationSound = !sv.NotificationSound
-	case 2:
-		sv.Theme = "light"
-	case 3:
-		sv.Theme = "dark"
-	case 4:
-		sv.Theme = "system"
 	}
 }
 
@@ -59,7 +58,6 @@ func (m *Model) openSettings() {
 	m.SettingsView = views.NewSettingsView()
 	m.SettingsView.NotificationsEnabled = m.App.Config.NotificationsStatus == config.NotificationGranted
 	m.SettingsView.NotificationSound = m.App.Config.NotificationSound
-	m.SettingsView.Theme = m.App.Config.Theme
 	m.State = viewSettings
 }
 
@@ -77,7 +75,6 @@ func (m *Model) saveSettings() {
 	}
 
 	m.App.Config.NotificationSound = sv.NotificationSound
-	m.App.Config.Theme = sv.Theme
 
 	m.App.SaveConfig()
 }

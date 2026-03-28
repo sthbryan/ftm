@@ -169,7 +169,6 @@ func (m *Model) viewSettings() string {
 	if m.SettingsView != nil {
 		view.NotificationsEnabled = m.SettingsView.NotificationsEnabled
 		view.NotificationSound = m.SettingsView.NotificationSound
-		view.Theme = m.SettingsView.Theme
 		view.Focused = m.SettingsView.Focused
 	}
 	return view.Render()
