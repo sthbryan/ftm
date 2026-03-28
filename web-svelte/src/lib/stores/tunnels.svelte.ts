@@ -1,4 +1,4 @@
-import { tunnelsApi } from '$lib/api';
+import { tunnelsApi, getStatus } from '$lib/api';
 import { useNotifications } from './notification.svelte';
 import { useExpirationMonitor } from './expiration.svelte';
 import type { Tunnel, TunnelState, ToastType } from '$lib/types';
@@ -92,7 +92,14 @@ function connect() {
   if (socket && socket.readyState === WebSocket.OPEN) return;
 
   loading = true;
-  notifications.init();
+
+  getStatus()
+    .then((status) => {
+      notifications.setStatus(status.notificationsStatus);
+    })
+    .catch(() => {
+      notifications.setStatus('pending');
+    });
 
   tunnelsApi.getAll()
     .then((data: Tunnel[]) => {

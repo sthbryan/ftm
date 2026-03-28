@@ -5,7 +5,7 @@
 
   const notifications = useNotifications();
 
-  let show = $derived(notifications.permission === 'default');
+  let show = $derived(notifications.status === 'pending');
   let cardRef: HTMLDivElement | undefined = $state();
   let isAnimatingOut = $state(false);
 
@@ -44,7 +44,7 @@
     if (isAnimatingOut) return;
     isAnimatingOut = true;
     await animateOut();
-    notifications.disable();
+    notifications.reject();
     isAnimatingOut = false;
   }
 </script>
