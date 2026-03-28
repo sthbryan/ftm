@@ -3,7 +3,6 @@ package pinggy
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,11 +13,15 @@ import (
 )
 
 type Installer struct {
-	BaseDir string
+	BaseDir    string
+	downloader *providers.BaseDownloader
 }
 
 func NewInstaller(baseDir string) *Installer {
-	return &Installer{BaseDir: baseDir}
+	return &Installer{
+		BaseDir:    baseDir,
+		downloader: providers.NewBaseDownloader(),
+	}
 }
 
 func (i *Installer) PinggyBin() string {
@@ -62,7 +65,7 @@ func (i *Installer) Install(progress chan<- providers.DownloadProgress) error {
 	}
 
 	dest := i.PinggyBin() + ".tmp"
-	if err := i.download(url, dest, progress); err != nil {
+	if err := i.downloader.Download(url, dest, progress, "pinggy"); err != nil {
 		os.Remove(dest)
 		return fmt.Errorf("failed to download pinggy: %w", err)
 	}
@@ -129,51 +132,4 @@ func (i *Installer) pinggyURL(version string) string {
 	default:
 		return ""
 	}
-}
-
-func (i *Installer) download(url, dest string, progress chan<- providers.DownloadProgress) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return fmt.Errorf("http.Get failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
-	}
-
-	out, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	total := resp.ContentLength
-	downloaded := int64(0)
-	buf := make([]byte, 32*1024)
-
-	for {
-		n, err := resp.Body.Read(buf)
-		if n > 0 {
-			out.Write(buf[:n])
-			downloaded += int64(n)
-			if total > 0 && progress != nil {
-				percent := 10 + float64(downloaded)/float64(total)*80
-				progress <- providers.DownloadProgress{
-					Percent: percent,
-					Current: downloaded,
-					Total:   total,
-					Name:    "pinggy",
-				}
-			}
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
