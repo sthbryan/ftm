@@ -99,7 +99,8 @@ function connect() {
       loading = false;
     });
   
-  const ws = new WebSocket(`ws://${window.location.host}/ws/events`);
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/events`);
   
   ws.onopen = () => {
     console.log('[WS] Connected');
