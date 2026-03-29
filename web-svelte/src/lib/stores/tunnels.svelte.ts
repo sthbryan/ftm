@@ -1,4 +1,5 @@
 import { tunnelsApi, getStatus } from '$lib/api';
+import { subscribeWsMessages } from '$lib/api/ws';
 import { useNotifications } from './notification.svelte';
 import { useExpirationMonitor } from './expiration.svelte';
 import type { Tunnel, TunnelState } from '$lib/types';
@@ -27,7 +28,7 @@ interface InstallProgress {
 let tunnelsById: TunnelMap = $state({});
 let loading = $state(true);
 let error: string | null = $state(null);
-let socket: WebSocket | null = $state(null);
+let unsubscribeWs: (() => void) | null = $state(null);
 let installProgress: InstallProgress = $state({});
 
 const previousStates: Record<string, { state: string; publicUrl: string; errorMessage: string }> = {};
@@ -89,59 +90,24 @@ function processStateMessage(msg: TunnelMessage) {
 }
 
 function connect() {
-  if (socket && socket.readyState === WebSocket.OPEN) return;
+  if (unsubscribeWs) return;
 
   loading = true;
 
-  let statusPort: number | null = null;
-
-  const connectWebSocket = () => {
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const hostname = window.location.hostname.toLowerCase();
-    const isWailsHost =
-      hostname === 'wails' ||
-      hostname === 'wails.localhost' ||
-      hostname.endsWith('.wails.localhost');
-    const wsHost = isWailsHost && statusPort ? `127.0.0.1:${statusPort}` : window.location.host;
-
-    const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/events`);
-
-    ws.onopen = () => {
-      console.log('[WS] Connected');
-    };
-
-    ws.onmessage = (e: MessageEvent) => {
-      try {
-        const msg = JSON.parse(e.data) as TunnelMessage;
-        processStateMessage(msg);
-      } catch (err) {
-        console.error('[WS] Parse error:', err);
-      }
-    };
-
-    ws.onclose = () => {
-      console.log('[WS] Disconnected');
-      socket = null;
-      setTimeout(connect, 5000);
-    };
-
-    ws.onerror = () => {
-      console.error('[WS] Error');
-      error = 'Connection error';
-    };
-
-    socket = ws;
-  };
+  unsubscribeWs = subscribeWsMessages((message) => {
+    if (typeof message !== 'object' || message === null) {
+      return;
+    }
+    processStateMessage(message as TunnelMessage);
+  });
 
   getStatus()
     .then((status) => {
-      statusPort = status.port;
       notifications.setStatus(status.notificationsStatus);
     })
     .catch(() => {
       notifications.setStatus('pending');
-    })
-    .finally(connectWebSocket);
+    });
 
   tunnelsApi.getAll()
     .then((data: Tunnel[]) => {
@@ -163,9 +129,9 @@ function connect() {
 }
 
 function disconnect() {
-  if (socket) {
-    socket.close();
-    socket = null;
+  if (unsubscribeWs) {
+    unsubscribeWs();
+    unsubscribeWs = null;
   }
   expirationMonitor.stopAll();
 }
