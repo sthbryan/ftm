@@ -1,7 +1,7 @@
 import { tunnelsApi, getStatus } from '$lib/api';
 import { useNotifications } from './notification.svelte';
 import { useExpirationMonitor } from './expiration.svelte';
-import type { Tunnel, TunnelState, ToastType } from '$lib/types';
+import type { Tunnel, TunnelState } from '$lib/types';
 
 interface TunnelMap {
   [id: string]: Tunnel;
@@ -124,7 +124,6 @@ function connect() {
 
   ws.onopen = () => {
     console.log('[WS] Connected');
-    notifications.notify('Connected', 'Welcome back!', 'success');
   };
 
   ws.onmessage = (e: MessageEvent) => {
@@ -138,7 +137,6 @@ function connect() {
 
   ws.onclose = () => {
     console.log('[WS] Disconnected');
-    notifications.notify('Disconnected', 'Catch you later!', 'warning');
     socket = null;
   };
 
