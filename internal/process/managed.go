@@ -3,20 +3,63 @@ package process
 import (
 	"bytes"
 	"strings"
+	"sync"
 
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/providers"
 )
 
 type ManagedProcess struct {
-	Config    config.TunnelConfig
-	Provider  providers.Provider
-	Process   *providers.Process
-	LogBuffer *LogBuffer
-	Status    config.TunnelStatus
-	PublicURL string
-	OnUpdate  func(config.TunnelStatus)
-	LogStream chan string
+	Config         config.TunnelConfig
+	Provider       providers.Provider
+	Process        *providers.Process
+	LogBuffer      *LogBuffer
+	Status         config.TunnelStatus
+	PublicURL      string
+	OnUpdate       func(config.TunnelStatus)
+	logsMu         sync.RWMutex
+	logSubscribers map[chan string]struct{}
+}
+
+func (mp *ManagedProcess) addLogSubscriber() (chan string, func()) {
+	ch := make(chan string, 100)
+	mp.logsMu.Lock()
+	if mp.logSubscribers == nil {
+		mp.logSubscribers = make(map[chan string]struct{})
+	}
+	mp.logSubscribers[ch] = struct{}{}
+	mp.logsMu.Unlock()
+
+	cancel := func() {
+		mp.logsMu.Lock()
+		if _, ok := mp.logSubscribers[ch]; ok {
+			delete(mp.logSubscribers, ch)
+			close(ch)
+		}
+		mp.logsMu.Unlock()
+	}
+
+	return ch, cancel
+}
+
+func (mp *ManagedProcess) publishLog(line string) {
+	mp.logsMu.RLock()
+	for ch := range mp.logSubscribers {
+		select {
+		case ch <- line:
+		default:
+		}
+	}
+	mp.logsMu.RUnlock()
+}
+
+func (mp *ManagedProcess) closeLogSubscribers() {
+	mp.logsMu.Lock()
+	for ch := range mp.logSubscribers {
+		close(ch)
+		delete(mp.logSubscribers, ch)
+	}
+	mp.logsMu.Unlock()
 }
 
 type urlCaptureWriter struct {

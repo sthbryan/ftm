@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"net"
@@ -31,9 +32,42 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-type connWrapper struct {
-	conn *websocket.Conn
-	mu   sync.Mutex
+type wsClient struct {
+	conn             *websocket.Conn
+	send             chan []byte
+	done             chan struct{}
+	closeOnce        sync.Once
+	subsMu           sync.Mutex
+	logSubscriptions map[string]context.CancelFunc
+}
+
+func newWSClient(conn *websocket.Conn) *wsClient {
+	return &wsClient{
+		conn:             conn,
+		send:             make(chan []byte, 256),
+		done:             make(chan struct{}),
+		logSubscriptions: make(map[string]context.CancelFunc),
+	}
+}
+
+func (c *wsClient) close() {
+	c.closeOnce.Do(func() {
+		close(c.done)
+	})
+}
+
+func (c *wsClient) enqueue(msg []byte) bool {
+	select {
+	case <-c.done:
+		return false
+	default:
+	}
+	select {
+	case c.send <- msg:
+		return true
+	default:
+		return false
+	}
 }
 
 type Server struct {
@@ -41,7 +75,7 @@ type Server struct {
 	config        *config.Config
 	httpServer    *http.Server
 	port          int
-	clients       map[*websocket.Conn]*connWrapper
+	clients       map[*wsClient]struct{}
 	clientsMu     sync.RWMutex
 	handlers      *Handlers
 	StatusChannel chan config.TunnelStatus
@@ -51,7 +85,7 @@ func NewServer(manager *process.Manager, cfg *config.Config) *Server {
 	s := &Server{
 		manager:       manager,
 		config:        cfg,
-		clients:       make(map[*websocket.Conn]*connWrapper),
+		clients:       make(map[*wsClient]struct{}),
 		StatusChannel: make(chan config.TunnelStatus, 10),
 	}
 	s.handlers = NewHandlers(manager, cfg, s)
@@ -130,17 +164,12 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cw := &connWrapper{conn: conn}
+	client := newWSClient(conn)
 	s.clientsMu.Lock()
-	s.clients[conn] = cw
+	s.clients[client] = struct{}{}
 	s.clientsMu.Unlock()
 
-	defer func() {
-		s.clientsMu.Lock()
-		delete(s.clients, conn)
-		s.clientsMu.Unlock()
-		cw.conn.Close()
-	}()
+	defer s.removeClient(client)
 
 	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	conn.SetPongHandler(func(string) error {
@@ -148,31 +177,146 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 
+	go s.writePump(client)
+
+	for {
+		_, payload, err := conn.ReadMessage()
+		if err != nil {
+			return
+		}
+		s.handleClientMessage(client, payload)
+	}
+}
+
+func (s *Server) writePump(client *wsClient) {
 	pingTicker := time.NewTicker(30 * time.Second)
 	defer pingTicker.Stop()
 
-	done := make(chan struct{})
-	go func() {
-		for {
-			select {
-			case <-pingTicker.C:
-				conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-					return
-				}
-			case <-done:
+	for {
+		select {
+		case <-client.done:
+			return
+		case msg := <-client.send:
+			client.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := client.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+				s.removeClient(client)
+				return
+			}
+		case <-pingTicker.C:
+			client.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				s.removeClient(client)
 				return
 			}
 		}
-	}()
-
-	for {
-		_, _, err := conn.ReadMessage()
-		if err != nil {
-			close(done)
-			break
-		}
 	}
+}
+
+func (s *Server) handleClientMessage(client *wsClient, payload []byte) {
+	var message struct {
+		Type string `json:"type"`
+		ID   string `json:"id"`
+	}
+	if err := json.Unmarshal(payload, &message); err != nil {
+		return
+	}
+
+	switch message.Type {
+	case "logs_subscribe":
+		s.subscribeLogs(client, message.ID)
+	case "logs_unsubscribe":
+		s.unsubscribeLogs(client, message.ID)
+	}
+}
+
+func (s *Server) subscribeLogs(client *wsClient, tunnelID string) {
+	if tunnelID == "" {
+		return
+	}
+
+	client.subsMu.Lock()
+	if _, ok := client.logSubscriptions[tunnelID]; ok {
+		client.subsMu.Unlock()
+		return
+	}
+
+	logCh, unsubscribe := s.manager.SubscribeLogs(tunnelID)
+	if logCh == nil {
+		client.subsMu.Unlock()
+		return
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	client.logSubscriptions[tunnelID] = func() {
+		cancel()
+		unsubscribe()
+	}
+	client.subsMu.Unlock()
+
+	go func() {
+		defer s.unsubscribeLogs(client, tunnelID)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case line, ok := <-logCh:
+				if !ok {
+					return
+				}
+				payload, err := MarshalJSON(map[string]interface{}{
+					"type": "log",
+					"id":   tunnelID,
+					"line": line,
+				})
+				if err != nil {
+					continue
+				}
+				if !client.enqueue(payload) {
+					s.removeClient(client)
+					return
+				}
+			}
+		}
+	}()
+}
+
+func (s *Server) unsubscribeLogs(client *wsClient, tunnelID string) {
+	if tunnelID == "" {
+		return
+	}
+
+	client.subsMu.Lock()
+	cancel, ok := client.logSubscriptions[tunnelID]
+	if ok {
+		delete(client.logSubscriptions, tunnelID)
+	}
+	client.subsMu.Unlock()
+
+	if ok {
+		cancel()
+	}
+}
+
+func (s *Server) removeClient(client *wsClient) {
+	client.close()
+
+	s.clientsMu.Lock()
+	delete(s.clients, client)
+	s.clientsMu.Unlock()
+
+	client.subsMu.Lock()
+	cancels := make([]context.CancelFunc, 0, len(client.logSubscriptions))
+	for tunnelID, cancel := range client.logSubscriptions {
+		cancels = append(cancels, cancel)
+		delete(client.logSubscriptions, tunnelID)
+	}
+	client.subsMu.Unlock()
+
+	for _, cancel := range cancels {
+		cancel()
+	}
+
+	client.conn.Close()
 }
 
 func (s *Server) Stop() error {
@@ -220,22 +364,18 @@ func (s *Server) statusUpdateLoop() {
 }
 
 func (s *Server) broadcast(msg string) {
+	payload := []byte(msg)
+
 	s.clientsMu.RLock()
-	clients := make([]*connWrapper, 0, len(s.clients))
-	for _, cw := range s.clients {
-		clients = append(clients, cw)
+	clients := make([]*wsClient, 0, len(s.clients))
+	for client := range s.clients {
+		clients = append(clients, client)
 	}
 	s.clientsMu.RUnlock()
 
-	for _, cw := range clients {
-		cw.mu.Lock()
-		err := cw.conn.WriteMessage(websocket.TextMessage, []byte(msg))
-		cw.mu.Unlock()
-		if err != nil {
-			s.clientsMu.Lock()
-			cw.conn.Close()
-			delete(s.clients, cw.conn)
-			s.clientsMu.Unlock()
+	for _, client := range clients {
+		if !client.enqueue(payload) {
+			s.removeClient(client)
 		}
 	}
 }

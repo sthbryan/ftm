@@ -52,16 +52,25 @@ func (h *Handlers) handleLogsStream(w http.ResponseWriter, r *http.Request) {
 		flusher.Flush()
 	}
 
-	logChan := h.manager.SubscribeLogs(id)
+	logChan, unsubscribe := h.manager.SubscribeLogs(id)
 	if logChan == nil {
 		fmt.Fprintf(w, "data: [tunnel stopped]\n\n")
 		flusher.Flush()
 		return
 	}
+	defer unsubscribe()
 
-	for line := range logChan {
-		fmt.Fprintf(w, "data: %s\n\n", line)
-		flusher.Flush()
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case line, ok := <-logChan:
+			if !ok {
+				return
+			}
+			fmt.Fprintf(w, "data: %s\n\n", line)
+			flusher.Flush()
+		}
 	}
 }
 

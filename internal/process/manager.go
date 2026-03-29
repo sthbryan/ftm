@@ -20,7 +20,7 @@ type Manager struct {
 	processes           map[string]*ManagedProcess
 	providers           map[config.Provider]providers.Provider
 	DownloadProgress    chan providers.DownloadProgress
-	StatusChannel      chan config.TunnelStatus
+	StatusChannel       chan config.TunnelStatus
 	NotificationHandler func(status config.TunnelStatus)
 	ExpirationCallbacks struct {
 		OnStart func(tunnelID, name, provider string, startedAt time.Time)
@@ -155,12 +155,16 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	}
 
 	logBuffer := NewLogBuffer()
-	logStream := make(chan string, 100)
+	mp := &ManagedProcess{
+		Config:         tunnel,
+		Provider:       provider,
+		LogBuffer:      logBuffer,
+		OnUpdate:       onUpdate,
+		Status:         tunnel.Status(),
+		logSubscribers: make(map[chan string]struct{}),
+	}
 	logBuffer.OnNewLine = func(line string) {
-		select {
-		case logStream <- line:
-		default:
-		}
+		mp.publishLog(line)
 	}
 
 	urlCapture := newURLCapture(provider, func(url string) { m.updateURL(tunnel.ID, url) })
@@ -169,19 +173,9 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	ctx := context.Background()
 	proc, err := provider.Start(ctx, tunnel, writer)
 	if err != nil {
-		close(logStream)
 		return err
 	}
-
-	mp := &ManagedProcess{
-		Config:    tunnel,
-		Provider:  provider,
-		Process:   proc,
-		LogBuffer: logBuffer,
-		OnUpdate:  onUpdate,
-		Status:    tunnel.Status(),
-		LogStream: logStream,
-	}
+	mp.Process = proc
 	mp.Status.State = config.TunnelStateStarting
 
 	m.processes[tunnel.ID] = mp
@@ -248,9 +242,7 @@ func (m *Manager) Stop(tunnelID string) error {
 	mp.Status.State = config.TunnelStateStopping
 	mp.Status.PublicURL = ""
 
-	if mp.LogStream != nil {
-		close(mp.LogStream)
-	}
+	mp.closeLogSubscribers()
 
 	if mp.OnUpdate != nil {
 		mp.OnUpdate(mp.Status)
@@ -316,26 +308,16 @@ func (m *Manager) GetLogs(tunnelID string) []string {
 	return mp.LogBuffer.GetLines()
 }
 
-func (m *Manager) SubscribeLogs(tunnelID string) <-chan string {
+func (m *Manager) SubscribeLogs(tunnelID string) (<-chan string, func()) {
 	m.mu.RLock()
-	defer m.mu.RUnlock()
-
 	mp, ok := m.processes[tunnelID]
-	if !ok || mp.LogStream == nil {
-		return nil
+	m.mu.RUnlock()
+	if !ok {
+		return nil, func() {}
 	}
 
-	logCh := make(chan string, 50)
-	go func() {
-		for line := range mp.LogStream {
-			select {
-			case logCh <- line:
-			default:
-			}
-		}
-		close(logCh)
-	}()
-	return logCh
+	ch, cancel := mp.addLogSubscriber()
+	return ch, cancel
 }
 
 func (m *Manager) IsRunning(tunnelID string) bool {
