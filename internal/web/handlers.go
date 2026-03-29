@@ -63,7 +63,7 @@ func (h *Handlers) Route(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) setCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 }
 
