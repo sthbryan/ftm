@@ -13,11 +13,8 @@ build-web:
 build: build-web
 	go build -ldflags "-X main.Version=$(VERSION)" -o $(BINARY) $(CMD)
 
-wails: build-web
-	cd $(DESKTOP_DIR) && wails build -s
-
-wails-dev: build-web
-	cd $(DESKTOP_DIR) && wails dev
+desktop-dev: build-web
+	cd $(DESKTOP_DIR) && wails build -s -nopackage -devtools
 
 desktop: build-web
 	cd $(DESKTOP_DIR) && wails build -s -nopackage
