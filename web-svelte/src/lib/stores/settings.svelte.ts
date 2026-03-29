@@ -2,8 +2,7 @@ import { getSettings, updateSettings, type Settings } from '$lib/api';
 
 let settings = $state<Settings>({
   notifications_enabled: false,
-  notification_sound: true,
-  theme: 'system'
+  notification_sound: true
 });
 
 let loaded = $state(false);
