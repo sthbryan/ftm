@@ -75,6 +75,12 @@ func (h *Handlers) tunnelToMap(t config.TunnelConfig) map[string]interface{} {
 	}
 
 
+	if item["state"] == "stopped" {
+		if needsInstall, canInstall := h.manager.CheckInstallation(t.Provider); needsInstall && canInstall {
+			item["state"] = "need_installing"
+		}
+	}
+
 	return item
 }
 

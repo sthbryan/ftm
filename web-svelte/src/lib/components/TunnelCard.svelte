@@ -99,6 +99,7 @@
     connecting: { key: "starting", text: "Connecting..." },
     installing: { key: "installing", text: "Installing..." },
     downloading: { key: "installing", text: "Downloading..." },
+    need_installing: { key: "stopped", text: "Needs Install" },
     stopping: { key: "starting", text: "Stopping..." },
     stopped: { key: "stopped", text: "Stopped" },
     offline: { key: "stopped", text: "Offline" },

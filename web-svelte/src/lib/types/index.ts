@@ -15,6 +15,7 @@ export type TunnelState =
   | 'connecting' 
   | 'installing' 
   | 'downloading' 
+  | 'need_installing' 
   | 'stopping' 
   | 'stopped' 
   | 'offline' 

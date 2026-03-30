@@ -9,7 +9,7 @@ export interface Tunnel {
   errorMessage?: string;
 }
 
-export type TunnelState = 'stopped' | 'starting' | 'installing' | 'online' | 'error';
+export type TunnelState = 'stopped' | 'need_installing' | 'starting' | 'installing' | 'online' | 'error';
 
 export interface CreateTunnelInput {
   name: string;

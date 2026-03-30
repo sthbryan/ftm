@@ -39,9 +39,12 @@
       case "edit":
         editingTunnelId = data as string;
         break;
-      case "delete":
-        deleteTunnel = data as Tunnel;
+      case "delete": {
+        const tunnel = data as Tunnel;
+        if (deleteTunnel?.id === tunnel.id) return;
+        deleteTunnel = tunnel;
         break;
+      }
     }
   }
 
