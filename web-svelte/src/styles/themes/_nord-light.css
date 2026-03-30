@@ -23,15 +23,10 @@
   --color-btn-danger: #bf606a;
   --color-btn-danger-hover: #b5545c;
   --color-status-running: #a3be8c;
-  --color-status-running-text: #2e3440;
   --color-status-starting: #ebcb8b;
-  --color-status-starting-text: #2e3440;
   --color-status-installing: #81a1c1;
-  --color-status-installing-text: #eceff4;
   --color-status-error: #bf606a;
-  --color-status-error-text: #eceff4;
-  --color-status-stopped: #d8dee9;
-  --color-status-stopped-text: #4c566a;
+  --color-status-stopped: var(--color-muted);
   --color-logs-bg: #d8dee9;
   --color-logs-text: #2e3440;
   --color-url-bg: #e5e9f0;

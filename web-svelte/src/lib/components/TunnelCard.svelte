@@ -67,29 +67,29 @@
 
   const statusConfig: Record<StatusKey, StatusColors> = {
     running: {
-      bg: "bg-status-running/50",
+      bg: "bg-status-running/40",
       text: "text-status-running",
-      dot: "bg-status-running",
+      dot: "bg-status-running/95",
     },
     starting: {
-      bg: "bg-status-starting/50",
+      bg: "bg-status-starting/40",
       text: "text-status-starting",
-      dot: "bg-status-starting",
+      dot: "bg-status-starting/95",
     },
     installing: {
-      bg: "bg-status-installing/50",
+      bg: "bg-status-installing/40",
       text: "text-status-installing",
-      dot: "bg-status-installing",
+      dot: "bg-status-installing/95",
     },
     error: {
-      bg: "bg-status-error/50",
-      text: "text-status-error-text",
-      dot: "bg-status-error",
+      bg: "bg-status-error/40",
+      text: "text-status-error",
+      dot: "bg-status-error/95",
     },
     stopped: {
-      bg: "bg-status-stopped/50",
+      bg: "bg-status-stopped/40",
       text: "text-status-stopped",
-      dot: "bg-status-stopped",
+      dot: "bg-status-stopped/95",
     },
   };
 
@@ -227,7 +227,7 @@
         {#if tunnelState === "installing" && installProgress}
           <div class="w-full h-1 rounded mt-2 overflow-hidden bg-border">
             <div
-              class="h-full rounded bg-status-installing-dot"
+              class="h-full rounded bg-status-installing"
               style="width: {installPercent}%"
             ></div>
           </div>
@@ -297,7 +297,7 @@
       <div
         class={cn(
           "flex items-center gap-2.5 px-4 py-2.5 border-t sm:px-3.5 sm:py-2.5",
-          "bg-status-error border-t-status-error text-status-error-text",
+          "bg-status-error/15 border-t-status-error/70 text-status-error",
           {
             "rounded-b-xl": !showLogs,
           },
@@ -322,7 +322,7 @@
         </div>
         {#if loadingLogs}
           <div
-            class="flex items-center justify-center gap-3 p-6 sm:p-4 sm:gap-2.5 text-status-stopped-dot"
+            class="flex items-center justify-center gap-3 p-6 sm:p-4 sm:gap-2.5 text-status-stopped"
           >
             <span>Loading logs...</span>
           </div>
