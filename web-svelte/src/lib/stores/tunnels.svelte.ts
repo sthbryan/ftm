@@ -106,7 +106,11 @@ function connect() {
     if (typeof message !== 'object' || message === null) {
       return;
     }
-    processStateMessage(message as TunnelMessage);
+    const msg = message as TunnelMessage;
+    if (msg.type === '__ws_open') {
+      return;
+    }
+    processStateMessage(msg);
   });
 
   statusApi.get()
