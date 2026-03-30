@@ -129,10 +129,21 @@ const notificationStore = {
   },
 
   async requestPermission(): Promise<boolean> {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      status = 'rejected';
-      await settingsApi.update({ notifications_enabled: "rejected" });
+    if (typeof window === 'undefined') {
       return false;
+    }
+
+    const isWails = typeof window !== 'undefined' && (window as any).wails;
+
+    if (!('Notification' in window) || isWails) {
+      console.warn('Notifications API not supported in this browser');
+      try {
+        const settings = await settingsApi.update({ notifications_enabled: "granted" });
+        this.applySettings(settings);
+        return true;
+      } catch {
+        return false;
+      }
     }
 
     const result = await Notification.requestPermission();
