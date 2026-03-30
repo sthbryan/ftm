@@ -18,6 +18,7 @@ interface TunnelMessage {
   publicUrl?: string;
   errorMessage?: string;
   expiresAt?: number;
+  done?: boolean;
   install?: { provider: string; percent: number; step: string };
 }
 
@@ -29,6 +30,7 @@ let tunnelsById: TunnelMap = $state({});
 let loading = $state(true);
 let error: string | null = $state(null);
 let unsubscribeWs: (() => void) | null = $state(null);
+let syncInterval: ReturnType<typeof setInterval> | null = $state(null);
 let installProgress: InstallProgress = $state({});
 
 const previousStates: Record<string, { state: string; publicUrl: string; errorMessage: string }> = {};
@@ -41,6 +43,9 @@ const tunnels = $derived.by(() => Object.values(tunnelsById));
 function processStateMessage(msg: TunnelMessage) {
   if (msg.type === 'install' && msg.install) {
     installProgress = { ...installProgress, [msg.install.provider]: msg.install };
+    if (msg.done) {
+      void syncTunnels();
+    }
     return;
   }
 
@@ -97,6 +102,29 @@ function processStateMessage(msg: TunnelMessage) {
   }
 }
 
+async function syncTunnels() {
+  try {
+    const data = await tunnelsApi.getAll() as Tunnel[];
+    const map: TunnelMap = {};
+    data.forEach(t => { map[t.id] = t; });
+    tunnelsById = map;
+
+    expirationMonitor.stopAll();
+    data.forEach(t => {
+      previousStates[t.id] = { state: t.state, publicUrl: t.publicUrl ?? '', errorMessage: t.errorMessage ?? '' };
+      if (t.state === 'online' && t.expiresAt) {
+        expirationMonitor.start(t);
+      }
+      if (t.state === 'online' && t.provider) {
+        const { [t.provider]: _, ...rest } = installProgress;
+        installProgress = rest as InstallProgress;
+      }
+    });
+  } catch {
+    return;
+  }
+}
+
 function connect() {
   if (unsubscribeWs) return;
 
@@ -108,10 +136,17 @@ function connect() {
     }
     const msg = message as TunnelMessage;
     if (msg.type === '__ws_open') {
+      void syncTunnels();
       return;
     }
     processStateMessage(msg);
   });
+
+  if (!syncInterval) {
+    syncInterval = setInterval(() => {
+      void syncTunnels();
+    }, 5000);
+  }
 
   statusApi.get()
     .then((status) => {
@@ -144,6 +179,10 @@ function disconnect() {
   if (unsubscribeWs) {
     unsubscribeWs();
     unsubscribeWs = null;
+  }
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
   }
   expirationMonitor.stopAll();
 }
