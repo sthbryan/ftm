@@ -46,6 +46,9 @@ func New() (*App, error) {
 		ProviderExpirationMinutes:  cfg.ProviderExpirationMinutes,
 	}
 	app.ExpirationMonitor = notifications.NewExpirationMonitor(expConfig, func(name string, mins int) {
+		if !app.shouldUseNativeNotifications() {
+			return
+		}
 		if mins == 0 {
 			notifications.NotifyTunnelExpired(name)
 		} else {
@@ -54,6 +57,9 @@ func New() (*App, error) {
 	})
 
 	app.Manager.SetNotificationHandler(func(status config.TunnelStatus) {
+		if !app.shouldUseNativeNotifications() {
+			return
+		}
 		switch status.State {
 		case config.TunnelStateOnline:
 			notifications.NotifyTunnelOnline(status.Name, status.PublicURL)
@@ -145,6 +151,13 @@ func (a *App) SaveConfig() error {
 	notifications.SetSoundEnabled(a.Config.NotificationSound)
 	notifications.SetNotificationsEnabled(a.Config.NotificationsStatus == config.NotificationGranted)
 	return a.Config.Save()
+}
+
+func (a *App) shouldUseNativeNotifications() bool {
+	if a.WebServer == nil {
+		return true
+	}
+	return a.WebServer.ClientCount() == 0
 }
 
 func (a *App) Shutdown() {
