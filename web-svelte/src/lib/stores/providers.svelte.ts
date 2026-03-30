@@ -1,4 +1,4 @@
-import { providersApi, api } from '$lib/api';
+import { providersApi } from '$lib/api';
 
 interface Provider {
   id: string;
@@ -29,11 +29,6 @@ export function useProviders() {
   };
 }
 
-export async function detectPort(): Promise<number> {
-  try {
-    const data = await api.get('detect-port').json<{ suggested?: number }>();
-    return data.suggested || 30000;
-  } catch {
-    return 30000;
-  }
+export function detectPort(options?: { forceRefresh?: boolean }): Promise<number> {
+  return providersApi.detectPort(options);
 }

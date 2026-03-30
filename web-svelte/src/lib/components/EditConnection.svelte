@@ -2,7 +2,7 @@
   import { X } from "lucide-svelte";
   import { animate, spring } from "motion";
   import { onMount } from "svelte";
-  import { useProviders } from "$lib/stores/providers.svelte";
+  import { useProviders, detectPort } from "$lib/stores/providers.svelte";
   import { useToast } from "$lib/stores/toast.svelte";
   import { useTunnels } from "$lib/stores/tunnels.svelte";
   import Button from "./Button.svelte";
@@ -70,6 +70,14 @@
       provider: tunnel.provider || "cloudflared",
       localPort: tunnel.port || 30000,
     };
+
+    if (!tunnel.port) {
+      detectPort().then((port) => {
+        if (currentTunnelId === tunnelId) {
+          formData = { ...formData, localPort: port };
+        }
+      });
+    }
   });
 
   function selectProvider(option: DropdownOption) {

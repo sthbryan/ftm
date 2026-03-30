@@ -68,10 +68,11 @@
     e.preventDefault();
     const name = formData.name;
     await store.create({ ...formData });
+    const detectedPort = await detectPort({ forceRefresh: true });
     formData = {
       name: "",
       provider: "cloudflared",
-      localPort: formData.localPort,
+      localPort: detectedPort,
     };
     toast.success(`Connection "${name}" created`);
   }
