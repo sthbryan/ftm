@@ -60,7 +60,10 @@ func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 
 	notifications.SetNotificationsEnabled(h.config.NotificationsStatus == config.NotificationGranted)
 	notifications.SetSoundEnabled(h.config.NotificationSound)
-	h.config.Save()
+	if err := h.config.Save(); err != nil {
+		http.Error(w, "Failed to save config", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{

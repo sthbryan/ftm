@@ -220,7 +220,7 @@ func (s *Server) broadcastTunnelNotification(status config.TunnelStatus) {
 		s.broadcastNotification("tunnel_error", "Tunnel Error", status.Name+": "+status.ErrorMessage, "error", "error")
 	case config.TunnelStateTimeout:
 		s.broadcastNotification("tunnel_timeout", "Tunnel Timeout", status.Name+" could not connect", "error", "error")
-	case config.TunnelStateStopping:
+	case config.TunnelStateStopped:
 		s.broadcastNotification("tunnel_stopped", "Tunnel Stopped", status.Name+" has been stopped", "info", "info")
 	}
 }

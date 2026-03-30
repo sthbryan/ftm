@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { useSettings } from '$lib/stores/settings.svelte';
+  import { useNotifications } from '$lib/stores/notification.svelte';
   import { useTheme } from '$lib/stores/theme.svelte';
   import { Bell, BellOff, Volume2, VolumeX, ChevronLeft } from 'lucide-svelte';
   import SettingsSection from '$lib/components/SettingsSection.svelte';
@@ -9,6 +10,7 @@
   import { themeGroups } from '$lib/data/themes';
 
   const settingsStore = useSettings();
+  const notifications = useNotifications();
   const theme = useTheme();
 
   let saving = $state(false);
@@ -21,7 +23,13 @@
   async function toggleNotifications() {
     saving = true;
     try {
-      await settingsStore.update({ notifications_enabled: !settingsStore.settings.notifications_enabled });
+      if (settingsStore.settings.notifications_enabled) {
+        await settingsStore.update({ notifications_enabled: false });
+        return;
+      }
+
+      await notifications.requestPermission();
+      await settingsStore.load();
     } finally {
       saving = false;
     }
