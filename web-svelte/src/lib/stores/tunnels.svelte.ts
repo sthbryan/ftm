@@ -150,7 +150,34 @@ function start(id: string) {
 }
 
 function stop(id: string) {
-  tunnelsApi.stop(id).catch(() => {});
+  const current = tunnelsById[id];
+  if (!current) return;
+
+  const previous = {
+    state: current.state,
+    publicUrl: current.publicUrl,
+    errorMessage: current.errorMessage
+  };
+
+  tunnelsById = {
+    ...tunnelsById,
+    [id]: { ...current, state: 'stopping' }
+  };
+
+  tunnelsApi.stop(id).catch(() => {
+    const latest = tunnelsById[id];
+    if (!latest) return;
+
+    tunnelsById = {
+      ...tunnelsById,
+      [id]: {
+        ...latest,
+        state: previous.state,
+        publicUrl: previous.publicUrl,
+        errorMessage: previous.errorMessage
+      }
+    };
+  });
 }
 
 function remove(id: string) {

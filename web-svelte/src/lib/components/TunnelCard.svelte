@@ -9,6 +9,7 @@
     Pencil,
     Play,
     Trash2,
+    X,
   } from "lucide-svelte";
   import { logsApi } from "$lib/api";
   import { cn } from "$lib/utils/cn";
@@ -114,7 +115,8 @@
       tunnelState === "starting" ||
       tunnelState === "connecting" ||
       tunnelState === "installing" ||
-      tunnelState === "downloading",
+      tunnelState === "downloading" ||
+      tunnelState === "stopping",
   );
 
   const isInstalling = $derived(
@@ -126,13 +128,18 @@
     toast.info("URL copied to clipboard");
   }
 
+  function closeLogs() {
+    if (logStream) {
+      logStream.close();
+      logStream = null;
+    }
+    loadingLogs = false;
+    showLogs = false;
+  }
+
   function loadLogs() {
     if (showLogs) {
-      if (logStream) {
-        logStream.close();
-        logStream = null;
-      }
-      showLogs = false;
+      closeLogs();
       return;
     }
 
@@ -235,9 +242,9 @@
             variant="error"
             icon={Pause}
             onclick={() => onStop(tunnel.id)}
-            disabled={isInstalling}
+            disabled={isInstalling || tunnelState === "stopping"}
           >
-            {isInstalling ? "Wait..." : "Stop"}
+            {isInstalling ? "Wait..." : tunnelState === "stopping" ? "Stopping..." : "Stop"}
           </Button>
         {:else}
           <Button
@@ -304,6 +311,12 @@
       )}
     >
       <div class="overflow-hidden bg-logs-bg">
+        <div class="flex items-center justify-between px-4 py-2.5 border-b border-border sm:px-3.5 sm:py-2">
+          <span class="text-[11px] font-medium text-muted">Live logs</span>
+          <Button variant="ghost" size="sm" icon={X} onclick={closeLogs}>
+            Close
+          </Button>
+        </div>
         {#if loadingLogs}
           <div
             class="flex items-center justify-center gap-3 p-6 sm:p-4 sm:gap-2.5 text-status-stopped-dot"
