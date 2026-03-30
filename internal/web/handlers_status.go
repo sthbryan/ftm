@@ -18,9 +18,9 @@ func (h *Handlers) handleStatus(w http.ResponseWriter) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"port":                 h.server.Port(),
-		"version":              version.Version,
-		"notificationsStatus":  status,
+		"port":                h.server.Port(),
+		"version":             version.Version,
+		"notificationsStatus": status,
 	})
 }
 

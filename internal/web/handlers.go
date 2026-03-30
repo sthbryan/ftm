@@ -32,14 +32,10 @@ func (h *Handlers) Route(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch {
-	case r.URL.Path == "/api/tunnels" || r.URL.Path == "/api/tunnels/":
+	case r.URL.Path == "/api/tunnels":
 		h.handleTunnels(w, r)
-	case r.URL.Path == "/api/copy-url":
-		h.handleCopyURL(w, r)
 	case strings.HasPrefix(r.URL.Path, "/api/logs/"):
 		h.handleLogs(w, r)
-	case r.URL.Path == "/api/tunnels/reorder":
-		h.handleReorder(w, r)
 	case r.URL.Path == "/api/status":
 		h.handleStatus(w)
 	case r.URL.Path == "/api/notifications":

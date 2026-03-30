@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sthbryan/ftm/internal/clipboard"
 	"github.com/sthbryan/ftm/internal/config"
 )
 
@@ -251,62 +250,6 @@ func (h *Handlers) deleteTunnel(w http.ResponseWriter, id string) {
 			break
 		}
 	}
-	h.server.updateConfig()
-	w.WriteHeader(http.StatusOK)
-}
-
-func (h *Handlers) handleCopyURL(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	var req struct {
-		URL string `json:"url"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	clipboard.Write(req.URL)
-	w.WriteHeader(http.StatusOK)
-}
-
-func (h *Handlers) handleReorder(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	var newOrder []string
-	if err := json.NewDecoder(r.Body).Decode(&newOrder); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	existing := h.config.Tunnels
-	tunnelByID := make(map[string]config.TunnelConfig, len(existing))
-	for i := range existing {
-		tunnelByID[existing[i].ID] = existing[i]
-	}
-
-	reordered := make([]config.TunnelConfig, 0, len(existing))
-	seen := make(map[string]bool, len(existing))
-	for _, id := range newOrder {
-		if t, ok := tunnelByID[id]; ok && !seen[id] {
-			reordered = append(reordered, t)
-			seen[id] = true
-		}
-	}
-
-	for i := range existing {
-		if !seen[existing[i].ID] {
-			reordered = append(reordered, existing[i])
-		}
-	}
-
-	h.config.Tunnels = reordered
 	h.server.updateConfig()
 	w.WriteHeader(http.StatusOK)
 }
