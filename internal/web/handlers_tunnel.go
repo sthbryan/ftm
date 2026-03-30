@@ -189,6 +189,7 @@ func (h *Handlers) startTunnel(w http.ResponseWriter, id string) {
 		}
 		data, _ := MarshalJSON(update)
 		h.server.broadcast(string(data))
+		h.server.broadcastInstallingNotification(*tunnel)
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -222,6 +223,7 @@ func (h *Handlers) installAndStart(tunnel config.TunnelConfig) {
 		}
 		data, _ := MarshalJSON(update)
 		h.server.broadcast(string(data))
+		h.server.broadcastNotification("tunnel_error", "Tunnel Error", tunnel.Name+": Installation failed: "+err.Error(), "error", "error")
 		return
 	}
 
@@ -234,6 +236,7 @@ func (h *Handlers) installAndStart(tunnel config.TunnelConfig) {
 		}
 		data, _ := MarshalJSON(update)
 		h.server.broadcast(string(data))
+		h.server.broadcastNotification("tunnel_error", "Tunnel Error", tunnel.Name+": "+err.Error(), "error", "error")
 	}
 }
 

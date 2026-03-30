@@ -159,12 +159,16 @@ func (s *Server) statusUpdateLoop() {
 		update := map[string]interface{}{
 			"type":         "tunnel_state",
 			"id":           status.ID,
+			"name":         status.Name,
+			"provider":     string(status.Provider),
+			"port":         status.LocalPort,
 			"state":        string(status.State),
 			"publicUrl":    status.PublicURL,
 			"errorMessage": status.ErrorMessage,
 		}
 		data, _ := MarshalJSON(update)
 		s.broadcast(string(data))
+		s.broadcastTunnelNotification(status)
 	}
 }
 
@@ -203,4 +207,46 @@ func (s *Server) getTunnel(id string) *config.TunnelConfig {
 
 func (s *Server) updateConfig() {
 	s.config.Save()
+}
+
+func (s *Server) broadcastTunnelNotification(status config.TunnelStatus) {
+	switch status.State {
+	case config.TunnelStateOnline:
+		if status.PublicURL == "" {
+			return
+		}
+		s.broadcastNotification("tunnel_online", "Tunnel Active", status.Name+" - "+status.PublicURL, "success", "success")
+	case config.TunnelStateError:
+		s.broadcastNotification("tunnel_error", "Tunnel Error", status.Name+": "+status.ErrorMessage, "error", "error")
+	case config.TunnelStateTimeout:
+		s.broadcastNotification("tunnel_timeout", "Tunnel Timeout", status.Name+" could not connect", "error", "error")
+	case config.TunnelStateStopping:
+		s.broadcastNotification("tunnel_stopped", "Tunnel Stopped", status.Name+" has been stopped", "info", "info")
+	}
+}
+
+func (s *Server) broadcastInstallingNotification(tunnel config.TunnelConfig) {
+	s.broadcastNotification("tunnel_installing", "Installing", "Installing tunnel for "+string(tunnel.Provider)+"...", "info", "info")
+}
+
+func (s *Server) broadcastNotification(eventType, title, body, toastType, soundType string) {
+	channel := "toast"
+	if s.config.NotificationsStatus == config.NotificationGranted {
+		channel = "os"
+	}
+
+	update := map[string]interface{}{
+		"type": "notification",
+		"notification": map[string]interface{}{
+			"event":        eventType,
+			"channel":      channel,
+			"title":        title,
+			"body":         body,
+			"toastType":    toastType,
+			"soundType":    soundType,
+			"soundEnabled": s.config.NotificationSound,
+		},
+	}
+	data, _ := MarshalJSON(update)
+	s.broadcast(string(data))
 }

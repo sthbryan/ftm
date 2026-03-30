@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/notifications"
 )
 
 func (h *Handlers) handleSettings(w http.ResponseWriter, r *http.Request) {
@@ -23,15 +24,15 @@ func (h *Handlers) handleGetSettings(w http.ResponseWriter) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"notifications_enabled": h.config.NotificationsStatus == config.NotificationGranted,
 		"notification_sound":    h.config.NotificationSound,
-		"theme":                h.config.Theme,
+		"theme":                 h.config.Theme,
 	})
 }
 
 func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		NotificationsEnabled *bool   `json:"notifications_enabled,omitempty"`
-		NotificationSound   *bool   `json:"notification_sound,omitempty"`
-		Theme               *string `json:"theme,omitempty"`
+		NotificationSound    *bool   `json:"notification_sound,omitempty"`
+		Theme                *string `json:"theme,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -57,12 +58,14 @@ func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	notifications.SetNotificationsEnabled(h.config.NotificationsStatus == config.NotificationGranted)
+	notifications.SetSoundEnabled(h.config.NotificationSound)
 	h.config.Save()
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"notifications_enabled": h.config.NotificationsStatus == config.NotificationGranted,
 		"notification_sound":    h.config.NotificationSound,
-		"theme":                h.config.Theme,
+		"theme":                 h.config.Theme,
 	})
 }
