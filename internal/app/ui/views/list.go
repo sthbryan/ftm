@@ -61,13 +61,9 @@ func (l *ListView) twoColumn() string {
 		Foreground(gold).
 		Bold(true).
 		Render("🎲  Foundry Tunnel Manager")
-	versionLabel := "v" + version.Version
-	if l.Sessions > 0 {
-		versionLabel += "  ws:" + fmt.Sprintf("%d", l.Sessions)
-	}
 	versionStr := lipgloss.NewStyle().
 		Foreground(textDim).
-		Render(versionLabel)
+		Render("v" + version.Version + "  ws:" + fmt.Sprintf("%d", l.Sessions))
 
 	b.WriteString(title)
 	b.WriteString(strings.Repeat(" ", l.Width-lipgloss.Width(title)-lipgloss.Width(versionStr)-ui.HeaderMargin))
@@ -148,13 +144,9 @@ func (l *ListView) singleColumn() string {
 		Foreground(gold).
 		Bold(true).
 		Render("🎲  Foundry Tunnel Manager")
-	versionLabel := "v" + version.Version
-	if l.Sessions > 0 {
-		versionLabel += "  ws:" + fmt.Sprintf("%d", l.Sessions)
-	}
 	versionStr := lipgloss.NewStyle().
 		Foreground(textDim).
-		Render(versionLabel)
+		Render("v" + version.Version + "  ws:" + fmt.Sprintf("%d", l.Sessions))
 
 	b.WriteString(title)
 	b.WriteString(strings.Repeat(" ", l.Width-lipgloss.Width(title)-lipgloss.Width(versionStr)-ui.HeaderMargin))

@@ -51,13 +51,9 @@ func (e *EmptyState) Render() string {
 		Foreground(textDim).
 		Render("Or press 'a' to start")
 
-	tipText := "💡 Tip: Web dashboard at " + e.Dashboard
-	if e.Sessions > 0 {
-		tipText += "  •  ws:" + fmt.Sprintf("%d", e.Sessions)
-	}
 	tip := lipgloss.NewStyle().
 		Foreground(bronze).
-		Render(tipText)
+		Render("💡 Tip: Web dashboard at " + e.Dashboard + "  •  ws:" + fmt.Sprintf("%d", e.Sessions))
 
 	contentHeight := 12
 	paddingTop := (e.Height - contentHeight) / 2
