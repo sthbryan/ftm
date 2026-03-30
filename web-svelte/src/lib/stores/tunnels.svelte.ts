@@ -144,22 +144,35 @@ function disconnect() {
   expirationMonitor.stopAll();
 }
 
-function start(id: string) {
+async function start(id: string) {
+  const current = tunnelsById[id];
+  if (!current) {
+    throw new Error(`Tunnel ${id} not found`);
+  }
+
   tunnelsById = {
     ...tunnelsById,
-    [id]: { ...tunnelsById[id], state: 'starting' }
+    [id]: { ...current, state: 'starting' }
   };
-  tunnelsApi.start(id).catch((e: Error) => {
+
+  try {
+    return await tunnelsApi.start(id);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Failed to start tunnel';
+    const latest = tunnelsById[id] ?? current;
     tunnelsById = {
       ...tunnelsById,
-      [id]: { ...tunnelsById[id], state: 'error', errorMessage: e.message }
+      [id]: { ...latest, state: 'error', errorMessage: message }
     };
-  });
+    throw e;
+  }
 }
 
-function stop(id: string) {
+async function stop(id: string) {
   const current = tunnelsById[id];
-  if (!current) return;
+  if (!current) {
+    throw new Error(`Tunnel ${id} not found`);
+  }
 
   const previous = {
     state: current.state,
@@ -172,10 +185,10 @@ function stop(id: string) {
     [id]: { ...current, state: 'stopping' }
   };
 
-  tunnelsApi.stop(id).catch(() => {
-    const latest = tunnelsById[id];
-    if (!latest) return;
-
+  try {
+    await tunnelsApi.stop(id);
+  } catch (e) {
+    const latest = tunnelsById[id] ?? current;
     tunnelsById = {
       ...tunnelsById,
       [id]: {
@@ -185,33 +198,55 @@ function stop(id: string) {
         errorMessage: previous.errorMessage
       }
     };
-  });
+    throw e;
+  }
 }
 
-function remove(id: string) {
+async function remove(id: string) {
+  const current = tunnelsById[id];
+  if (!current) {
+    throw new Error(`Tunnel ${id} not found`);
+  }
+
   expirationMonitor.stop(id);
   const { [id]: _, ...rest } = tunnelsById;
   tunnelsById = rest as TunnelMap;
-  tunnelsApi.delete(id).catch(() => {});
+
+  try {
+    await tunnelsApi.delete(id);
+  } catch (e) {
+    tunnelsById = { ...tunnelsById, [id]: current };
+    if (current.state === 'online' && current.expiresAt) {
+      expirationMonitor.start(current);
+    }
+    throw e;
+  }
 }
 
-function add(data: { name: string; provider: string; localPort: number }) {
-  tunnelsApi.create(data).then((newTunnel: Tunnel) => {
-    tunnelsById = {
-      ...tunnelsById,
-      [newTunnel.id]: newTunnel
-    };
-  });
+async function add(data: { name: string; provider: string; localPort: number }) {
+  const newTunnel = await tunnelsApi.create(data);
+  tunnelsById = {
+    ...tunnelsById,
+    [newTunnel.id]: newTunnel
+  };
+  return newTunnel;
 }
 
-function update(id: string, data: Partial<Tunnel>) {
-  return tunnelsApi.update(id, data).then((updated: Tunnel) => {
-    tunnelsById = {
-      ...tunnelsById,
-      [id]: updated
-    };
-    return updated;
-  });
+async function update(id: string, data: Partial<Tunnel> & { localPort?: number }) {
+  const payload: { name?: string; provider?: string; localPort?: number } = {};
+
+  if (data.name !== undefined) payload.name = data.name;
+  if (data.provider !== undefined) payload.provider = data.provider;
+
+  const localPort = data.localPort ?? data.port;
+  if (localPort !== undefined) payload.localPort = localPort;
+
+  const updated = await tunnelsApi.update(id, payload);
+  tunnelsById = {
+    ...tunnelsById,
+    [id]: updated
+  };
+  return updated;
 }
 
 export function useTunnels() {

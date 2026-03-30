@@ -17,8 +17,10 @@ async function update(partial: Partial<Settings>) {
   settings = { ...settings, ...partial };
   try {
     settings = await settingsApi.update(partial);
-  } catch {
+    return settings;
+  } catch (e) {
     settings = old;
+    throw e;
   }
 }
 

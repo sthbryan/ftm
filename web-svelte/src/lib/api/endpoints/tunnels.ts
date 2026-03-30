@@ -16,12 +16,15 @@ export const tunnelsApi = {
   start: (id: string): Promise<StartResponse> =>
     api.post(`tunnels/${id}/start`).json<StartResponse>(),
 
-  stop: (id: string): Promise<void> =>
-    api.post(`tunnels/${id}/stop`).json<void>(),
+  stop: async (id: string): Promise<void> => {
+    await api.post(`tunnels/${id}/stop`);
+  },
 
-  delete: (id: string): Promise<void> =>
-    api.delete(`tunnels/${id}`).json<void>(),
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`tunnels/${id}`);
+  },
 
-  reorder: (ids: string[]): Promise<void> =>
-    api.post('tunnels/reorder', { json: ids }).json<void>(),
+  reorder: async (ids: string[]): Promise<void> => {
+    await api.post('tunnels/reorder', { json: ids });
+  },
 };
