@@ -20,14 +20,20 @@
 
   async function toggleNotifications() {
     saving = true;
-    await settingsStore.update({ notifications_enabled: !settingsStore.settings.notifications_enabled });
-    saving = false;
+    try {
+      await settingsStore.update({ notifications_enabled: !settingsStore.settings.notifications_enabled });
+    } finally {
+      saving = false;
+    }
   }
 
   async function toggleSound() {
     saving = true;
-    await settingsStore.update({ notification_sound: !settingsStore.settings.notification_sound });
-    saving = false;
+    try {
+      await settingsStore.update({ notification_sound: !settingsStore.settings.notification_sound });
+    } finally {
+      saving = false;
+    }
   }
 </script>
 

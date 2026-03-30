@@ -93,7 +93,7 @@
       await store.update(tunnelId, {
         name: formData.name,
         provider: formData.provider,
-        port: formData.localPort,
+        localPort: formData.localPort,
       });
       toast.success(`Connection "${formData.name}" updated`);
       onSaved?.();

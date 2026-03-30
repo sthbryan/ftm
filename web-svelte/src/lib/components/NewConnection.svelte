@@ -67,14 +67,19 @@
   async function handleSubmit(e: Event) {
     e.preventDefault();
     const name = formData.name;
-    await store.create({ ...formData });
-    const detectedPort = await detectPort({ forceRefresh: true });
-    formData = {
-      name: "",
-      provider: "cloudflared",
-      localPort: detectedPort,
-    };
-    toast.success(`Connection "${name}" created`);
+
+    try {
+      await store.create({ ...formData });
+      const detectedPort = await detectPort({ forceRefresh: true });
+      formData = {
+        name: "",
+        provider: "cloudflared",
+        localPort: detectedPort,
+      };
+      toast.success(`Connection "${name}" created`);
+    } catch (err) {
+      toast.error(`Failed to create connection: ${(err as Error).message}`);
+    }
   }
 </script>
 

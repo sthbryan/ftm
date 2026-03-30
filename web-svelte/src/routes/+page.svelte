@@ -45,12 +45,17 @@
     }
   }
 
-  function handleConfirmDelete() {
-    if (deleteTunnel) {
-      const name = deleteTunnel.name;
-      store.delete(deleteTunnel.id);
+  async function handleConfirmDelete() {
+    if (!deleteTunnel) return;
+
+    const { id, name } = deleteTunnel;
+
+    try {
+      await store.delete(id);
       toast.success(`Connection "${name}" deleted`);
       deleteTunnel = null;
+    } catch (err) {
+      toast.error(`Failed to delete connection: ${(err as Error).message}`);
     }
   }
 
