@@ -23,8 +23,8 @@
   async function toggleNotifications() {
     saving = true;
     try {
-      if (settingsStore.settings.notifications_enabled) {
-        await settingsStore.update({ notifications_enabled: false });
+      if (settingsStore.settings.notifications_enabled === "granted") {
+        await settingsStore.update({ notifications_enabled: "rejected" });
         return;
       }
 
@@ -68,7 +68,7 @@
             <SettingRow
               icon={BellOff}
               iconActive={Bell}
-              active={settingsStore.settings.notifications_enabled}
+              active={settingsStore.settings.notifications_enabled === "granted"}
               label="Enable Notifications"
               disabled={saving}
               onchange={toggleNotifications}

@@ -1,7 +1,7 @@
 import { api } from '../client';
 
 export interface Settings {
-  notifications_enabled: boolean;
+  notifications_enabled: "granted" | "pending" | "rejected";
   notification_sound: boolean;
 }
 

@@ -29,7 +29,7 @@ function normalizeToastType(type: string | undefined): ToastType {
 
 function deriveStatusFromSettings(settings: Settings): NotificationStatus {
   if (settings.notifications_enabled) {
-    return 'granted';
+    return settings.notifications_enabled as NotificationStatus;
   }
 
   if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -131,7 +131,7 @@ const notificationStore = {
   async requestPermission(): Promise<boolean> {
     if (typeof window === 'undefined' || !('Notification' in window)) {
       status = 'rejected';
-      await settingsApi.update({ notifications_enabled: false });
+      await settingsApi.update({ notifications_enabled: "rejected" });
       return false;
     }
 
@@ -141,7 +141,7 @@ const notificationStore = {
     status = granted ? 'granted' : 'rejected';
 
     try {
-      const settings = await settingsApi.update({ notifications_enabled: granted });
+      const settings = await settingsApi.update({ notifications_enabled: granted ? "granted" : "rejected" });
       this.applySettings(settings);
     } catch {
       return granted;
@@ -152,7 +152,7 @@ const notificationStore = {
 
   reject() {
     status = 'rejected';
-    settingsApi.update({ notifications_enabled: false }).catch(() => {});
+    settingsApi.update({ notifications_enabled: "rejected" });
   },
 
   notify(title: string, body: string, type: ToastType = 'info') {

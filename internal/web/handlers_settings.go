@@ -29,8 +29,8 @@ func (h *Handlers) handleGetSettings(w http.ResponseWriter) {
 
 func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		NotificationsEnabled *bool `json:"notifications_enabled,omitempty"`
-		NotificationSound    *bool `json:"notification_sound,omitempty"`
+		NotificationsEnabled *string `json:"notifications_enabled,omitempty"`
+		NotificationSound    *bool   `json:"notification_sound,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -39,11 +39,7 @@ func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.NotificationsEnabled != nil {
-		if *req.NotificationsEnabled {
-			h.config.NotificationsStatus = config.NotificationGranted
-		} else {
-			h.config.NotificationsStatus = config.NotificationRejected
-		}
+		h.config.NotificationsStatus = *req.NotificationsEnabled
 	}
 
 	if req.NotificationSound != nil {
@@ -59,7 +55,7 @@ func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"notifications_enabled": h.config.NotificationsStatus == config.NotificationGranted,
+		"notifications_enabled": h.config.NotificationsStatus,
 		"notification_sound":    h.config.NotificationSound,
 	})
 }
