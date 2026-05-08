@@ -1,0 +1,143 @@
+# English translations
+
+# App
+app_name: "Foundry Tunnel Manager"
+app_description: "Manage tunnels to expose Foundry VTT"
+
+# General
+ok: "OK"
+cancel: "Cancel"
+close: "Close"
+save: "Save"
+delete: "Delete"
+edit: "Edit"
+create: "Create"
+start: "Start"
+stop: "Stop"
+restart: "Restart"
+status: "Status"
+name: "Name"
+type: "Type"
+port: "Port"
+url: "URL"
+
+# Status
+online: "Online"
+offline: "Offline"
+connecting: "Connecting..."
+error: "Error"
+timeout: "Timeout"
+starting: "Starting..."
+stopping: "Stopping..."
+
+# Providers
+provider_pinggy: "Pinggy"
+provider_serveo: "Serveo"
+provider_cloudflared: "Cloudflared"
+provider_tunnelmole: "Tunnelmole"
+provider_localhostrun: "LocalhostRun"
+
+# Actions
+connect: "Connect"
+disconnect: "Disconnect"
+copy_url: "Copy URL"
+open_browser: "Open in Browser"
+configure: "Configure"
+
+# Form labels
+tunnel_name: "Tunnel Name"
+select_provider: "Select Provider"
+local_port: "Local Port"
+ssh_key: "SSH Key (optional)"
+provider_options: "Provider Options"
+
+# Messages
+confirm_delete: "Are you sure you want to delete this tunnel?"
+confirm_stop: "Are you sure you want to stop this tunnel?"
+copied: "Copied to clipboard"
+connection_failed: "Connection failed"
+connection_success: "Connection successful"
+tunnel_expired: "Tunnel expired"
+tunnel_expiring: "Tunnel expiring soon"
+
+# Notifications
+notification_tunnel_online: "{name} is now online"
+notification_tunnel_offline: "{name} is now offline"
+notification_tunnel_error: "{name} encountered an error"
+notification_tunnel_expiring: "{name} expires in {minutes} minutes"
+notification_tunnel_expired: "{name} has expired"
+
+# Settings
+settings: "Settings"
+language: "Language"
+theme: "Theme"
+notifications: "Notifications"
+enable_notifications: "Enable Notifications"
+notification_sound: "Notification Sound"
+expiration_warnings: "Expiration Warnings"
+
+# Help
+help: "Help"
+press_enter: "Press Enter to select"
+press_esc: "Press Esc to go back"
+press_tab: "Press Tab to switch"
+navigation_hint: "↑↓ Navigate • Enter Select • Esc Back"
+
+# Errors
+error_loading_config: "Error loading configuration"
+error_saving_config: "Error saving configuration"
+error_invalid_port: "Invalid port number"
+error_invalid_name: "Invalid tunnel name"
+error_connection_refused: "Connection refused"
+
+# Labels
+connections: "Your Connections"
+selected_tunnel: "Selected Tunnel"
+select_tunnel_details: "Select a tunnel to view details"
+provider_label: "Provider"
+port_label: "Port"
+status_label: "Status"
+start_action: "Start"
+stop_action: "Stop"
+logs_action: "Logs"
+delete_action: "Delete"
+press_c_copy: "Press 'c' to copy"
+
+# Form
+new_tunnel: "✨ New Tunnel"
+new_tunnel_desc: "Create a secure tunnel to your local service"
+edit_tunnel: "✏️ Edit Tunnel"
+edit_tunnel_desc: "Modify your tunnel settings"
+name_label: "Name"
+tunnel_name_hint: "your tunnel identifier"
+provider_hint: "cloudflare | pinggy | serveo"
+port_hint: "e.g. 3000, 8080"
+type_hint: "type to enter"
+arrow_hint: "← → to change"
+numbers_hint: "numbers only"
+submit_new: "Create Tunnel"
+submit_edit: "Save Changes"
+form_nav_hint: "TAB: navigate  •  ENTER: submit  •  ESC: cancel"
+
+# Empty states
+no_tunnels: "No tunnels configured"
+add_tunnel_prompt: "Press 'a' to add a new tunnel"
+no_logs: "No logs available"
+
+# Empty state
+welcome_title: "Welcome, Dungeon Master!"
+no_tunnels_yet: "You haven't created any tunnels yet."
+tunnels_desc: "Tunnels let your players connect to your Foundry world."
+create_first: "[ Create First Tunnel ]"
+press_a_hint: "Or press 'a' to start"
+tip_dashboard: "💡 Tip: Web dashboard at"
+
+# Settings UI
+settings_title: "⚙ Settings"
+settings_nav_hint: "↑/↓ navigate  •  space/enter toggle  •  esc back"
+
+# Downloads
+downloading: "Downloading..."
+download_complete: "Download complete"
+download_failed: "Download failed"
+download_progress: "{percent}% complete"

@@ -1,0 +1,143 @@
+# Traducciones en español
+
+# App
+app_name: "Gestor de Túneles Foundry"
+app_description: "Gestiona túneles para exponer Foundry VTT"
+
+# General
+ok: "Aceptar"
+cancel: "Cancelar"
+close: "Cerrar"
+save: "Guardar"
+delete: "Eliminar"
+edit: "Editar"
+create: "Crear"
+start: "Iniciar"
+stop: "Detener"
+restart: "Reiniciar"
+status: "Estado"
+name: "Nombre"
+type: "Tipo"
+port: "Puerto"
+url: "URL"
+
+# Status
+online: "En línea"
+offline: "Desconectado"
+connecting: "Conectando..."
+error: "Error"
+timeout: "Tiempo agotado"
+starting: "Iniciando..."
+stopping: "Deteniendo..."
+
+# Providers
+provider_pinggy: "Pinggy"
+provider_serveo: "Serveo"
+provider_cloudflared: "Cloudflared"
+provider_tunnelmole: "Tunnelmole"
+provider_localhostrun: "LocalhostRun"
+
+# Actions
+connect: "Conectar"
+disconnect: "Desconectar"
+copy_url: "Copiar URL"
+open_browser: "Abrir en navegador"
+configure: "Configurar"
+
+# Form labels
+tunnel_name: "Nombre del túnel"
+select_provider: "Seleccionar proveedor"
+local_port: "Puerto local"
+ssh_key: "Clave SSH (opcional)"
+provider_options: "Opciones del proveedor"
+
+# Messages
+confirm_delete: "¿Estás seguro de que quieres eliminar este túnel?"
+confirm_stop: "¿Estás seguro de que quieres detener este túnel?"
+copied: "Copiado al portapapeles"
+connection_failed: "Conexión fallida"
+connection_success: "Conexión exitosa"
+tunnel_expired: "Túnel expirado"
+tunnel_expiring: "Túnel por expirar"
+
+# Notifications
+notification_tunnel_online: "{name} está en línea"
+notification_tunnel_offline: "{name} está desconectado"
+notification_tunnel_error: "{name} encontró un error"
+notification_tunnel_expiring: "{name} expira en {minutes} minutos"
+notification_tunnel_expired: "{name} ha expirado"
+
+# Settings
+settings: "Configuración"
+language: "Idioma"
+theme: "Tema"
+notifications: "Notificaciones"
+enable_notifications: "Habilitar notificaciones"
+notification_sound: "Sonido de notificación"
+expiration_warnings: "Advertencias de expiración"
+
+# Help
+help: "Ayuda"
+press_enter: "Presiona Enter para seleccionar"
+press_esc: "Presiona Esc para volver"
+press_tab: "Presiona Tab para cambiar"
+navigation_hint: "↑↓ Navegar • Enter Seleccionar • Esc Volver"
+
+# Errors
+error_loading_config: "Error al cargar la configuración"
+error_saving_config: "Error al guardar la configuración"
+error_invalid_port: "Número de puerto inválido"
+error_invalid_name: "Nombre de túnel inválido"
+error_connection_refused: "Conexión rechazada"
+
+# Labels
+connections: "Tus Conexiones"
+selected_tunnel: "Túnel Seleccionado"
+select_tunnel_details: "Selecciona un túnel para ver detalles"
+provider_label: "Proveedor"
+port_label: "Puerto"
+status_label: "Estado"
+start_action: "Iniciar"
+stop_action: "Detener"
+logs_action: "Logs"
+delete_action: "Eliminar"
+press_c_copy: "Presiona 'c' para copiar"
+
+# Form labels
+new_tunnel: "✨ Nuevo Túnel"
+new_tunnel_desc: "Crea un túnel seguro a tu servicio local"
+edit_tunnel: "✏️ Editar Túnel"
+edit_tunnel_desc: "Modifica la configuración del túnel"
+name_label: "Nombre"
+tunnel_name_hint: "identificador del túnel"
+provider_hint: "cloudflare | pinggy | serveo"
+port_hint: "ej: 3000, 8080"
+type_hint: "escribe para entrar"
+arrow_hint: "← → para cambiar"
+numbers_hint: "solo números"
+submit_new: "Crear Túnel"
+submit_edit: "Guardar Cambios"
+form_nav_hint: "TAB: navegar  •  ENTER: enviar  •  ESC: cancelar"
+
+# Empty states
+no_tunnels: "No hay túneles configurados"
+add_tunnel_prompt: "Presiona 'a' para agregar un nuevo túnel"
+no_logs: "No hay logs disponibles"
+
+# Empty state
+welcome_title: "¡Bienvenido, Dungeon Master!"
+no_tunnels_yet: "Aún no has creado ningún túnel."
+tunnels_desc: "Los túneles permiten a tus jugadores conectarse a tu mundo de Foundry."
+create_first: "[ Crear Primer Túnel ]"
+press_a_hint: "O presiona 'a' para comenzar"
+tip_dashboard: "💡 Tip: Panel web en"
+
+# Settings UI
+settings_title: "⚙ Configuración"
+settings_nav_hint: "↑/↓ navegar  •  espacio/enter cambiar  •  esc volver"
+
+# Downloads
+downloading: "Descargando..."
+download_complete: "Descarga completa"
+download_failed: "Descarga fallida"
+download_progress: "{percent}% completado"
