@@ -136,6 +136,9 @@ tip_dashboard: "💡 Tip: Panel web en"
 settings_title: "⚙ Configuración"
 settings_nav_hint: "↑/↓ navegar  •  espacio/enter cambiar  •  esc volver"
 
+tunnel_logs: "📋  Logs del Túnel"
+logs_nav_hint: "esc/b: volver • ↑/↓: scroll"
+
 # Downloads
 downloading: "Descargando..."
 download_complete: "Descarga completa"

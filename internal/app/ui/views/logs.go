@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sthbryan/ftm/internal/app/ui"
+	"github.com/sthbryan/ftm/internal/i18n"
 )
 
 type LogsView struct {
@@ -28,7 +29,7 @@ func (l *LogsView) Render() string {
 	header := lipgloss.NewStyle().
 		Foreground(gold).
 		Bold(true).
-		Render("📋  Tunnel Logs")
+		Render(i18n.T("tunnel_logs"))
 
 	b.WriteString(header)
 	b.WriteString("\n\n")
@@ -46,7 +47,7 @@ func (l *LogsView) Render() string {
 
 	b.WriteString(lipgloss.NewStyle().
 		Foreground(textDim).
-		Render("esc/b: back • ↑/↓: scroll"))
+		Render(i18n.T("logs_nav_hint")))
 
 	return b.String()
 }
