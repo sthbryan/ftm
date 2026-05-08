@@ -37,6 +37,8 @@ const TwoColumnThreshold = 100
 type KeyMap struct {
 	Up       key.Binding
 	Down     key.Binding
+	Left     key.Binding
+	Right    key.Binding
 	Enter    key.Binding
 	Toggle   key.Binding
 	Logs     key.Binding
@@ -60,6 +62,14 @@ var DefaultKeys = KeyMap{
 	Down: key.NewBinding(
 		key.WithKeys("down", "j"),
 		key.WithHelp("↓/j", "down"),
+	),
+	Left: key.NewBinding(
+		key.WithKeys("left", "h"),
+		key.WithHelp("←/h", "prev"),
+	),
+	Right: key.NewBinding(
+		key.WithKeys("right", "l"),
+		key.WithHelp("→/l", "next"),
 	),
 	Enter: key.NewBinding(
 		key.WithKeys("enter"),
