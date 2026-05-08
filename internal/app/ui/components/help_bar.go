@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sthbryan/ftm/internal/app/ui"
+	"github.com/sthbryan/ftm/internal/i18n"
 )
 
 type HelpBar struct{}
@@ -15,16 +16,15 @@ func NewHelpBar() *HelpBar {
 
 func (h *HelpBar) Render() string {
 	shortcuts := []string{
-		"↑/↓ navigate",
-		"Enter toggle",
-		"a add",
-		"e edit",
-		"d delete",
-		"s settings",
-		"l logs",
+		i18n.T("navigation_hint"),
+		"a " + i18n.T("create"),
+		"e " + i18n.T("edit"),
+		"d " + i18n.T("delete"),
+		"s " + i18n.T("settings"),
+		"l " + i18n.T("logs"),
 		"w web",
 		"o config",
-		"q quit",
+		"q " + i18n.T("close"),
 	}
 
 	firstLine := strings.Join(shortcuts[:5], "  •  ")

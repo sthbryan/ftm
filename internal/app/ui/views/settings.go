@@ -5,18 +5,21 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sthbryan/ftm/internal/app/ui"
+	"github.com/sthbryan/ftm/internal/i18n"
 )
 
 type SettingsView struct {
 	Width                int
 	NotificationsEnabled bool
 	NotificationSound    bool
+	Language             string
 	Focused              int
 }
 
 func NewSettingsView() *SettingsView {
 	return &SettingsView{
-		Focused: 0,
+		Focused:  0,
+		Language: i18n.GetCurrentLang(),
 	}
 }
 
@@ -27,7 +30,7 @@ func (s *SettingsView) Render() string {
 	header := lipgloss.NewStyle().
 		Foreground(t.Gold).
 		Bold(true).
-		Render("⚙ Settings")
+		Render(i18n.T("settings_title"))
 
 	b.WriteString(header)
 	b.WriteString("\n")
@@ -35,7 +38,7 @@ func (s *SettingsView) Render() string {
 	b.WriteString("\n\n")
 
 	b.WriteString(s.renderToggle(
-		"Enable Notifications",
+		i18n.T("enable_notifications"),
 		s.NotificationsEnabled,
 		s.Focused == 0,
 		t,
@@ -43,16 +46,46 @@ func (s *SettingsView) Render() string {
 	b.WriteString("\n")
 
 	b.WriteString(s.renderToggle(
-		"Sound Effects",
+		i18n.T("notification_sound"),
 		s.NotificationSound,
 		s.Focused == 1,
 		t,
 	))
+	b.WriteString("\n\n")
+
+	b.WriteString(s.renderLanguageSelector(t))
 
 	b.WriteString("\n\n")
 	b.WriteString(lipgloss.NewStyle().
 		Foreground(t.TextDim).
-		Render("↑/↓ navigate  •  space toggle  •  esc back"))
+		Render(i18n.T("settings_nav_hint")))
+
+	return b.String()
+}
+
+func (s *SettingsView) renderLanguageSelector(t *ui.Theme) string {
+	var b strings.Builder
+
+	label := i18n.T("language") + ":"
+
+	if s.Focused == 2 {
+		b.WriteString(lipgloss.NewStyle().Foreground(t.Gold).Render("▸ "))
+	} else {
+		b.WriteString("  ")
+	}
+
+	b.WriteString(label)
+	b.WriteString(" ")
+
+	for _, lang := range i18n.SupportedLanguages() {
+		langName := i18n.LanguageName(lang)
+		if lang == s.Language {
+			b.WriteString(lipgloss.NewStyle().Foreground(t.Gold).Bold(true).Render("[" + langName + "]"))
+		} else {
+			b.WriteString(lipgloss.NewStyle().Foreground(t.TextDim).Render("[" + langName + "]"))
+		}
+		b.WriteString(" ")
+	}
 
 	return b.String()
 }

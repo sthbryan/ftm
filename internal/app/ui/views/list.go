@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sthbryan/ftm/internal/app/ui"
 	"github.com/sthbryan/ftm/internal/app/ui/components"
+	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/version"
 )
 
@@ -76,12 +77,12 @@ func (l *ListView) twoColumn() string {
 	leftHeader := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(text).
-		Render("Your Connections")
+		Render(i18n.T("connections"))
 
 	rightHeader := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(text).
-		Render("Selected Tunnel")
+		Render(i18n.T("selected_tunnel"))
 
 	b.WriteString(leftHeader)
 	b.WriteString(strings.Repeat(" ", leftWidth-lipgloss.Width(leftHeader)+3))

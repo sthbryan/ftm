@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sthbryan/ftm/internal/app/ui"
+	"github.com/sthbryan/ftm/internal/i18n"
 )
 
 type DetailPanel struct {
@@ -39,23 +40,23 @@ func (d *DetailPanel) Render() string {
 	labelStyle := lipgloss.NewStyle().Foreground(ui.ThemeDefault.TextDim)
 	textStyle := lipgloss.NewStyle().Foreground(ui.ThemeDefault.Text)
 
-	b.WriteString(labelStyle.Render("Provider:"))
+	b.WriteString(labelStyle.Render(i18n.T("provider_label") + ":"))
 	b.WriteString(" ")
-	b.WriteString(textStyle.Render(d.Provider))
+	b.WriteString(textStyle.Render(i18n.ProviderText(d.Provider)))
 	b.WriteString("\n")
 
-	b.WriteString(labelStyle.Render("Local Port:"))
+	b.WriteString(labelStyle.Render(i18n.T("port_label") + ":"))
 	b.WriteString(" ")
 	b.WriteString(textStyle.Render(fmt.Sprintf(":%d", d.LocalPort)))
 	b.WriteString("\n\n")
 
-	b.WriteString(labelStyle.Render("Status:"))
+	b.WriteString(labelStyle.Render(i18n.T("status_label") + ":"))
 	b.WriteString(" ")
 	b.WriteString(textStyle.Render(StatusLabel(d.StatusState)))
 	b.WriteString("\n\n")
 
 	if d.StatusState == TunnelStateOnline && d.PublicURL != "" {
-		b.WriteString(labelStyle.Render("Public URL:"))
+		b.WriteString(labelStyle.Render("URL:"))
 		b.WriteString("\n")
 
 		urlBox := lipgloss.NewStyle().
@@ -70,7 +71,7 @@ func (d *DetailPanel) Render() string {
 
 		copyHint := lipgloss.NewStyle().
 			Foreground(ui.ThemeDefault.Bronze).
-			Render("Press 'c' to copy")
+			Render(i18n.T("press_c_copy"))
 		b.WriteString(copyHint)
 		b.WriteString("\n\n")
 	}
@@ -104,13 +105,13 @@ func (d *DetailPanel) actions() string {
 		Padding(0, 2)
 
 	if isActive {
-		actions = append(actions, buttonStyle.Render("[t] Stop"))
+		actions = append(actions, buttonStyle.Render("[t] "+i18n.T("stop_action")))
 	} else {
-		actions = append(actions, buttonStyle.Render("[t] Start"))
+		actions = append(actions, buttonStyle.Render("[t] "+i18n.T("start_action")))
 	}
 
-	actions = append(actions, buttonStyle.Render("[l] Logs"))
-	actions = append(actions, buttonStyle.Render("[d] Delete"))
+	actions = append(actions, buttonStyle.Render("[l] "+i18n.T("logs_action")))
+	actions = append(actions, buttonStyle.Render("[d] "+i18n.T("delete_action")))
 
 	return strings.Join(actions, "  ")
 }
