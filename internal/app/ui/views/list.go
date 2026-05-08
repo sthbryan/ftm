@@ -126,7 +126,7 @@ func (l *ListView) twoColumn() string {
 
 	if l.Message != "" {
 		msgStyle := lipgloss.NewStyle().Foreground(gold).Bold(true)
-		b.WriteString(msgStyle.Render("✓ " + l.Message))
+		b.WriteString(msgStyle.Render(i18n.T("success_prefix") + " " + l.Message))
 		b.WriteString("\n")
 	}
 
@@ -156,7 +156,7 @@ func (l *ListView) singleColumn() string {
 
 	if l.Dashboard != "" {
 		urlStyle := lipgloss.NewStyle().Foreground(gold)
-		b.WriteString(urlStyle.Render("🌐  Dashboard: " + l.Dashboard + " (press 'w')"))
+		b.WriteString(urlStyle.Render(i18n.T("dashboard_label") + " " + l.Dashboard + " " + i18n.T("press_w_hint")))
 		b.WriteString("\n\n")
 	}
 
@@ -165,7 +165,7 @@ func (l *ListView) singleColumn() string {
 
 	if l.Message != "" {
 		msgStyle := lipgloss.NewStyle().Foreground(gold).Bold(true)
-		b.WriteString(msgStyle.Render("✓ " + l.Message))
+		b.WriteString(msgStyle.Render(i18n.T("success_prefix") + " " + l.Message))
 		b.WriteString("\n")
 	}
 

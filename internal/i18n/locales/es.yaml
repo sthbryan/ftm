@@ -139,6 +139,12 @@ settings_nav_hint: "↑/↓ navegar  •  espacio/enter cambiar  •  esc volver
 tunnel_logs: "📋  Logs del Túnel"
 logs_nav_hint: "esc/b: volver • ↑/↓: scroll"
 
+# UI elements
+play_indicator: "▶"
+success_prefix: "✓"
+dashboard_label: "🌐  Panel:"
+press_w_hint: "(presiona 'w')"
+
 # Downloading
 installing: "⬇️  Instalando"
 complete: "¡Completo!"
