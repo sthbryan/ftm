@@ -139,6 +139,11 @@ settings_nav_hint: "↑/↓ navigate  •  space/enter toggle  •  esc back"
 tunnel_logs: "📋  Tunnel Logs"
 logs_nav_hint: "esc/b: back • ↑/↓: scroll"
 
+# Downloading
+installing: "⬇️  Installing"
+complete: "Complete!"
+esc_cancel: "esc: cancel"
+
 # Downloads
 downloading: "Downloading..."
 download_complete: "Download complete"
