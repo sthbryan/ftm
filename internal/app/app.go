@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/notifications"
 	"github.com/sthbryan/ftm/internal/process"
 	"github.com/sthbryan/ftm/internal/providers"
@@ -18,15 +19,22 @@ type App struct {
 	Config            *config.Config
 	Manager           *process.Manager
 	WebServer         *web.Server
-	DownloadProgress   chan providers.DownloadProgress
+	DownloadProgress  chan providers.DownloadProgress
 	ExpirationMonitor *notifications.ExpirationMonitor
 }
 
 func New() (*App, error) {
+
+	if err := i18n.Load(); err != nil {
+		return nil, fmt.Errorf("failed to load translations: %w", err)
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
+
+	i18n.InitFromConfig(cfg)
 
 	manager := process.NewManager()
 
@@ -42,8 +50,8 @@ func New() (*App, error) {
 	notifications.SetNotificationsEnabled(cfg.NotificationsStatus == config.NotificationGranted)
 
 	expConfig := notifications.ExpirationConfig{
-		Thresholds:                 cfg.ExpirationThresholds,
-		ProviderExpirationMinutes:  cfg.ProviderExpirationMinutes,
+		Thresholds:                cfg.ExpirationThresholds,
+		ProviderExpirationMinutes: cfg.ProviderExpirationMinutes,
 	}
 	app.ExpirationMonitor = notifications.NewExpirationMonitor(expConfig, func(name string, mins int) {
 		if !app.shouldUseNativeNotifications() {
