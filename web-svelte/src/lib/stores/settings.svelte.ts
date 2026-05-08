@@ -1,4 +1,5 @@
-import { Settings, settingsApi } from '../api';
+import type { Settings } from '../api';
+import { settingsApi } from '../api';
 import { useNotifications } from './notification.svelte';
 
 let settings = $state<Settings>({
