@@ -157,3 +157,11 @@ downloading: "Downloading..."
 download_complete: "Download complete"
 download_failed: "Download failed"
 download_progress: "{percent}% complete"
+
+# Web settings
+web_settings_title: "Settings"
+notifications_section: "Desktop Notifications"
+enable_notifications_web: "Enable Notifications"
+sound_effects: "Sound Effects"
+appearance_section: "Appearance"
+language_section: "Language"
