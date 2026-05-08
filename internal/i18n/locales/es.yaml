@@ -1,7 +1,5 @@
-# Traducciones en español
-
 # App
-app_name: "Gestor de Túneles Foundry"
+app_name: "Foundry Tunnel Manager"
 app_description: "Gestiona túneles para exponer Foundry VTT"
 
 # General
@@ -46,10 +44,9 @@ configure: "Configurar"
 
 # Form labels
 tunnel_name: "Nombre del túnel"
+tunnel_name_hint: "ej. mi partida de D&D"
 select_provider: "Seleccionar proveedor"
-local_port: "Puerto local"
-ssh_key: "Clave SSH (opcional)"
-provider_options: "Opciones del proveedor"
+local_port: "Puerto"
 
 # Messages
 confirm_delete: "¿Estás seguro de que quieres eliminar este túnel?"
@@ -105,7 +102,7 @@ press_c_copy: "Presiona 'c' para copiar"
 error_label: "Error"
 url_label: "URL"
 
-# Form labels
+# Form
 new_tunnel: "✨ Nuevo Túnel"
 new_tunnel_desc: "Crea un túnel seguro a tu servicio local"
 edit_tunnel: "✏️ Editar Túnel"
@@ -165,3 +162,11 @@ enable_notifications_web: "Habilitar Notificaciones"
 sound_effects: "Efectos de Sonido"
 appearance_section: "Apariencia"
 language_section: "Idioma"
+
+# Web Home
+app_tagline: "Comparte tu mundo con jugadores en todas partes"
+new_connection: "Nueva Conexión"
+select: "Seleccionar"
+create_connection: "Crear Conexión"
+connection_created: "Conexión \"{name}\" creada"
+connection_create_failed: "Error al crear conexión: {error}"

@@ -5,6 +5,7 @@
   import { useProviders, detectPort } from "$lib/stores/providers.svelte";
   import { useToast } from "$lib/stores/toast.svelte";
   import { useTunnels } from "$lib/stores/tunnels.svelte";
+  import { translate } from "$lib/i18n";
   import Button from "./Button.svelte";
   import Dropdown from "./Dropdown.svelte";
   import type { DropdownOption } from "$lib/types";
@@ -12,6 +13,7 @@
   const store = useTunnels();
   const toast = useToast();
   const providerStore = useProviders();
+  let t = $derived($translate);
 
   let sectionEl: HTMLElement | undefined = $state();
   let headerEl: HTMLElement | undefined = $state();
@@ -72,9 +74,9 @@
         provider: "cloudflared",
         localPort: detectedPort,
       };
-      toast.success(`Connection "${name}" created`);
+      toast.success(t("connection_created", { name }));
     } catch (err) {
-      toast.error(`Failed to create connection: ${(err as Error).message}`);
+      toast.error(t("connection_create_failed", { error: (err as Error).message }));
     }
   }
 </script>
@@ -85,25 +87,21 @@
   class="rounded-xl p-5 bg-card border border-border"
 >
   <div bind:this={headerEl} style="opacity: 0;" class="mb-5">
-    <h2
-      class="text-base font-semibold text-text-heading flex items-center gap-2"
-    >
-      New Connection
+    <h2 class="text-base font-semibold text-text-heading flex items-center gap-2">
+      {t("new_connection")}
     </h2>
   </div>
   <div bind:this={contentEl} style="opacity: 0;">
     <form onsubmit={handleSubmit}>
       <div class="mb-4">
-        <label
-          for="name"
-          class="block text-xs font-medium mb-1.5 text-text-muted"
-          >Connection Name</label
-        >
+        <label for="name" class="block text-xs font-medium mb-1.5 text-text-muted">
+          {t("tunnel_name")}
+        </label>
         <input
           type="text"
           id="name"
           bind:value={formData.name}
-          placeholder="e.g. Storm King's Thunder"
+          placeholder={t("tunnel_name_hint")}
           required
           autocomplete="off"
           class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 bg-input-bg text-text border-border focus:ring-primary transition-all duration-200"
@@ -111,10 +109,9 @@
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div class="mb-4">
-          <label
-            for="port"
-            class="block text-xs font-medium mb-1.5 text-text-muted">Port</label
-          >
+          <label for="port" class="block text-xs font-medium mb-1.5 text-text-muted">
+            {t("local_port")}
+          </label>
           <input
             type="number"
             id="port"
@@ -126,30 +123,24 @@
           />
         </div>
         <div class="mb-4">
-          <label
-            for="provider"
-            class="block text-xs font-medium mb-1.5 text-text-muted"
-            >Provider</label
-          >
+          <label for="provider" class="block text-xs font-medium mb-1.5 text-text-muted">
+            {t("select_provider")}
+          </label>
           <Dropdown
             id="provider"
             class="w-full"
             options={providerOptions}
             onSelect={selectProvider}
             align="left"
-            ariaLabel="Select provider"
-            label={selectedProvider?.label || "Select"}
+            ariaLabel={t("select_provider")}
+            label={selectedProvider?.label || t("select")}
           />
         </div>
       </div>
       <div class="mt-5">
-        <Button
-          variant="primary"
-          size="lg"
-          type="submit"
-          class="w-full"
-          icon={Plus}>Create Connection</Button
-        >
+        <Button variant="primary" size="lg" type="submit" class="w-full" icon={Plus}>
+          {t("create_connection")}
+        </Button>
       </div>
     </form>
   </div>

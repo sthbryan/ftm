@@ -1,5 +1,3 @@
-# English translations
-
 # App
 app_name: "Foundry Tunnel Manager"
 app_description: "Manage tunnels to expose Foundry VTT"
@@ -46,10 +44,9 @@ configure: "Configure"
 
 # Form labels
 tunnel_name: "Tunnel Name"
+tunnel_name_hint: "ex. Strahd's Castle"
 select_provider: "Select Provider"
-local_port: "Local Port"
-ssh_key: "SSH Key (optional)"
-provider_options: "Provider Options"
+local_port: "Local"
 
 # Messages
 confirm_delete: "Are you sure you want to delete this tunnel?"
@@ -165,3 +162,11 @@ enable_notifications_web: "Enable Notifications"
 sound_effects: "Sound Effects"
 appearance_section: "Appearance"
 language_section: "Language"
+
+# Web Home
+app_tagline: "Share your world with players everywhere"
+new_connection: "New Connection"
+select: "Select"
+create_connection: "Create Connection"
+connection_created: "Connection \"{name}\" created"
+connection_create_failed: "Failed to create connection: {error}"
