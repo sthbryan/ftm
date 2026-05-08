@@ -9,9 +9,11 @@ close: "Cerrar"
 save: "Guardar"
 delete: "Eliminar"
 edit: "Editar"
+logs: "Logs"
 create: "Crear"
 start: "Iniciar"
 stop: "Detener"
+wait: "Espera..."
 loading: "Cargando..."
 restart: "Reiniciar"
 status: "Estado"
@@ -41,6 +43,7 @@ connect: "Conectar"
 disconnect: "Desconectar"
 copy_url: "Copiar URL"
 open_browser: "Abrir en navegador"
+live_logs: "Logs en vivo"
 configure: "Configurar"
 
 # Form labels
@@ -86,6 +89,8 @@ error_saving_config: "Error al guardar la configuración"
 error_invalid_port: "Número de puerto inválido"
 error_invalid_name: "Nombre de túnel inválido"
 error_connection_refused: "Conexión rechazada"
+error_loading_logs: "Error al cargar logs"
+tunnel_options: "Opciones del túnel"
 
 # Labels
 connections: "Tus Conexiones"
@@ -121,6 +126,8 @@ form_nav_hint: "TAB: navegar  •  ENTER: enviar  •  ESC: cancelar"
 # Empty states
 no_tunnels: "No hay túneles configurados"
 add_tunnel_prompt: "Presiona 'a' para agregar un nuevo túnel"
+logs_action: "Logs"
+click_to_copy: "Clic para copiar"
 no_logs: "No hay logs disponibles"
 
 # Empty state

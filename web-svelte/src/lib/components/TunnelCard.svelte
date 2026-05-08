@@ -12,6 +12,7 @@
     X,
   } from "lucide-svelte";
   import { logsApi } from "$lib/api";
+  import { translate } from "$lib/i18n";
   import { cn } from "$lib/utils/cn";
   import { formatLogs } from "$lib/utils/logs";
   import Button from "./Button.svelte";
@@ -25,7 +26,7 @@
 
   type StatusKey = "running" | "starting" | "installing" | "error" | "stopped";
   type StatusColors = { bg: string; text: string; dot: string };
-  type StatusInfo = { key: StatusKey; text: string };
+  type StatusInfo = { key: StatusKey; textKey: string };
   type InstallProgress = { percent: number; step: string };
 
   interface TunnelCardProps {
@@ -48,6 +49,7 @@
     installProgress = null,
   }: TunnelCardProps = $props();
 
+  let t = $derived($translate);
   const dropdownAlign = $derived(index === totalItems - 1 ? "top-left" : "left");
 
   const toast = useToast();
@@ -94,17 +96,17 @@
   };
 
   const statusMap: Record<TunnelState, StatusInfo> = {
-    online: { key: "running", text: "Online" },
-    starting: { key: "starting", text: "Starting..." },
-    connecting: { key: "starting", text: "Connecting..." },
-    installing: { key: "installing", text: "Installing..." },
-    downloading: { key: "installing", text: "Downloading..." },
-    need_installing: { key: "stopped", text: "Needs Install" },
-    stopping: { key: "starting", text: "Stopping..." },
-    stopped: { key: "stopped", text: "Stopped" },
-    offline: { key: "stopped", text: "Offline" },
-    timeout: { key: "error", text: "Timeout" },
-    error: { key: "error", text: "Error" },
+    online: { key: "running", textKey: "online" },
+    starting: { key: "starting", textKey: "starting" },
+    connecting: { key: "starting", textKey: "connecting" },
+    installing: { key: "installing", textKey: "installing" },
+    downloading: { key: "installing", textKey: "downloading" },
+    need_installing: { key: "stopped", textKey: "need_installing" },
+    stopping: { key: "starting", textKey: "stopping" },
+    stopped: { key: "stopped", textKey: "stopped" },
+    offline: { key: "stopped", textKey: "offline" },
+    timeout: { key: "error", textKey: "timeout" },
+    error: { key: "error", textKey: "error" },
   };
 
   const tunnelState = $derived(tunnel.state as TunnelState);
@@ -126,7 +128,7 @@
 
   function copyUrl(url: string) {
     navigator.clipboard.writeText(url);
-    toast.info("URL copied to clipboard");
+    toast.info(t("copied"));
   }
 
   function closeLogs() {
@@ -154,7 +156,7 @@
         loadingLogs = false;
       })
       .catch(() => {
-        logs = "Failed to load logs";
+        logs = t("error_loading_logs");
         loadingLogs = false;
       });
 
@@ -183,16 +185,18 @@
   }
 
   const dropdownOptions: DropdownOption[] = $derived([
-    { label: "Edit", action: "edit", icon: Pencil, disabled: isRunning },
-    { label: "Logs", action: "logs", icon: FileText },
+    { label: t("edit"), action: "edit", icon: Pencil, disabled: isRunning },
+    { label: t("logs"), action: "logs", icon: FileText },
     { label: "separator", action: "separator" },
-    { label: "Delete", action: "delete", icon: Trash2, danger: true },
+    { label: t("delete"), action: "delete", icon: Trash2, danger: true },
   ]);
 
   const installPercent = $derived(
     Math.trunc((installProgress?.percent ?? 0) * 100) / 100,
   );
-  const installStep = $derived(installProgress?.step ?? "Installing...");
+  const installStep = $derived(installProgress?.step ?? t("installing"));
+
+  const providerLabel = $derived(providerNames[tunnel.provider] || tunnel.provider);
 </script>
 
 <div
@@ -209,7 +213,7 @@
           {tunnel.name}
         </div>
         <div class="text-xs mb-2 sm:text-xs text-muted">
-          {providerNames[tunnel.provider] || tunnel.provider} — Port {tunnel.port}
+          {providerLabel} — {t("port")} {tunnel.port}
         </div>
         <div
           class={cn(
@@ -219,7 +223,7 @@
           )}
         >
           <span class={cn("w-1.5 h-1.5 rounded-full", statusColors.dot)}></span>
-          <span>{statusInfo.text}</span>
+          <span>{t(statusInfo.textKey)}</span>
           {#if tunnelState === "installing" && installProgress}
             <span class="font-semibold ml-1">{installPercent}%</span>
           {/if}
@@ -246,7 +250,7 @@
             onclick={() => onStop(tunnel.id)}
             disabled={isInstalling || tunnelState === "stopping"}
           >
-            {isInstalling ? "Wait..." : tunnelState === "stopping" ? "Stopping..." : "Stop"}
+            {isInstalling ? t("wait") : tunnelState === "stopping" ? t("stopping") : t("stop")}
           </Button>
         {:else}
           <Button
@@ -254,14 +258,14 @@
             icon={Play}
             onclick={() => onStart(tunnel.id)}
           >
-            Start
+            {t("start")}
           </Button>
         {/if}
         <Dropdown
           options={dropdownOptions}
           onSelect={handleDropdownAction}
           align={dropdownAlign}
-          ariaLabel="Tunnel options"
+          ariaLabel={t("tunnel_options")}
         >
           {#snippet children()}
             <Menu size={16} />
@@ -289,7 +293,7 @@
         >
         <span
           class="text-[10px] text-muted opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-          >Click to copy</span
+          >{t("click_to_copy")}</span
         >
       </button>
     {/if}
@@ -315,21 +319,21 @@
     >
       <div class="overflow-hidden bg-logs-bg">
         <div class="flex items-center justify-between px-4 py-2.5 border-b border-border sm:px-3.5 sm:py-2">
-          <span class="text-[11px] font-medium text-muted">Live logs</span>
+          <span class="text-[11px] font-medium text-muted">{t("live_logs")}</span>
           <Button variant="ghost" size="sm" icon={X} onclick={closeLogs}>
-            Close
+            {t("close")}
           </Button>
         </div>
         {#if loadingLogs}
           <div
             class="flex items-center justify-center gap-3 p-6 sm:p-4 sm:gap-2.5 text-status-stopped"
           >
-            <span>Loading logs...</span>
+            <span>{t("loading")}</span>
           </div>
         {:else}
           <pre
             class="m-0 p-4 text-[12px] leading-relaxed whitespace-pre-wrap break-all max-h-[300px] overflow-auto font-mono sm:p-3.5 sm:text-[11px] sm:leading-relaxed text-logs-text">{logs ||
-              "No logs available"}</pre>
+              t("no_logs")}</pre>
         {/if}
       </div>
     </div>

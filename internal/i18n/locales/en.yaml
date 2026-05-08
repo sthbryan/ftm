@@ -9,9 +9,11 @@ close: "Close"
 save: "Save"
 delete: "Delete"
 edit: "Edit"
+logs: "Logs"
 create: "Create"
 start: "Start"
 stop: "Stop"
+wait: "Wait..."
 loading: "Loading..."
 restart: "Restart"
 status: "Status"
@@ -41,6 +43,7 @@ connect: "Connect"
 disconnect: "Disconnect"
 copy_url: "Copy URL"
 open_browser: "Open in Browser"
+live_logs: "Live logs"
 configure: "Configure"
 
 # Form labels
@@ -86,6 +89,8 @@ error_saving_config: "Error saving configuration"
 error_invalid_port: "Invalid port number"
 error_invalid_name: "Invalid tunnel name"
 error_connection_refused: "Connection refused"
+error_loading_logs: "Failed to load logs"
+tunnel_options: "Tunnel options"
 
 # Labels
 connections: "Your Connections"
@@ -121,6 +126,8 @@ form_nav_hint: "TAB: navigate  •  ENTER: submit  •  ESC: cancel"
 # Empty states
 no_tunnels: "No tunnels configured"
 add_tunnel_prompt: "Press 'a' to add a new tunnel"
+logs_action: "Logs"
+click_to_copy: "Click to copy"
 no_logs: "No logs available"
 
 # Empty state
