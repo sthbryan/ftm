@@ -201,7 +201,7 @@ func (l *ListView) renderDetailPanel(width int) string {
 	if l.Cursor < 0 || l.Cursor >= len(l.Items) {
 		return lipgloss.NewStyle().
 			Foreground(ui.ThemeDefault.TextDim).
-			Render("Select a tunnel to view details")
+			Render(i18n.T("select_tunnel_details"))
 	}
 
 	item := l.Items[l.Cursor]
