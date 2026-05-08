@@ -56,7 +56,7 @@ func (d *DetailPanel) Render() string {
 	b.WriteString("\n\n")
 
 	if d.StatusState == TunnelStateOnline && d.PublicURL != "" {
-		b.WriteString(labelStyle.Render("URL:"))
+		b.WriteString(labelStyle.Render(i18n.T("url_label")))
 		b.WriteString("\n")
 
 		urlBox := lipgloss.NewStyle().
@@ -77,7 +77,7 @@ func (d *DetailPanel) Render() string {
 	}
 
 	if d.ErrorMsg != "" {
-		b.WriteString(labelStyle.Render("Error:"))
+		b.WriteString(labelStyle.Render(i18n.T("error_label")))
 		b.WriteString("\n")
 
 		errorBox := lipgloss.NewStyle().
