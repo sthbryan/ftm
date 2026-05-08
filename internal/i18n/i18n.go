@@ -235,3 +235,49 @@ func AddFallback(lang string) {
 		}
 	}
 }
+
+func TranslationsMap() map[string]map[string]string {
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+
+	result := make(map[string]map[string]string)
+	for lang, trans := range store.translations {
+		result[lang] = trans
+	}
+	return result
+}
+
+func GetTranslations(lang string) map[string]string {
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+
+	if trans, ok := store.translations[lang]; ok {
+		return trans
+	}
+	if trans, ok := store.translations[DefaultLang]; ok {
+		return trans
+	}
+	return nil
+}
+
+func GetCurrentTranslations() map[string]string {
+	return GetTranslations(currentLang)
+}
+
+func CurrentLanguage() string {
+	return currentLang
+}
+
+func ChangeLanguage(lang string) {
+	store.mu.RLock()
+	_, ok := store.translations[lang]
+	store.mu.RUnlock()
+
+	if ok {
+		currentLang = lang
+	}
+}
+
+func AvailableLanguages() []string {
+	return SupportedLanguages()
+}

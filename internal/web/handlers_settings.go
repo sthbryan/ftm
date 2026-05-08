@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/notifications"
 )
 
@@ -24,6 +25,7 @@ func (h *Handlers) handleGetSettings(w http.ResponseWriter) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"notifications_enabled": h.config.NotificationsStatus,
 		"notification_sound":    h.config.NotificationSound,
+		"language":              h.config.Language,
 	})
 }
 
@@ -31,6 +33,7 @@ func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		NotificationsEnabled *string `json:"notifications_enabled,omitempty"`
 		NotificationSound    *bool   `json:"notification_sound,omitempty"`
+		Language             *string `json:"language,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -46,6 +49,11 @@ func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 		h.config.NotificationSound = *req.NotificationSound
 	}
 
+	if req.Language != nil {
+		h.config.Language = *req.Language
+		i18n.ChangeLanguage(*req.Language)
+	}
+
 	notifications.SetNotificationsEnabled(h.config.NotificationsStatus == config.NotificationGranted)
 	notifications.SetSoundEnabled(h.config.NotificationSound)
 	if err := h.config.Save(); err != nil {
@@ -57,5 +65,24 @@ func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"notifications_enabled": h.config.NotificationsStatus,
 		"notification_sound":    h.config.NotificationSound,
+		"language":              h.config.Language,
+	})
+}
+
+func (h *Handlers) handleI18n(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	translations := i18n.TranslationsMap()
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"translations": translations,
+		"current":      i18n.CurrentLanguage(),
+		"available":    i18n.AvailableLanguages(),
+	})
+}
+
+func (h *Handlers) handleI18nCurrent(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"translations": i18n.GetCurrentTranslations(),
+		"language":     i18n.CurrentLanguage(),
 	})
 }
