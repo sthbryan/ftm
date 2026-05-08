@@ -70,12 +70,24 @@ func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) handleI18n(w http.ResponseWriter, r *http.Request) {
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = i18n.CurrentLanguage()
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	translations := i18n.TranslationsMap()
+
+	allTranslations := i18n.TranslationsMap()
+	currentTrans := allTranslations[lang]
+	if currentTrans == nil {
+		currentTrans = allTranslations[i18n.DefaultLang]
+		lang = i18n.DefaultLang
+	}
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"translations": translations,
-		"current":      i18n.CurrentLanguage(),
-		"available":    i18n.AvailableLanguages(),
+		"translations": currentTrans,
+		"current":      lang,
+		"available":     i18n.AvailableLanguages(),
 	})
 }
 

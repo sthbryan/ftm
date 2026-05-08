@@ -29,7 +29,7 @@ function createI18nStore() {
         
         update(state => ({
           ...state,
-          translations: data.translations[data.current] || {},
+          translations: data.translations || {},
           language: data.current,
           available: data.available,
           loading: false,
@@ -42,20 +42,20 @@ function createI18nStore() {
 
     async setLanguage(lang: string) {
       try {
-        const res = await fetch('/api/i18n/current');
-        const data = await res.json();
-        
-        
         await fetch('/api/settings', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ language: lang }),
         });
 
+        const res = await fetch('/api/i18n?lang=' + lang);
+        const data = await res.json();
+        
         update(state => ({
           ...state,
           translations: data.translations || {},
-          language: lang,
+          language: data.current,
+          available: data.available,
         }));
       } catch (e) {
         console.error('Failed to set language:', e);
