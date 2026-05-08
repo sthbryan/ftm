@@ -30,6 +30,10 @@ error: "Error"
 timeout: "Timeout"
 starting: "Starting..."
 stopping: "Stopping..."
+stopped: "Stopped"
+need_installing: "Needs Install"
+installing: "Installing..."
+downloading: "Downloading..."
 
 # Providers
 provider_pinggy: "Pinggy"
@@ -157,7 +161,6 @@ complete: "Complete!"
 esc_cancel: "esc: cancel"
 
 # Downloads
-downloading: "Downloading..."
 download_complete: "Download complete"
 download_failed: "Download failed"
 download_progress: "{percent}% complete"
