@@ -13,11 +13,14 @@
   import type { Tunnel } from "$lib/types";
 
   import { cn } from "$lib/utils/cn";
+  import { translate } from "$lib/i18n";
 
   const store = useTunnels();
   const toast = useToast();
   const providerStore = useProviders();
   const theme = useTheme();
+
+  let t = $derived($translate);
 
   let deleteTunnel: Tunnel | null = $state(null);
   let editingTunnelId: string | null = $state(null);
@@ -53,10 +56,12 @@
 
     try {
       await store.delete(id);
-      toast.success(`Connection "${name}" deleted`);
+      toast.success(t("connection_deleted", { name }));
       deleteTunnel = null;
     } catch (err) {
-      toast.error(`Failed to delete connection: ${(err as Error).message}`);
+      toast.error(
+        t("connection_delete_failed", { error: (err as Error).message }),
+      );
     }
   }
 

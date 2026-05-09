@@ -22,6 +22,10 @@ type: "Tipo"
 port: "Puerto"
 url: "URL"
 
+# Modal
+delete_connection: "Eliminar Conexión"
+cannot_undo: "Esta acción no se puede deshacer."
+
 # Status
 online: "En línea"
 offline: "Desconectado"
@@ -56,7 +60,8 @@ select_provider: "Seleccionar proveedor"
 local_port: "Puerto"
 
 # Messages
-confirm_delete: "¿Estás seguro de que quieres eliminar este túnel?"
+confirm_delete: "¿Estás seguro de que quieres eliminar \"{name}\"?"
+confirm_delete_tunnel: "¿Estás seguro de que quieres eliminar \"{name}\"?"
 confirm_stop: "¿Estás seguro de que quieres detener este túnel?"
 copied: "Copiado al portapapeles"
 connection_failed: "Conexión fallida"
@@ -105,7 +110,6 @@ port_label: "Puerto"
 status_label: "Estado"
 start_action: "Iniciar"
 stop_action: "Detener"
-logs_action: "Logs"
 delete_action: "Eliminar"
 press_c_copy: "Presiona 'c' para copiar"
 error_label: "Error"
@@ -156,7 +160,6 @@ dashboard_label: "🌐  Panel:"
 press_w_hint: "(presiona 'w')"
 
 # Downloading
-installing: "⬇️  Instalando"
 complete: "¡Completo!"
 esc_cancel: "esc: cancelar"
 
@@ -179,4 +182,6 @@ new_connection: "Nueva Conexión"
 select: "Seleccionar"
 create_connection: "Crear Conexión"
 connection_created: "Conexión \"{name}\" creada"
+connection_deleted: "Conexión \"{name}\" eliminada"
+connection_delete_failed: "Error al eliminar conexión: {error}"
 connection_create_failed: "Error al crear conexión: {error}"
