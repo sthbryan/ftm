@@ -1,9 +1,10 @@
 <script lang="ts">
   import { useNotifications } from '$lib/stores/notification.svelte.js';
-  import { cn } from '$lib/utils/cn';
-  import { animate } from 'motion';
+  import { translate } from '$lib/i18n';
 
   const notifications = useNotifications();
+
+  let t = $derived($translate);
 
   let show = $derived(notifications.status === 'pending');
   let cardRef: HTMLDivElement | undefined = $state();
@@ -58,8 +59,8 @@
     )}
   >
     <div class="flex flex-col gap-2">
-      <h3 class="m-0 text-[1.1rem] font-semibold text-text-heading">Enable Notifications</h3>
-      <p class="m-0 text-sm leading-relaxed text-text-muted">Get notified when tunnels go online, offline, or are about to expire.</p>
+      <h3 class="m-0 text-[1.1rem] font-semibold text-text-heading">{t('enable_notifications_title')}</h3>
+      <p class="m-0 text-sm leading-relaxed text-text-muted">{t('notifications_prompt')}</p>
       <div class="flex gap-2 mt-1">
         <button
           onclick={request}
@@ -69,7 +70,7 @@
             'bg-primary text-heading border-none'
           )}
         >
-          Enable
+          {t('enable_notifications')}
         </button>
         <button
           onclick={later}
@@ -79,7 +80,7 @@
             'bg-secondary-btn text-secondary-btn-text border border-border'
           )}
         >
-          Not Now
+          {t('not_now')}
         </button>
       </div>
     </div>
