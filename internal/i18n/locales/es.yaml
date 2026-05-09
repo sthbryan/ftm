@@ -116,6 +116,10 @@ error_label: "Error"
 url_label: "URL"
 
 # Form
+edit_connection: "Editar Conexión"
+edit_connection_desc: "Modifica la configuración del túnel"
+connection_name_label: "Nombre de Conexión"
+name_placeholder: "ej. Mi Túnel Increíble"
 new_tunnel: "✨ Nuevo Túnel"
 new_tunnel_desc: "Crea un túnel seguro a tu servicio local"
 edit_tunnel: "✏️ Editar Túnel"

@@ -120,7 +120,7 @@
     <h2
       class="text-base font-semibold text-text-heading flex items-center gap-2"
     >
-      Edit Connection
+      {t("edit_connection")}
     </h2>
     <button
       type="button"
@@ -136,13 +136,13 @@
         <label
           for="edit-name"
           class="block text-xs font-medium mb-1.5 text-text-muted"
-          >Connection Name</label
+          >{t("connection_name_label")}</label
         >
         <input
           type="text"
           id="edit-name"
           bind:value={formData.name}
-          placeholder="e.g. Storm King's Thunder"
+          placeholder={t("name_placeholder")}
           required
           autocomplete="off"
           class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 bg-input-bg text-text border-border focus:ring-primary transition-all duration-200"
@@ -152,7 +152,7 @@
         <div class="mb-4">
           <label
             for="edit-port"
-            class="block text-xs font-medium mb-1.5 text-text-muted">Port</label
+            class="block text-xs font-medium mb-1.5 text-text-muted">{t("port")}</label
           >
           <input
             type="number"
@@ -168,7 +168,7 @@
           <label
             for="edit-provider"
             class="block text-xs font-medium mb-1.5 text-text-muted"
-            >Provider</label
+            >{t("provider_label")}</label
           >
           <Dropdown
             id="edit-provider"
@@ -176,8 +176,8 @@
             options={providerOptions}
             onSelect={selectProvider}
             align="left"
-            ariaLabel="Select provider"
-            label={selectedProvider?.label || "Select"}
+            ariaLabel={t("select_provider")}
+            label={selectedProvider?.label || t("select")}
           />
         </div>
       </div>
@@ -187,10 +187,10 @@
           size="lg"
           type="button"
           onclick={onCancel}
-          class="flex-1">Cancel</Button
+          class="flex-1">{t("cancel")}</Button
         >
         <Button variant="primary" size="lg" type="submit" class="flex-1"
-          >Save</Button
+          >{t("save")}</Button
         >
       </div>
     </form>

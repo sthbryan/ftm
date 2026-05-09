@@ -116,6 +116,10 @@ error_label: "Error"
 url_label: "URL"
 
 # Form
+edit_connection: "Edit Connection"
+edit_connection_desc: "Modify your tunnel settings"
+connection_name_label: "Connection Name"
+name_placeholder: "e.g. My Awesome Tunnel"
 new_tunnel: "✨ New Tunnel"
 new_tunnel_desc: "Create a secure tunnel to your local service"
 edit_tunnel: "✏️ Edit Tunnel"
