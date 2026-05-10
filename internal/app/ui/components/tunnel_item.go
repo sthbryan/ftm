@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sthbryan/ftm/internal/app/ui"
+	"github.com/sthbryan/ftm/internal/i18n"
 )
 
 type TunnelItem struct {
@@ -35,30 +36,30 @@ const (
 func StatusBadge(state int) string {
 	switch state {
 	case TunnelStateStarting, TunnelStateConnecting:
-		return "[...]"
+		return i18n.T("badge_starting")
 	case TunnelStateOnline:
-		return "[ON]"
+		return i18n.T("badge_online")
 	case TunnelStateError, TunnelStateTimeout:
-		return "[ERR]"
+		return i18n.T("badge_error")
 	default:
-		return "[OFF]"
+		return i18n.T("badge_offline")
 	}
 }
 
 func StatusLabel(state int) string {
 	switch state {
 	case TunnelStateStarting:
-		return "STARTING"
+		return i18n.T("status_starting")
 	case TunnelStateConnecting:
-		return "CONNECTING"
+		return i18n.T("status_connecting")
 	case TunnelStateOnline:
-		return "ONLINE"
+		return i18n.T("status_online")
 	case TunnelStateError:
-		return "ERROR"
+		return i18n.T("status_error")
 	case TunnelStateStopped:
-		return "OFFLINE"
+		return i18n.T("status_offline")
 	default:
-		return "OFFLINE"
+		return i18n.T("status_offline")
 	}
 }
 
