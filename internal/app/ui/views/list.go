@@ -61,7 +61,7 @@ func (l *ListView) twoColumn() string {
 	title := lipgloss.NewStyle().
 		Foreground(gold).
 		Bold(true).
-		Render("🎲  Foundry Tunnel Manager")
+		Render(i18n.T("app_name_tui"))
 	versionStr := lipgloss.NewStyle().
 		Foreground(textDim).
 		Render("v" + version.Version + "  ws:" + fmt.Sprintf("%d", l.Sessions))
@@ -144,7 +144,7 @@ func (l *ListView) singleColumn() string {
 	title := lipgloss.NewStyle().
 		Foreground(gold).
 		Bold(true).
-		Render("🎲  Foundry Tunnel Manager")
+		Render(i18n.T("app_name_tui"))
 	versionStr := lipgloss.NewStyle().
 		Foreground(textDim).
 		Render("v" + version.Version + "  ws:" + fmt.Sprintf("%d", l.Sessions))

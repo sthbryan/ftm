@@ -238,8 +238,8 @@ validation_required_fields: "Nombre y Puerto son requeridos"
 
 # TUI Elements
 app_name_tui: "🎲  Foundry Tunnel Manager"
-shortcut_web: "w web"
-shortcut_config: "o config"
+web: "web"
+config: "configuración"
 
 # CLI
 uninstall_not_found: "ftm no está instalado o no está en PATH"
