@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/i18n"
 )
 
 func (m *Model) handleFormKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -111,7 +112,7 @@ func (m *Model) handlePortInput(s string) {
 
 func (m *Model) submitForm() {
 	if m.FormValues.Name == "" || m.FormValues.Port == "" {
-		m.showMessage("Name and Port are required")
+		m.showMessage(i18n.T("validation_required_fields"))
 		return
 	}
 
@@ -139,7 +140,7 @@ func (m *Model) submitEditForm() {
 	m.App.SaveConfig()
 	m.refreshItems()
 	m.State = viewList
-	m.showMessage("Tunnel updated!")
+	m.showMessage(i18n.T("tunnel_updated"))
 }
 
 func (m *Model) submitAddForm() {
@@ -156,7 +157,7 @@ func (m *Model) submitAddForm() {
 	m.App.SaveConfig()
 	m.refreshItems()
 	m.State = viewList
-	m.showMessage("Tunnel added!")
+	m.showMessage(i18n.T("tunnel_added"))
 }
 
 func parsePort(s string) int {
