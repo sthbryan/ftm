@@ -38,6 +38,10 @@ func T(key string) string {
 	return store.T(key, currentLang)
 }
 
+func TF(key string, args ...interface{}) string {
+	return fmt.Sprintf(T(key), args...)
+}
+
 func TLang(lang, key string) string {
 	return store.T(key, lang)
 }

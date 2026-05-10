@@ -203,3 +203,50 @@ connection_updated: "Conexión \"{name}\" actualizada"
 connection_delete_failed: "Error al eliminar conexión: {error}"
 connection_update_failed: "Error al actualizar conexión: {error}"
 connection_create_failed: "Error al crear conexión: {error}"
+
+# TUI Status
+status_unknown: "Desconocido"
+status_installing: "INSTALANDO"
+status_stopping: "DETENIENDO"
+
+# TUI Badges
+badge_offline: "[OFF]"
+badge_starting: "[...]"
+badge_online: "[ON]"
+badge_error: "[ERR]"
+
+# TUI Feedback
+tunnel_added: "¡Túnel agregado!"
+tunnel_updated: "¡Túnel actualizado!"
+tunnel_deleted: "Túnel eliminado"
+url_copied: "¡URL copiada!"
+download_complete: "¡Descarga completa!"
+install_complete: "¡Instalación completa! Iniciando túnel..."
+dashboard_opened: "Dashboard abierto en el navegador"
+config_opened: "Carpeta de configuración abierta"
+
+# TUI Errors
+error_no_url: "No hay URL disponible - inicia el túnel primero"
+error_install_failed: "Instalación fallida: {0}"
+error_tunnel_running: "Detén el túnel primero para editar"
+error_dashboard: "Error al abrir dashboard: {0}"
+error_config: "Error al abrir carpeta de configuración: {0}"
+error_state: "Error: {0}"
+
+# TUI Validation
+validation_required_fields: "Nombre y Puerto son requeridos"
+
+# TUI Elements
+app_name_tui: "🎲  Foundry Tunnel Manager"
+shortcut_web: "w web"
+shortcut_config: "o config"
+
+# CLI
+uninstall_not_found: "ftm no está instalado o no está en PATH"
+uninstall_removing: "Removiendo {0}..."
+uninstall_error: "Error al remover binario: {0}"
+uninstall_success: "✓ ftm ha sido desinstalado"
+version_output: "Foundry Tunnel Manager v{0}"
+dashboard_url: "🌐 Dashboard ejecutándose en: {0}"
+press_ctrl_c: "\nPresiona Ctrl+C para detener"
+tui_hint: "Presiona 'w' en el TUI para abrir el dashboard"
