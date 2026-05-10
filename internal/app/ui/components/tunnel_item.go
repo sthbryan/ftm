@@ -141,7 +141,7 @@ func (t *TunnelItem) statusText(bgColor lipgloss.Color) string {
 }
 
 func (t *TunnelItem) meta(bgColor lipgloss.Color) string {
-	meta := fmt.Sprintf("%s :%d", t.Provider, t.LocalPort)
+	meta := fmt.Sprintf("%s: %d", t.Provider, t.LocalPort)
 
 	return lipgloss.NewStyle().
 		Foreground(ui.ThemeDefault.TextDim).
