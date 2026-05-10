@@ -9,6 +9,7 @@ import (
 
 	"github.com/sthbryan/ftm/internal/clipboard"
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/i18n"
 )
 
 func (m *Model) handleListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -102,7 +103,7 @@ func (m *Model) startAddForm() {
 func (m *Model) startEditForm() (tea.Model, tea.Cmd) {
 	if item, ok := m.selectedItem(); ok {
 		if item.Status.State != config.TunnelStateStopped {
-			m.showMessage("Stop tunnel first to edit")
+			m.showMessage(i18n.T("error_tunnel_running"))
 			return m, nil
 		}
 		m.State = viewEditForm
@@ -127,7 +128,7 @@ func (m *Model) handleListDelete() (tea.Model, tea.Cmd) {
 		if m.Cursor >= len(m.Items) && m.Cursor > 0 {
 			m.Cursor--
 		}
-		m.showMessage("Tunnel deleted")
+		m.showMessage(i18n.T("tunnel_deleted"))
 	}
 	return m, nil
 }
@@ -135,26 +136,26 @@ func (m *Model) handleListDelete() (tea.Model, tea.Cmd) {
 func (m *Model) copyTunnelURL(item TunnelItem) {
 	if item.Status.PublicURL != "" {
 		clipboard.Write(item.Status.PublicURL)
-		m.showMessage("Copied URL!")
+		m.showMessage(i18n.T("url_copied"))
 		return
 	}
-	m.showMessage("No URL available - start tunnel first")
+	m.showMessage(i18n.T("error_no_url"))
 }
 
 func (m *Model) openDashboard() {
 	if err := m.App.OpenDashboard(); err != nil {
-		m.showMessage("Error opening dashboard: " + err.Error())
+		m.showMessage(i18n.TF("error_dashboard", err.Error()))
 		return
 	}
-	m.showMessage("Dashboard opened in browser")
+	m.showMessage(i18n.T("dashboard_opened"))
 }
 
 func (m *Model) openConfigDir() {
 	if err := m.App.OpenConfigDir(); err != nil {
-		m.showMessage("Error opening config folder: " + err.Error())
+		m.showMessage(i18n.TF("error_config", err.Error()))
 		return
 	}
-	m.showMessage("Config folder opened")
+	m.showMessage(i18n.T("config_opened"))
 }
 
 func (m *Model) playBeep() {
