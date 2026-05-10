@@ -168,8 +168,8 @@ complete: "Complete!"
 esc_cancel: "esc: cancel"
 
 # Downloads
-download_complete: "Download complete"
-download_failed: "Download failed"
+download_complete: "Download complete!"
+download_failed: "Download failed!"
 download_progress: "{percent}% complete"
 
 # Web settings
@@ -220,7 +220,6 @@ tunnel_added: "Tunnel added!"
 tunnel_updated: "Tunnel updated!"
 tunnel_deleted: "Tunnel deleted"
 url_copied: "Copied URL!"
-download_complete: "Download complete!"
 install_complete: "Install complete! Starting tunnel..."
 dashboard_opened: "Dashboard opened in browser"
 config_opened: "Config folder opened"
