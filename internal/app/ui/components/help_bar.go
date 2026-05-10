@@ -22,8 +22,8 @@ func (h *HelpBar) Render() string {
 		"d " + i18n.T("delete"),
 		"s " + i18n.T("settings"),
 		"l " + i18n.T("logs"),
-		"w web",
-		"o config",
+		i18n.T("shortcut_web"),
+		i18n.T("shortcut_config"),
 		"q " + i18n.T("close"),
 	}
 
