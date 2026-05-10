@@ -11,6 +11,7 @@ import (
 
 	"github.com/sthbryan/ftm/internal/app/ui/views"
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/providers"
 )
 
@@ -165,14 +166,18 @@ func (i TunnelItem) FilterValue() string { return i.Tunnel.Name }
 func (i TunnelItem) Title() string { return i.Tunnel.Name }
 
 func (i TunnelItem) Description() string {
-	status := "OFFLINE"
+	status := i18n.T("status_offline")
 	switch i.Status.State {
 	case config.TunnelStateStarting:
-		status = "STARTING"
+		status = i18n.T("status_starting")
 	case config.TunnelStateConnecting:
-		status = "CONNECTING"
+		status = i18n.T("status_connecting")
 	case config.TunnelStateOnline:
-		status = "ONLINE"
+		status = i18n.T("status_online")
+	case config.TunnelStateError:
+		status = i18n.T("status_error")
+	case config.TunnelStateTimeout:
+		status = i18n.T("status_timeout")
 	}
 	return fmt.Sprintf("%s | Port %d | %s", i.Tunnel.Provider, i.Tunnel.LocalPort, status)
 }
