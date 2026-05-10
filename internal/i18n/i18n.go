@@ -39,7 +39,12 @@ func T(key string) string {
 }
 
 func TF(key string, args ...interface{}) string {
-	return fmt.Sprintf(T(key), args...)
+	template := T(key)
+	for i, arg := range args {
+		placeholder := fmt.Sprintf("{%d}", i)
+		template = strings.Replace(template, placeholder, fmt.Sprintf("%v", arg), 1)
+	}
+	return template
 }
 
 func TLang(lang, key string) string {
