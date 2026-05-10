@@ -2,6 +2,9 @@
   import { animate, spring } from "motion";
   import { toast, type ToastType } from "$lib/stores/toast.svelte";
   import { cn } from "$lib/utils/cn";
+  import { translate } from "$lib/i18n";
+
+  let t = $derived($translate);
 
   const MAX_TOASTS = 5;
   const STACK_Y = 8;
@@ -124,7 +127,7 @@
           <span class="flex-1 text-sm font-medium">{t.message}</span>
           <button
             onclick={() => close(t.id)}
-            aria-label="Close notification"
+            aria-label={t('close_notification')}
             class="w-7 h-7 rounded-md cursor-pointer text-lg flex items-center justify-center transition-colors duration-150 bg-heading/20 text-heading"
           >
             &times;

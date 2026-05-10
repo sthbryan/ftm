@@ -1,5 +1,8 @@
 <script lang="ts">
   import { cn } from '$lib/utils/cn';
+  import { translate } from '$lib/i18n';
+
+  let t = $derived($translate);
 
   interface Props {
     checked?: boolean;
@@ -20,7 +23,7 @@
   onclick={toggle}
   {disabled}
   aria-pressed={checked}
-  aria-label={checked ? "Disable" : "Enable"}
+  aria-label={checked ? t('disable') : t('enable')}
   class={cn(
     "relative w-12 h-7 rounded-full transition-all duration-200 flex-shrink-0",
     checked ? "bg-primary" : "bg-secondary",
