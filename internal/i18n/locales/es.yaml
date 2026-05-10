@@ -180,6 +180,7 @@ notifications_prompt: "Recibe notificaciones cuando los túneles se conecten, de
 not_now: "Ahora no"
 sound_effects: "Efectos de Sonido"
 appearance_section: "Apariencia"
+current_theme: "Tema actual"
 language_section: "Idioma"
 go_back: "Volver"
 lang_en: "English"

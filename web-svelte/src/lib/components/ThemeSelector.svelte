@@ -1,6 +1,7 @@
 <script lang="ts">
   import ThemeButton from './ThemeButton.svelte';
   import { useTheme } from '$lib/stores/theme.svelte';
+  import { translate } from '$lib/i18n';
 
   interface ThemeGroup {
     name: string;
@@ -14,6 +15,8 @@
   let { groups }: Props = $props();
 
   const theme = useTheme();
+
+  let t = $derived($translate);
 
   const themeNames: Record<string, string> = {
     'dracula': 'Dracula',
@@ -76,6 +79,6 @@
   ></div>
   <div>
     <p class="font-medium text-sm">{getName(theme.current)}</p>
-    <p class="text-xs text-text-muted">Current theme</p>
+    <p class="text-xs text-text-muted">{t('current_theme')}</p>
   </div>
 </div>

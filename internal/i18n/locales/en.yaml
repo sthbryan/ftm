@@ -180,6 +180,7 @@ notifications_prompt: "Get notified when tunnels go online, offline, or are abou
 not_now: "Not Now"
 sound_effects: "Sound Effects"
 appearance_section: "Appearance"
+current_theme: "Current theme"
 language_section: "Language"
 go_back: "Go back"
 lang_en: "English"
