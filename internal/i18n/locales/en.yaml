@@ -181,6 +181,9 @@ not_now: "Not Now"
 sound_effects: "Sound Effects"
 appearance_section: "Appearance"
 language_section: "Language"
+go_back: "Go back"
+lang_en: "English"
+lang_es: "Español"
 
 # Web Home
 app_tagline: "Share your world with players everywhere"

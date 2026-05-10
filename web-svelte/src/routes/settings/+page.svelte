@@ -78,7 +78,7 @@
     <a
       href="/"
       class="p-2 rounded-lg hover:bg-secondary transition-colors"
-      aria-label="Go back"
+      aria-label={t('go_back')}
     >
       <ChevronLeft size={20} />
     </a>
@@ -144,7 +144,7 @@
               >
                 <span class="flex items-center gap-2">
                   <Globe size={16} />
-                  {lang === "en" ? "English" : "Español"}
+                  {t(`lang_${lang}`)}
                 </span>
               </button>
             {/each}
