@@ -2,6 +2,7 @@
   import { cn } from "$lib/utils/cn";
   import { ChevronDown } from "lucide-svelte";
   import { animate, spring } from "motion";
+  import { translate } from "$lib/i18n";
   import type { DropdownOption } from "$lib/types";
   import type { Snippet } from "svelte";
 
@@ -23,12 +24,14 @@
     "top-right": "bottom-full mb-1.5 right-auto left-0"
   };
 
+  let t = $derived($translate);
+
   let {
     options = [],
     onSelect,
     align = "left",
-    ariaLabel = "Options",
-    label = "Options",
+    ariaLabel = t("options"),
+    label = t("options"),
     class: className = "",
     id = "",
     children,

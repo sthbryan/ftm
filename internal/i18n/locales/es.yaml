@@ -186,6 +186,12 @@ go_back: "Volver"
 lang_en: "English"
 lang_es: "Español"
 
+# Dropdown
+close_notification: "Cerrar notificación"
+options: "Opciones"
+disable: "Desactivar"
+enable: "Activar"
+
 # Web Home
 app_tagline: "Comparte tu mundo con jugadores en todas partes"
 new_connection: "Nueva Conexión"
