@@ -3,11 +3,12 @@ package app
 import (
 	"github.com/sthbryan/ftm/internal/app/ui/views"
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/i18n"
 )
 
 func (m *Model) View() string {
 	if m.Width == 0 || m.Height == 0 {
-		return "Loading..."
+		return i18n.T("loading")
 	}
 
 	switch m.State {
@@ -86,17 +87,17 @@ func statusStateIndex(state config.TunnelState) int {
 func statusMsg(state config.TunnelState) string {
 	switch state {
 	case config.TunnelStateStarting:
-		return "Starting..."
+		return i18n.T("starting")
 	case config.TunnelStateConnecting:
-		return "Connecting..."
+		return i18n.T("connecting")
 	case config.TunnelStateOnline:
-		return "Online"
+		return i18n.T("online")
 	case config.TunnelStateError:
-		return "Error"
+		return i18n.T("error")
 	case config.TunnelStateTimeout:
-		return "Timeout"
+		return i18n.T("timeout")
 	default:
-		return "Offline"
+		return i18n.T("offline")
 	}
 }
 
