@@ -179,5 +179,5 @@ func (i TunnelItem) Description() string {
 	case config.TunnelStateTimeout:
 		status = i18n.T("status_timeout")
 	}
-	return fmt.Sprintf("%s | Port %d | %s", i.Tunnel.Provider, i.Tunnel.LocalPort, status)
+	return fmt.Sprintf("%s | %s %d | %s", i.Tunnel.Provider, i18n.T("port"), i.Tunnel.LocalPort, status)
 }
