@@ -36,8 +36,8 @@ starting: "Starting..."
 stopping: "Stopping..."
 stopped: "Stopped"
 need_installing: "Needs Install"
-installing: "Installing..."
-downloading: "Downloading..."
+installing: "Installing {0}..."
+downloading: "Downloading {0}..."
 
 # Providers
 provider_pinggy: "Pinggy"

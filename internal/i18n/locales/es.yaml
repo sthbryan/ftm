@@ -36,7 +36,8 @@ starting: "Iniciando..."
 stopping: "Deteniendo..."
 stopped: "Detenido"
 need_installing: "Necesita instalación"
-installing: "Instalando..."
+installing: "Instalando {0}..."
+downloading: "Descargando {0}..."
 downloading: "Descargando..."
 
 # Providers
