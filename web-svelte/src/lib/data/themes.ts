@@ -24,6 +24,7 @@ export const themeGroups: ThemeGroup[] = [
       { id: 'red', color: '#ff5555' },
       { id: 'blue', color: '#8be9fd' },
       { id: 'purple', color: '#ff79c6' },
+      { id: 'rust-dark', color: '#e05824' },
     ]
   },
   {
@@ -38,6 +39,7 @@ export const themeGroups: ThemeGroup[] = [
       { id: 'red-light', color: '#ff6e6e' },
       { id: 'blue-light', color: '#8be9fd' },
       { id: 'purple-light', color: '#ff79c6' },
+      { id: 'rust', color: '#e05824' },
     ]
   }
 ];
