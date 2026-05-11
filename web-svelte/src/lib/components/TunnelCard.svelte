@@ -200,11 +200,11 @@
 </script>
 
 <div
-  class={cn("border rounded-xl cursor-default", "bg-card border-border")}
+  class="border rounded-3xl cursor-default transition-all duration-150 hover:scale-[1.01] bg-card border-border"
 >
   <div class="flex flex-col">
     <div
-      class="flex justify-between items-start p-4 gap-4 flex-row sm:items-stretch sm:p-3.5 sm:gap-3"
+      class="flex justify-between items-start p-5 gap-4 flex-row sm:items-stretch sm:p-3.5 sm:gap-3"
     >
       <div class="flex-1 min-w-0">
         <div
