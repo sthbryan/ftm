@@ -32,6 +32,9 @@ jobs:
           mkdir -p ../desktop/frontend/dist
           cp -r dist/* ../desktop/frontend/dist/
           cp -r dist/* ../internal/web/static/
+
+      - name: Test Svelte
+        run: cd web-svelte && bun test
       
       - name: Build
         run: go build -v $(go list ./... | grep -v '/desktop')
