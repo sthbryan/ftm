@@ -55,7 +55,7 @@
     )}
   >
     <h2
-      class="m-0 text-[17px] font-semibold font-serif text-text-heading flex items-center gap-2"
+      class="m-0 text-base font-semibold font-serif text-text-heading flex items-center gap-2"
     >
       {t("connections")}
     </h2>
