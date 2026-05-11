@@ -23,6 +23,7 @@ const DefaultLang = LangEN
 var (
 	currentLang     = DefaultLang
 	currentLangOnce sync.Once
+	langMu          sync.RWMutex
 )
 
 type TranslationStore struct {
@@ -35,7 +36,10 @@ var store = &TranslationStore{
 }
 
 func T(key string) string {
-	return store.T(key, currentLang)
+	langMu.RLock()
+	lang := currentLang
+	langMu.RUnlock()
+	return store.T(key, lang)
 }
 
 func TF(key string, args ...interface{}) string {
@@ -52,6 +56,8 @@ func TLang(lang, key string) string {
 }
 
 func GetCurrentLang() string {
+	langMu.RLock()
+	defer langMu.RUnlock()
 	return currentLang
 }
 
@@ -59,6 +65,8 @@ func SetLanguage(lang string) {
 	currentLangOnce.Do(func() {})
 	store.mu.Lock()
 	defer store.mu.Unlock()
+	langMu.Lock()
+	defer langMu.Unlock()
 	if _, ok := store.translations[lang]; ok {
 		currentLang = lang
 	}
@@ -69,6 +77,8 @@ func SetLanguageWithFallback(lang string) {
 	_, ok := store.translations[lang]
 	store.mu.RUnlock()
 
+	langMu.Lock()
+	defer langMu.Unlock()
 	if ok {
 		currentLang = lang
 	} else {
@@ -274,6 +284,8 @@ func GetCurrentTranslations() map[string]string {
 }
 
 func CurrentLanguage() string {
+	langMu.RLock()
+	defer langMu.RUnlock()
 	return currentLang
 }
 
@@ -283,7 +295,9 @@ func ChangeLanguage(lang string) {
 	store.mu.RUnlock()
 
 	if ok {
+		langMu.Lock()
 		currentLang = lang
+		langMu.Unlock()
 	}
 }
 
