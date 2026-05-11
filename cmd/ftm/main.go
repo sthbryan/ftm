@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/sthbryan/ftm/internal/app"
+	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/version"
 )
 
@@ -16,7 +17,7 @@ var BuildVersion string
 func doUninstall() {
 	binaryPath, err := exec.LookPath("ftm")
 	if err != nil {
-		fmt.Println("ftm is not installed or not in PATH")
+		fmt.Println(i18n.T("uninstall_not_found"))
 		os.Exit(1)
 	}
 
@@ -25,13 +26,13 @@ func doUninstall() {
 		absPath = binaryPath
 	}
 
-	fmt.Printf("Removing %s...\n", absPath)
+	fmt.Println(i18n.TF("uninstall_removing", absPath))
 	if err := os.Remove(absPath); err != nil {
-		fmt.Fprintf(os.Stderr, "Error removing binary: %v\n", err)
+		fmt.Fprintf(os.Stderr, i18n.TF("uninstall_error", err.Error())+"\n")
 		os.Exit(1)
 	}
 
-	fmt.Println("✓ ftm has been uninstalled")
+	fmt.Println(i18n.T("uninstall_success"))
 }
 
 func main() {
@@ -45,7 +46,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Printf("Foundry Tunnel Manager v%s\n", version.Version)
+		fmt.Println(i18n.TF("version_output", version.Version))
 		os.Exit(0)
 	}
 
@@ -75,18 +76,18 @@ func main() {
 
 	url := application.WebServer.URL()
 	fmt.Printf("🎲 Foundry Tunnel Manager v%s\n", BuildVersion)
-	fmt.Printf("🌐 Dashboard running at: %s\n", url)
+	fmt.Printf(i18n.TF("dashboard_url", url))
 
 	if *webOnly {
-		fmt.Println("\nPress Ctrl+C to stop")
+		fmt.Print(i18n.T("press_ctrl_c"))
 		application.OpenDashboard()
 		select {}
 	} else if *server {
-		fmt.Println("\nPress Ctrl+C to stop")
+		fmt.Print(i18n.T("press_ctrl_c"))
 		select {}
 	}
 
-	fmt.Printf("\nPress 'w' in the TUI to open the dashboard\n\n")
+	fmt.Print(i18n.T("tui_hint"))
 
 	if err := application.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)

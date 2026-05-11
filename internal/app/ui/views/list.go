@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sthbryan/ftm/internal/app/ui"
 	"github.com/sthbryan/ftm/internal/app/ui/components"
+	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/version"
 )
 
@@ -60,7 +61,7 @@ func (l *ListView) twoColumn() string {
 	title := lipgloss.NewStyle().
 		Foreground(gold).
 		Bold(true).
-		Render("🎲  Foundry Tunnel Manager")
+		Render(i18n.T("app_name_tui"))
 	versionStr := lipgloss.NewStyle().
 		Foreground(textDim).
 		Render("v" + version.Version + "  ws:" + fmt.Sprintf("%d", l.Sessions))
@@ -76,12 +77,12 @@ func (l *ListView) twoColumn() string {
 	leftHeader := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(text).
-		Render("Your Connections")
+		Render(i18n.T("connections"))
 
 	rightHeader := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(text).
-		Render("Selected Tunnel")
+		Render(i18n.T("selected_tunnel"))
 
 	b.WriteString(leftHeader)
 	b.WriteString(strings.Repeat(" ", leftWidth-lipgloss.Width(leftHeader)+3))
@@ -125,7 +126,7 @@ func (l *ListView) twoColumn() string {
 
 	if l.Message != "" {
 		msgStyle := lipgloss.NewStyle().Foreground(gold).Bold(true)
-		b.WriteString(msgStyle.Render("✓ " + l.Message))
+		b.WriteString(msgStyle.Render(i18n.T("success_prefix") + " " + l.Message))
 		b.WriteString("\n")
 	}
 
@@ -143,7 +144,7 @@ func (l *ListView) singleColumn() string {
 	title := lipgloss.NewStyle().
 		Foreground(gold).
 		Bold(true).
-		Render("🎲  Foundry Tunnel Manager")
+		Render(i18n.T("app_name_tui"))
 	versionStr := lipgloss.NewStyle().
 		Foreground(textDim).
 		Render("v" + version.Version + "  ws:" + fmt.Sprintf("%d", l.Sessions))
@@ -155,7 +156,7 @@ func (l *ListView) singleColumn() string {
 
 	if l.Dashboard != "" {
 		urlStyle := lipgloss.NewStyle().Foreground(gold)
-		b.WriteString(urlStyle.Render("🌐  Dashboard: " + l.Dashboard + " (press 'w')"))
+		b.WriteString(urlStyle.Render(i18n.T("dashboard_label") + " " + l.Dashboard + " " + i18n.T("press_w_hint")))
 		b.WriteString("\n\n")
 	}
 
@@ -164,7 +165,7 @@ func (l *ListView) singleColumn() string {
 
 	if l.Message != "" {
 		msgStyle := lipgloss.NewStyle().Foreground(gold).Bold(true)
-		b.WriteString(msgStyle.Render("✓ " + l.Message))
+		b.WriteString(msgStyle.Render(i18n.T("success_prefix") + " " + l.Message))
 		b.WriteString("\n")
 	}
 
@@ -200,7 +201,7 @@ func (l *ListView) renderDetailPanel(width int) string {
 	if l.Cursor < 0 || l.Cursor >= len(l.Items) {
 		return lipgloss.NewStyle().
 			Foreground(ui.ThemeDefault.TextDim).
-			Render("Select a tunnel to view details")
+			Render(i18n.T("select_tunnel_details"))
 	}
 
 	item := l.Items[l.Cursor]

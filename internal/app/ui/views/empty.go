@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sthbryan/ftm/internal/app/ui"
+	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/version"
 )
 
@@ -31,29 +32,29 @@ func (e *EmptyState) Render() string {
 	title := lipgloss.NewStyle().
 		Foreground(gold).
 		Bold(true).
-		Render("Welcome, Dungeon Master!")
+		Render(i18n.T("welcome_title"))
 
 	subtitle := lipgloss.NewStyle().
 		Foreground(text).
-		Render("You haven't created any tunnels yet.")
+		Render(i18n.T("no_tunnels_yet"))
 
 	desc := lipgloss.NewStyle().
 		Foreground(textDim).
-		Render("Tunnels let your players connect to your Foundry world.")
+		Render(i18n.T("tunnels_desc"))
 
 	cta := lipgloss.NewStyle().
 		Background(gold).
 		Bold(true).
 		Padding(0, 2).
-		Render("[ Create First Tunnel ]")
+		Render(i18n.T("create_first"))
 
 	hint := lipgloss.NewStyle().
 		Foreground(textDim).
-		Render("Or press 'a' to start")
+		Render(i18n.T("press_a_hint"))
 
 	tip := lipgloss.NewStyle().
 		Foreground(bronze).
-		Render("💡 Tip: Web dashboard at " + e.Dashboard + "  •  ws:" + fmt.Sprintf("%d", e.Sessions))
+		Render(i18n.T("tip_dashboard") + " " + e.Dashboard + "  •  ws:" + fmt.Sprintf("%d", e.Sessions))
 
 	contentHeight := 12
 	paddingTop := (e.Height - contentHeight) / 2

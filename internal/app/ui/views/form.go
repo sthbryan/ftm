@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sthbryan/ftm/internal/app/ui"
+	"github.com/sthbryan/ftm/internal/i18n"
 )
 
 type FormView struct {
@@ -24,15 +25,26 @@ func NewFormView() *FormView {
 func (f *FormView) Render() string {
 	t := ui.ThemeDefault
 	inputWidth := 25
-
 	labelWidth := 17
 	totalWidth := labelWidth + 2 + inputWidth
 
-	header := "✨ New Tunnel"
-	subheader := "Create a secure tunnel to your local service"
+	newTunnelText := i18n.T("new_tunnel")
+	editTunnelText := i18n.T("edit_tunnel")
+	newTunnelDesc := i18n.T("new_tunnel_desc")
+	editTunnelDesc := i18n.T("edit_tunnel_desc")
+	nameLabel := i18n.T("name_label")
+	nameHint := i18n.T("tunnel_name_hint")
+	providerLabel := i18n.T("provider_label")
+	providerHint := i18n.T("provider_hint")
+	portLabel := i18n.T("local_port")
+	portHint := i18n.T("port_hint")
+	navHint := i18n.T("form_nav_hint")
+
+	header := newTunnelText
+	subheader := newTunnelDesc
 	if f.IsEditMode {
-		header = "✏️ Edit Tunnel"
-		subheader = "Modify your tunnel settings"
+		header = editTunnelText
+		subheader = editTunnelDesc
 	}
 
 	headerStyle := lipgloss.NewStyle().
@@ -44,89 +56,49 @@ func (f *FormView) Render() string {
 		Foreground(t.TextDim).
 		Render(subheader)
 
+	if f.Focus == 0 {
+		nameLabel = "▸ " + nameLabel
+		nameHint = i18n.T("type_hint")
+	}
+	if f.Focus == 1 {
+		providerLabel = "▸ " + providerLabel
+		providerHint = i18n.T("arrow_hint")
+	}
+	if f.Focus == 2 {
+		portLabel = "▸ " + portLabel
+		portHint = i18n.T("numbers_hint")
+	}
+
 	lines := []string{
 		headerStyle,
 		"",
 		subheaderStyle,
 		"",
-		f.nameField(t, inputWidth, labelWidth),
+		f.fieldWithLabel(nameLabel, nameHint, f.Name, 0, t, inputWidth, labelWidth),
 		"",
-		f.providerField(t, inputWidth, labelWidth),
+		f.fieldWithLabel(providerLabel, providerHint, f.Provider, 1, t, inputWidth, labelWidth),
 		"",
-		f.portField(t, inputWidth, labelWidth),
+		f.fieldWithLabel(portLabel, portHint, f.Port, 2, t, inputWidth, labelWidth),
 		"",
 		f.submitButton(t, inputWidth),
 		"",
-		lipgloss.NewStyle().Foreground(t.TextDim).Render("TAB: to navigate fields\nENTER: to submit\nESC: to cancel"),
+		lipgloss.NewStyle().Foreground(t.TextDim).Render(navHint),
 	}
 
 	content := strings.Join(lines, "\n")
 	return centerBlock(content, f.Width, totalWidth)
 }
 
-func (f *FormView) nameField(t *ui.Theme, inputWidth, labelWidth int) string {
-	label := "Name"
-	hint := "your tunnel identifier"
-
-	if f.Focus == 0 {
-		label = "▸ Name"
-		hint = "type to enter"
-	}
-
-	value := f.Name
+func (f *FormView) fieldWithLabel(label, hint, value string, field int, t *ui.Theme, inputWidth, labelWidth int) string {
 	if value == "" {
 		value = "..."
 	}
-
-	labelStyle := f.labelStyle(t, 0, labelWidth)
-	inputStyle := f.inputStyle(t, 0, inputWidth)
-	hintStyle := lipgloss.NewStyle().Foreground(t.Bronze)
-
-	return fmt.Sprintf("%s\n%s\n%s",
-		labelStyle.Render(label+":"),
-		inputStyle.Render(value),
-		hintStyle.Render(hint),
-	)
-}
-
-func (f *FormView) providerField(t *ui.Theme, inputWidth, labelWidth int) string {
-	label := "Provider"
-	value := f.Provider
-	hint := "cloudflare | ngrok | local"
-
-	if f.Focus == 1 {
-		label = "▸ Provider"
+	if field == 1 && f.Focus == 1 {
 		value = "‹ " + value + " ›"
-		hint = "← → to change"
 	}
 
-	labelStyle := f.labelStyle(t, 1, labelWidth)
-	inputStyle := f.inputStyle(t, 1, inputWidth)
-	hintStyle := lipgloss.NewStyle().Foreground(t.Bronze)
-
-	return fmt.Sprintf("%s\n%s\n%s",
-		labelStyle.Render(label+":"),
-		inputStyle.Render(value),
-		hintStyle.Render(hint),
-	)
-}
-
-func (f *FormView) portField(t *ui.Theme, inputWidth, labelWidth int) string {
-	label := "Local Port"
-	value := f.Port
-	hint := "e.g. 3000, 8080"
-
-	if f.Focus == 2 {
-		label = "▸ Local Port"
-		hint = "numbers only"
-	}
-
-	if value == "" {
-		value = "..."
-	}
-
-	labelStyle := f.labelStyle(t, 2, labelWidth)
-	inputStyle := f.inputStyle(t, 2, inputWidth)
+	labelStyle := f.labelStyle(t, field, labelWidth)
+	inputStyle := f.inputStyle(t, field, inputWidth)
 	hintStyle := lipgloss.NewStyle().Foreground(t.Bronze)
 
 	return fmt.Sprintf("%s\n%s\n%s",
@@ -137,9 +109,9 @@ func (f *FormView) portField(t *ui.Theme, inputWidth, labelWidth int) string {
 }
 
 func (f *FormView) submitButton(t *ui.Theme, inputWidth int) string {
-	btnText := "Create Tunnel"
+	btnText := i18n.T("submit_new")
 	if f.IsEditMode {
-		btnText = "Save Changes"
+		btnText = i18n.T("submit_edit")
 	}
 
 	btnStyle := lipgloss.NewStyle().

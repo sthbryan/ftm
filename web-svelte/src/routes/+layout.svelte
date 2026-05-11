@@ -2,13 +2,15 @@
   import { onDestroy, onMount } from "svelte";
   import Toasts from "$lib/components/Toasts.svelte";
   import { subscribeWsMessages } from "$lib/api/ws";
+  import { i18n } from "$lib/i18n";
 
   import "../styles/app.css";
 
   let unsubscribeWs: (() => void) | null = null;
 
-  onMount(() => {
+  onMount(async () => {
     unsubscribeWs = subscribeWsMessages(() => {});
+    await i18n.init();
   });
 
   onDestroy(() => {

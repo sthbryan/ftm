@@ -1,9 +1,11 @@
-import { settingsApi, type Settings } from '$lib/api';
+import type { Settings } from '../api';
+import { settingsApi } from '../api';
 import { useNotifications } from './notification.svelte';
 
 let settings = $state<Settings>({
   notifications_enabled: "pending",
-  notification_sound: true
+  notification_sound: true,
+  language: "en"
 });
 
 let loaded = $state(false);

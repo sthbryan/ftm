@@ -20,6 +20,7 @@ type Config struct {
 	Version int            `yaml:"version"`
 	Tunnels []TunnelConfig `yaml:"tunnels"`
 	WebPort int            `yaml:"web_port,omitempty"`
+	Language string        `yaml:"language"`
 
 	NotificationsStatus string `yaml:"notifications_status"`
 	NotificationSound   bool   `yaml:"notification_sound"`
@@ -31,6 +32,7 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		Version:              1,
+		Language:             "en",
 		Tunnels:              []TunnelConfig{},
 		NotificationsStatus:  NotificationPending,
 		NotificationSound:    true,

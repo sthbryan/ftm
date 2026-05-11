@@ -1,0 +1,256 @@
+# App
+app_name: "Foundry Tunnel Manager"
+app_description: "Gestiona túneles para exponer Foundry VTT"
+
+# General
+ok: "Aceptar"
+cancel: "Cancelar"
+close: "Cerrar"
+save: "Guardar"
+delete: "Eliminar"
+edit: "Editar"
+logs: "Logs"
+create: "Crear"
+start: "Iniciar"
+stop: "Detener"
+wait: "Espera..."
+loading: "Cargando..."
+restart: "Reiniciar"
+status: "Estado"
+name: "Nombre"
+type: "Tipo"
+port: "Puerto"
+url: "URL"
+
+# Modal
+delete_connection: "Eliminar Conexión"
+cannot_undo: "Esta acción no se puede deshacer."
+
+# Status
+online: "En línea"
+offline: "Desconectado"
+connecting: "Conectando..."
+error: "Error"
+timeout: "Tiempo agotado"
+starting: "Iniciando..."
+stopping: "Deteniendo..."
+stopped: "Detenido"
+need_installing: "Necesita instalación"
+installing: "Instalando {0}..."
+downloading: "Descargando {0}..."
+
+# Providers
+provider_pinggy: "Pinggy"
+provider_serveo: "Serveo"
+provider_cloudflared: "Cloudflared"
+provider_tunnelmole: "Tunnelmole"
+provider_localhostrun: "LocalhostRun"
+
+# Actions
+connect: "Conectar"
+disconnect: "Desconectar"
+copy_url: "Copiar URL"
+open_browser: "Abrir en navegador"
+live_logs: "Logs en vivo"
+configure: "Configurar"
+
+# Form labels
+tunnel_name: "Nombre del túnel"
+select_provider: "Seleccionar proveedor"
+local_port: "Puerto"
+
+# Messages
+confirm_delete: "¿Estás seguro de que quieres eliminar \"{name}\"?"
+confirm_delete_tunnel: "¿Estás seguro de que quieres eliminar \"{name}\"?"
+confirm_stop: "¿Estás seguro de que quieres detener este túnel?"
+copied: "Copiado al portapapeles"
+connection_failed: "Conexión fallida"
+connection_success: "Conexión exitosa"
+tunnel_expired: "Túnel expirado"
+tunnel_expiring: "Túnel por expirar"
+
+# Notifications
+notification_tunnel_online: "{name} está en línea"
+notification_tunnel_offline: "{name} está desconectado"
+notification_tunnel_error: "{name} encontró un error"
+notification_tunnel_expiring: "{name} expira en {minutes} minutos"
+notification_tunnel_expired: "{name} ha expirado"
+
+# Settings
+settings: "Configuración"
+language: "Idioma"
+theme: "Tema"
+notifications: "Notificaciones"
+enable_notifications: "Habilitar notificaciones"
+notification_sound: "Sonido de notificación"
+expiration_warnings: "Advertencias de expiración"
+
+# Help
+help: "Ayuda"
+press_enter: "Presiona Enter para seleccionar"
+press_esc: "Presiona Esc para volver"
+press_tab: "Presiona Tab para cambiar"
+navigation_hint: "↑↓ Navegar • Enter Seleccionar • Esc Volver"
+
+# Errors
+error_loading_config: "Error al cargar la configuración"
+error_saving_config: "Error al guardar la configuración"
+error_invalid_port: "Número de puerto inválido"
+error_invalid_name: "Nombre de túnel inválido"
+error_connection_refused: "Conexión rechazada"
+error_loading_logs: "Error al cargar logs"
+tunnel_options: "Opciones del túnel"
+
+# Labels
+connections: "Tus Conexiones"
+selected_tunnel: "Túnel Seleccionado"
+select_tunnel_details: "Selecciona un túnel para ver detalles"
+provider_label: "Proveedor"
+port_label: "Puerto"
+status_label: "Estado"
+status_starting: "INICIANDO"
+status_connecting: "CONECTANDO"
+status_online: "EN LÍNEA"
+status_error: "ERROR"
+status_offline: "DESCONECTADO"
+start_action: "Iniciar"
+stop_action: "Detener"
+delete_action: "Eliminar"
+press_c_copy: "Presiona 'c' para copiar"
+error_label: "Error"
+url_label: "URL"
+
+# Form
+edit_connection: "Editar Conexión"
+edit_connection_desc: "Modifica la configuración del túnel"
+connection_name_label: "Nombre de Conexión"
+name_placeholder: "ej. Mi Túnel Increíble"
+new_tunnel: "✨ Nuevo Túnel"
+new_tunnel_desc: "Crea un túnel seguro a tu servicio local"
+edit_tunnel: "✏️ Editar Túnel"
+edit_tunnel_desc: "Modifica la configuración del túnel"
+name_label: "Nombre"
+tunnel_name_hint: "ej. Las Ruinas de Undermountain"
+provider_hint: "cloudflare | pinggy | serveo"
+port_hint: "ej: 3000, 8080"
+type_hint: "escribe para entrar"
+arrow_hint: "← → para cambiar"
+numbers_hint: "solo números"
+submit_new: "Crear Túnel"
+submit_edit: "Guardar Cambios"
+form_nav_hint: "TAB: navegar  •  ENTER: enviar  •  ESC: cancelar"
+
+# Empty states
+no_tunnels: "No hay túneles configurados"
+add_tunnel_prompt: "Presiona 'a' para agregar un nuevo túnel"
+logs_action: "Logs"
+click_to_copy: "Clic para copiar"
+no_logs: "No hay logs disponibles"
+
+# Empty state
+welcome_title: "¡Bienvenido, Dungeon Master!"
+no_tunnels_yet: "Aún no has creado ningún túnel."
+tunnels_desc: "Los túneles permiten a tus jugadores conectarse a tu mundo de Foundry."
+create_first: "[ Crear Primer Túnel ]"
+press_a_hint: "O presiona 'a' para comenzar"
+tip_dashboard: "💡 Tip: Panel web en"
+
+# Settings UI
+settings_title: "⚙ Configuración"
+settings_nav_hint: "↑/↓ navegar  •  espacio/enter cambiar  •  esc volver"
+
+tunnel_logs: "📋  Logs del Túnel"
+logs_nav_hint: "esc/b: volver • ↑/↓: scroll"
+
+# UI elements
+play_indicator: "▶"
+success_prefix: "✓"
+dashboard_label: "🌐  Panel:"
+press_w_hint: "(presiona 'w')"
+
+# Downloading
+complete: "¡Completo!"
+esc_cancel: "esc: cancelar"
+
+# Downloads
+download_complete: "¡Descarga completa!"
+download_failed: "¡Descarga fallida!"
+download_progress: "{percent}% completado"
+
+# Web settings
+web_settings_title: "Configuración"
+notifications_section: "Notificaciones de Escritorio"
+enable_notifications_web: "Habilitar Notificaciones"
+notifications_prompt: "Recibe notificaciones cuando los túneles se conecten, desconecten o estén por expirar."
+not_now: "Ahora no"
+sound_effects: "Efectos de Sonido"
+appearance_section: "Apariencia"
+current_theme: "Tema actual"
+language_section: "Idioma"
+go_back: "Volver"
+lang_en: "English"
+lang_es: "Español"
+
+# Dropdown
+close_notification: "Cerrar notificación"
+options: "Opciones"
+disable: "Desactivar"
+enable: "Activar"
+
+# Web Home
+app_tagline: "Comparte tu mundo con jugadores en todas partes"
+new_connection: "Nueva Conexión"
+select: "Seleccionar"
+create_connection: "Crear Conexión"
+connection_created: "Conexión \"{name}\" creada"
+connection_deleted: "Conexión \"{name}\" eliminada"
+connection_updated: "Conexión \"{name}\" actualizada"
+connection_delete_failed: "Error al eliminar conexión: {error}"
+connection_update_failed: "Error al actualizar conexión: {error}"
+connection_create_failed: "Error al crear conexión: {error}"
+
+# TUI Status
+status_unknown: "Desconocido"
+status_installing: "INSTALANDO"
+status_stopping: "DETENIENDO"
+
+# TUI Badges
+badge_offline: "[OFF]"
+badge_starting: "[...]"
+badge_online: "[ON]"
+badge_error: "[ERR]"
+
+# TUI Feedback
+tunnel_added: "¡Túnel agregado!"
+tunnel_updated: "¡Túnel actualizado!"
+tunnel_deleted: "Túnel eliminado"
+url_copied: "¡URL copiada!"
+install_complete: "¡Instalación completa! Iniciando túnel..."
+dashboard_opened: "Dashboard abierto en el navegador"
+config_opened: "Carpeta de configuración abierta"
+
+# TUI Errors
+error_no_url: "No hay URL disponible - inicia el túnel primero"
+error_install_failed: "Instalación fallida: {0}"
+error_tunnel_running: "Detén el túnel primero para editar"
+error_dashboard: "Error al abrir dashboard: {0}"
+error_config: "Error al abrir carpeta de configuración: {0}"
+error_state: "Error: {0}"
+
+# TUI Validation
+validation_required_fields: "Nombre y Puerto son requeridos"
+
+# TUI Elements
+app_name_tui: "🎲  Foundry Tunnel Manager"
+web: "web"
+config: "configuración"
+
+# CLI
+uninstall_not_found: "ftm no está instalado o no está en PATH"
+uninstall_removing: "Removiendo {0}..."
+uninstall_error: "Error al remover binario: {0}"
+uninstall_success: "✓ ftm ha sido desinstalado"
+version_output: "Foundry Tunnel Manager v{0}"
+dashboard_url: "🌐 Dashboard ejecutándose en: {0}"
+press_ctrl_c: "\nPresiona Ctrl+C para detener"
+tui_hint: "Presiona 'w' en el TUI para abrir el dashboard"

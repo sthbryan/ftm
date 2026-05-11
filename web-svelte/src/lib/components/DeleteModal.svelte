@@ -2,6 +2,7 @@
   import { X, Trash2 } from "lucide-svelte";
   import { animate } from "motion";
   import { cn } from "$lib/utils/cn";
+  import { translate } from "$lib/i18n";
   import Button from "./Button.svelte";
 
   let {
@@ -15,6 +16,8 @@
     onConfirm: () => void;
     onCancel: () => void;
   } = $props();
+
+  let t = $derived($translate);
 
   let modalRef: HTMLDivElement | undefined = $state();
   let backdropRef: HTMLDivElement | undefined = $state();
@@ -99,7 +102,7 @@
           id="modal-title"
           class="m-0 text-lg font-semibold text-text-heading flex items-center gap-2"
         >
-          Delete Connection
+          {t("delete_connection")}
         </h3>
         <button
           class={cn(
@@ -108,16 +111,16 @@
             "transition-all duration-150 hover:rotate-90 hover:bg-hover",
           )}
           onclick={handleCancel}
-          aria-label="Close dialog"
+          aria-label={t("close")}
         >
           <X size={18} />
         </button>
       </div>
       <div class="px-6 py-5 max-md:px-5">
         <p class="m-0 mb-2 text-text">
-          Are you sure you want to delete <strong>{name}</strong>?
+          {t("confirm_delete", { name })}
         </p>
-        <p class="m-0 text-sm text-text-muted">This action cannot be undone.</p>
+        <p class="m-0 text-sm text-text-muted">{t("cannot_undo")}</p>
       </div>
       <div
         class="flex gap-3 px-6 pb-6 max-md:flex-col-reverse max-md:gap-2 max-md:px-5 max-md:pb-5"
@@ -126,13 +129,13 @@
           variant="default"
           size="lg"
           onclick={handleCancel}
-          class="flex-1 max-md:w-full">Cancel</Button
+          class="flex-1 max-md:w-full">{t("cancel")}</Button
         >
         <Button
           variant="error"
           size="lg"
           onclick={handleConfirm}
-          class="flex-1 max-md:w-full">Delete</Button
+          class="flex-1 max-md:w-full">{t("delete")}</Button
         >
       </div>
     </div>

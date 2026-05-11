@@ -3,6 +3,7 @@ import { api } from '../client';
 export interface Settings {
   notifications_enabled: "granted" | "pending" | "rejected";
   notification_sound: boolean;
+  language: string;
 }
 
 export const settingsApi = {

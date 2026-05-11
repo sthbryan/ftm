@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/providers"
 )
 
@@ -67,7 +68,7 @@ func (m *Model) installProvider(providerType config.Provider) tea.Cmd {
 		if err != nil {
 			return statusUpdateMsg{
 				tunnelID: "",
-				status:   config.TunnelStatus{ErrorMessage: "Install failed: " + err.Error(), State: config.TunnelStateError},
+				status:   config.TunnelStatus{ErrorMessage: i18n.TF("error_install_failed", err.Error()), State: config.TunnelStateError},
 			}
 		}
 		return downloadProgressMsg{Done: true, Percent: 100}

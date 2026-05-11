@@ -3,6 +3,7 @@
   import { animate, spring } from "motion";
   import { onMount } from "svelte";
   import { useTunnels } from "$lib/stores/tunnels.svelte";
+  import { translate } from "$lib/i18n";
   import { cn } from "$lib/utils/cn";
   import TunnelCard from "./TunnelCard.svelte";
 
@@ -10,6 +11,7 @@
     $props();
 
   const store = useTunnels();
+  let t = $derived($translate);
 
   let sectionEl: HTMLElement | undefined = $state();
   let headerEl: HTMLElement | undefined = $state();
@@ -55,7 +57,7 @@
     <h2
       class="m-0 text-[17px] font-semibold font-serif text-text-heading flex items-center gap-2"
     >
-      Your Connections
+      {t("connections")}
     </h2>
     <span
       class="rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm text-btn-text bg-primary"
@@ -75,16 +77,16 @@
         <div
           class="h-7 w-7 animate-spin rounded-full border-2 border-border border-t-primary"
         ></div>
-        <span>Loading connections...</span>
+        <span>{t("loading")}</span>
       </div>
     {:else if store.tunnels.length === 0}
       <div class="py-10 text-center text-text-muted">
         <Radio class="mx-auto mb-3 h-12 w-12" size={48} />
         <h3 class="mb-1.5 mt-0 text-base text-text-heading">
-          No connections yet
+          {t("no_tunnels")}
         </h3>
         <p class="m-0 text-sm leading-relaxed">
-          Create your first tunnel to share your Foundry VTT world with players.
+          {t("tunnels_desc")}
         </p>
       </div>
     {:else}

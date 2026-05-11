@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sthbryan/ftm/internal/app/ui"
+	"github.com/sthbryan/ftm/internal/i18n"
 )
 
 type DownloadingView struct {
@@ -30,7 +31,7 @@ func (d *DownloadingView) Render(progressBarView string) string {
 	header := lipgloss.NewStyle().
 		Foreground(gold).
 		Bold(true).
-		Render("⬇️  Installing")
+		Render(i18n.T("installing"))
 
 	b.WriteString(header)
 	b.WriteString("\n\n")
@@ -43,11 +44,11 @@ func (d *DownloadingView) Render(progressBarView string) string {
 	var step string
 	switch {
 	case d.Percent < 90:
-		step = fmt.Sprintf("Downloading %s...", name)
+		step = i18n.TF("downloading", name)
 	case d.Percent < 100:
-		step = fmt.Sprintf("Installing %s...", name)
+		step = i18n.TF("installing", name)
 	default:
-		step = "Complete!"
+		step = i18n.T("complete")
 	}
 
 	stepStyle := lipgloss.NewStyle().Foreground(text)
@@ -76,7 +77,7 @@ func (d *DownloadingView) Render(progressBarView string) string {
 	b.WriteString("\n")
 	b.WriteString(lipgloss.NewStyle().
 		Foreground(textDim).
-		Render("esc: cancel"))
+		Render(i18n.T("esc_cancel")))
 
 	return b.String()
 }

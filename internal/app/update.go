@@ -3,6 +3,7 @@ package app
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/providers"
 )
 
@@ -54,13 +55,13 @@ func (m *Model) handleDownloadProgress(msg downloadProgressMsg) (tea.Model, tea.
 			for _, item := range m.Items {
 				if ti, ok := item.(TunnelItem); ok && ti.Tunnel.ID == m.PendingTunnel.ID {
 					m.PendingTunnel = nil
-					m.showMessage("Install complete! Starting tunnel...")
+					m.showMessage(i18n.T("install_complete"))
 					return m, m.startTunnel(ti)
 				}
 			}
 			m.PendingTunnel = nil
 		}
-		m.showMessage("Download complete!")
+		m.showMessage(i18n.T("download_complete"))
 	}
 	return m, m.checkDownloadProgress()
 }
@@ -69,7 +70,7 @@ func (m *Model) handleStatusUpdate(msg statusUpdateMsg) (tea.Model, tea.Cmd) {
 	m.refreshItems()
 	if msg.status.ErrorMessage != "" {
 		m.playBeep()
-		m.showMessage("Error: " + msg.status.ErrorMessage)
+		m.showMessage(i18n.TF("error_state", msg.status.ErrorMessage))
 	}
 	return m, nil
 }

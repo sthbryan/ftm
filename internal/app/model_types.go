@@ -11,6 +11,7 @@ import (
 
 	"github.com/sthbryan/ftm/internal/app/ui/views"
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/providers"
 )
 
@@ -37,6 +38,8 @@ const TwoColumnThreshold = 100
 type KeyMap struct {
 	Up       key.Binding
 	Down     key.Binding
+	Left     key.Binding
+	Right    key.Binding
 	Enter    key.Binding
 	Toggle   key.Binding
 	Logs     key.Binding
@@ -60,6 +63,14 @@ var DefaultKeys = KeyMap{
 	Down: key.NewBinding(
 		key.WithKeys("down", "j"),
 		key.WithHelp("↓/j", "down"),
+	),
+	Left: key.NewBinding(
+		key.WithKeys("left", "h"),
+		key.WithHelp("←/h", "prev"),
+	),
+	Right: key.NewBinding(
+		key.WithKeys("right", "l"),
+		key.WithHelp("→/l", "next"),
 	),
 	Enter: key.NewBinding(
 		key.WithKeys("enter"),
@@ -155,14 +166,18 @@ func (i TunnelItem) FilterValue() string { return i.Tunnel.Name }
 func (i TunnelItem) Title() string { return i.Tunnel.Name }
 
 func (i TunnelItem) Description() string {
-	status := "OFFLINE"
+	status := i18n.T("status_offline")
 	switch i.Status.State {
 	case config.TunnelStateStarting:
-		status = "STARTING"
+		status = i18n.T("status_starting")
 	case config.TunnelStateConnecting:
-		status = "CONNECTING"
+		status = i18n.T("status_connecting")
 	case config.TunnelStateOnline:
-		status = "ONLINE"
+		status = i18n.T("status_online")
+	case config.TunnelStateError:
+		status = i18n.T("status_error")
+	case config.TunnelStateTimeout:
+		status = i18n.T("status_timeout")
 	}
-	return fmt.Sprintf("%s | Port %d | %s", i.Tunnel.Provider, i.Tunnel.LocalPort, status)
+	return fmt.Sprintf("%s | %s %d | %s", i.Tunnel.Provider, i18n.T("port"), i.Tunnel.LocalPort, status)
 }
