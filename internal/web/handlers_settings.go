@@ -50,8 +50,18 @@ func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Language != nil {
-		h.config.Language = *req.Language
-		i18n.ChangeLanguage(*req.Language)
+		validLangs := i18n.AvailableLanguages()
+		isValid := false
+		for _, l := range validLangs {
+			if l == *req.Language {
+				isValid = true
+				break
+			}
+		}
+		if isValid {
+			h.config.Language = *req.Language
+			i18n.ChangeLanguage(*req.Language)
+		}
 	}
 
 	notifications.SetNotificationsEnabled(h.config.NotificationsStatus == config.NotificationGranted)
