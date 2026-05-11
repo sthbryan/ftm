@@ -38,7 +38,6 @@ stopped: "Detenido"
 need_installing: "Necesita instalación"
 installing: "Instalando {0}..."
 downloading: "Descargando {0}..."
-downloading: "Descargando..."
 
 # Providers
 provider_pinggy: "Pinggy"
