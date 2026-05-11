@@ -44,9 +44,9 @@ func (d *DownloadingView) Render(progressBarView string) string {
 	var step string
 	switch {
 	case d.Percent < 90:
-		step = fmt.Sprintf(i18n.T("downloading"), name)
+		step = i18n.TF("downloading", name)
 	case d.Percent < 100:
-		step = fmt.Sprintf(i18n.T("installing"), name)
+		step = i18n.TF("installing", name)
 	default:
 		step = i18n.T("complete")
 	}
