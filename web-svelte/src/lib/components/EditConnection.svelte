@@ -110,7 +110,7 @@
 <section
   bind:this={sectionEl}
   style="opacity: 0;"
-  class="rounded-xl p-5 bg-card border border-border"
+  class="rounded-2xl p-5 bg-card border border-border"
 >
   <div
     bind:this={headerEl}
@@ -125,7 +125,7 @@
     <button
       type="button"
       onclick={onCancel}
-      class="p-1 rounded text-lg bg-transparent border-none text-text-muted cursor-pointer transition-colors hover:bg-hover hover:text-text"
+      class="p-1 rounded-xl text-lg bg-transparent border-none text-text-muted cursor-pointer transition-all hover:bg-hover hover:text-text"
     >
       <X size={18} />
     </button>
@@ -145,7 +145,7 @@
           placeholder={t("name_placeholder")}
           required
           autocomplete="off"
-          class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 bg-input-bg text-text border-border focus:ring-primary transition-all duration-200"
+          class="w-full h-9 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 bg-input-bg text-text border-border focus:ring-primary transition-all duration-200"
         />
       </div>
       <div class="grid grid-cols-2 gap-4">
@@ -161,7 +161,7 @@
             min="1"
             max="65535"
             required
-            class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 bg-input-bg text-text border-border focus:ring-primary transition-all duration-200"
+            class="w-full h-9 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 bg-input-bg text-text border-border focus:ring-primary transition-all duration-200"
           />
         </div>
         <div class="mb-4">
