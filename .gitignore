@@ -51,3 +51,6 @@ desktop/frontend/
 
 # .specs
 *.specs
+.docs
+
+AGENTS.md
