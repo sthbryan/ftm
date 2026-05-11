@@ -22,5 +22,8 @@
     "tailwindcss": "^4.2.2",
     "vite": "^8.0.0",
     "motion": "^12.38.0"
+  },
+  "dependencies": {
+    "svelte-sonner": "^1.1.1"
   }
 }
