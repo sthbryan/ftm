@@ -74,9 +74,10 @@
   {disabled}
   {onclick}
   class={cn(
-    "inline-flex items-center justify-center rounded-lg border font-medium cursor-pointer",
-    "transition-colors duration-150",
+    "inline-flex items-center justify-center border font-medium cursor-pointer",
+    "transition-all duration-150 rounded-xl",
     "disabled:opacity-50 disabled:cursor-not-allowed",
+    "active:scale-[0.98]",
     variantClasses.base,
     variantClasses.hover,
     sizeClasses,

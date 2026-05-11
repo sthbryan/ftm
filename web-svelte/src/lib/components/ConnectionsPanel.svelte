@@ -41,8 +41,8 @@
   bind:this={sectionEl}
   style="opacity: 0;"
   class={cn(
-    "flex flex-col overflow-hidden rounded-xl border shadow-sm transition-all duration-200",
-    "hover:shadow-lg hover:-translate-y-px",
+    "flex flex-col overflow-hidden rounded-3xl border shadow-sm transition-all duration-200",
+    "hover:shadow-lg",
     "bg-card border-border",
   )}
 >

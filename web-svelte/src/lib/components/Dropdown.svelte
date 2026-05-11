@@ -112,7 +112,7 @@
     aria-expanded={isOpen}
     aria-haspopup="true"
     class={cn(
-      "flex items-center gap-1.5 px-3 py-2 text-xs h-9 rounded-lg border min-h-9 cursor-pointer",
+      "flex items-center gap-1.5 px-3 py-2 text-xs h-9 rounded-xl border min-h-9 cursor-pointer",
       "bg-card border-border text-text hover:bg-hover flex-1",
     )}
   >
@@ -135,7 +135,7 @@
       aria-orientation="vertical"
       style="opacity: 0; scale: 0.95; transform: translateY(-4px);"
       class={cn(
-        "absolute min-w-[150px] max-h-[300px] rounded-lg border p-1 z-50 overflow-y-auto cursor-default",
+        "absolute min-w-[150px] max-h-[300px] rounded-2xl border p-1 z-50 overflow-y-auto cursor-default",
         menuPosition,
         "bg-card border-border",
       )}
@@ -153,7 +153,7 @@
               onSelect?.(option);
             }}
             class={cn(
-              "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-lg text-left cursor-pointer",
+              "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-xl text-left cursor-pointer",
               "text-text bg-transparent border-none hover:bg-hover",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               option.danger && "text-red-500 hover:bg-red-500/10",
