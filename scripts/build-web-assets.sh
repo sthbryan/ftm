@@ -7,7 +7,7 @@ DESKTOP_DIST_DIR="$ROOT_DIR/desktop/frontend/dist"
 STATIC_DIR="$ROOT_DIR/internal/web/static"
 
 cd "$WEB_DIR"
-bun install
+bun install --frozen-lockfile
 bun run build
 
 rm -rf "$DESKTOP_DIST_DIR"
