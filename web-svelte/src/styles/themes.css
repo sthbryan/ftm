@@ -23,6 +23,8 @@
 @import './themes/_blue-light.css';
 @import './themes/_purple.css';
 @import './themes/_purple-light.css';
+@import './themes/_rust.css';
+@import './themes/_rust-dark.css';
 
 @theme {
   --color-bg: var(--color-bg);

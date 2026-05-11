@@ -19,10 +19,10 @@ const THEMES = [
   'blue',
   'blue-light',
   'purple',
-  'purple-light'
+  'purple-light',
+  'rust-dark',
+  'rust'
 ] as const;
-
-type Theme = typeof THEMES[number];
 
 const STORAGE_KEY = 'ftm-theme';
 

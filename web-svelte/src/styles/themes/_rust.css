@@ -1,0 +1,63 @@
+/* ===========================================
+   RUST - Rust Language Theme (Light)
+   Inspired by rust-lang.org branding
+   =========================================== */
+
+:root[data-theme="rust"] {
+  /* Base - warm cream */
+  --color-bg: #fdf6ec;
+  --color-card: #ffffff;
+  --color-text: #3d1c0a;
+  --color-heading: #2a1205;
+  --color-muted: #8b6b4d;
+  --color-border: #e8d5c4;
+  --color-border-light: #f5ebe0;
+  
+  /* Primary - Rust orange */
+  --color-primary: #e05824;
+  --color-primary-hover: #c44d1f;
+  --color-hover: #f5ebe0;
+  
+  /* Buttons */
+  --color-btn-primary: #e05824;
+  --color-btn-text: #ffffff;
+  --color-btn-primary-hover: #c44d1f;
+  
+  /* Start/Stop */
+  --color-btn-start: #3d8b40;
+  --color-btn-start-hover: #2f7032;
+  --color-btn-stop: #b91c1c;
+  --color-btn-stop-hover: #991b1b;
+  
+  /* Danger */
+  --color-btn-danger: #b91c1c;
+  --color-btn-danger-hover: #991b1b;
+  
+  /* Status */
+  --color-status-running: #3d8b40;
+  --color-status-starting: #e05824;
+  --color-status-installing: #8b4513;
+  --color-status-error: #b91c1c;
+  --color-status-stopped: #9ca3af;
+  
+  /* Logs */
+  --color-logs-bg: #faf3e8;
+  --color-logs-text: #3d1c0a;
+  
+  /* URL bar */
+  --color-url-bg: #f5ebe0;
+  --color-url-text: #e05824;
+  
+  /* Inputs */
+  --color-input-bg: #ffffff;
+  --color-input-text: #3d1c0a;
+  --color-input-placeholder: #b89e7d;
+  --color-input-disabled: #f5ebe0;
+  
+  /* Badge */
+  --color-badge-text: #ffffff;
+  
+  /* Secondary button */
+  --color-secondary-btn: #f0e6d9;
+  --color-secondary-btn-text: #3d1c0a;
+}

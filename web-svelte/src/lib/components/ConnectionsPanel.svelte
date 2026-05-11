@@ -41,8 +41,7 @@
   bind:this={sectionEl}
   style="opacity: 0;"
   class={cn(
-    "flex flex-col overflow-hidden rounded-xl border shadow-sm transition-all duration-200",
-    "hover:shadow-lg hover:-translate-y-px",
+    "flex flex-col overflow-hidden rounded-3xl border shadow-sm transition-all duration-200",
     "bg-card border-border",
   )}
 >
@@ -55,7 +54,7 @@
     )}
   >
     <h2
-      class="m-0 text-[17px] font-semibold font-serif text-text-heading flex items-center gap-2"
+      class="m-0 text-base font-semibold font-serif text-text-heading flex items-center gap-2"
     >
       {t("connections")}
     </h2>

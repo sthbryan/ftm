@@ -84,7 +84,7 @@
 <section
   bind:this={sectionEl}
   style="opacity: 0;"
-  class="rounded-xl p-5 bg-card border border-border"
+  class="rounded-2xl p-5 bg-card border border-border"
 >
   <div bind:this={headerEl} style="opacity: 0;" class="mb-5">
     <h2 class="text-base font-semibold text-text-heading flex items-center gap-2">
@@ -104,7 +104,7 @@
           placeholder={t("tunnel_name_hint")}
           required
           autocomplete="off"
-          class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 bg-input-bg text-text border-border focus:ring-primary transition-all duration-200"
+          class="w-full h-9 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 bg-input-bg text-text border-border focus:ring-primary transition-all duration-200"
         />
       </div>
       <div class="grid grid-cols-2 gap-4">
@@ -119,7 +119,7 @@
             min="1"
             max="65535"
             required
-            class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 bg-input-bg text-text border-border focus:ring-primary transition-all duration-200"
+            class="w-full h-9 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 bg-input-bg text-text border-border focus:ring-primary transition-all duration-200"
           />
         </div>
         <div class="mb-4">

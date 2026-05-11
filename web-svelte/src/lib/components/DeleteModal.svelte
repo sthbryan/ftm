@@ -106,9 +106,8 @@
         </h3>
         <button
           class={cn(
-            "w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer",
-            "bg-transparent border-none text-text-muted",
-            "transition-all duration-150 hover:rotate-90 hover:bg-hover",
+            "w-8 h-8 flex items-center justify-center rounded-xl cursor-pointer",
+            "bg-transparent border-none text-text-muted transition-all duration-150 hover:rotate-90 hover:bg-hover"
           )}
           onclick={handleCancel}
           aria-label={t("close")}
