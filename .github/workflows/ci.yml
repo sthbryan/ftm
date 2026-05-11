@@ -34,7 +34,7 @@ jobs:
           cp -r dist/* ../internal/web/static/
 
       - name: Test Svelte
-        run: cd web-svelte && bun test
+        run: cd web-svelte && bun run test
       
       - name: Build
         run: go build -v $(go list ./... | grep -v '/desktop')
