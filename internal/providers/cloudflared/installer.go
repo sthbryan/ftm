@@ -3,7 +3,6 @@ package cloudflared
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -12,15 +11,11 @@ import (
 )
 
 type Installer struct {
-	BaseDir    string
-	downloader *providers.BaseDownloader
+	BaseDir string
 }
 
 func NewInstaller(baseDir string) *Installer {
-	return &Installer{
-		BaseDir:    baseDir,
-		downloader: providers.NewBaseDownloader(),
-	}
+	return &Installer{BaseDir: baseDir}
 }
 
 func (i *Installer) CloudflaredBin() string {
@@ -61,28 +56,23 @@ func (i *Installer) Install(progress chan<- providers.DownloadProgress) error {
 	}
 
 	if strings.HasSuffix(url, ".tgz") {
-		tmpFile := binPath + ".tgz"
-		if err := i.downloader.Download(url, tmpFile, progress, "cloudflared"); err != nil {
-			os.Remove(tmpFile)
+		destArchive := binPath + ".tgz"
+		if err := providers.DownloadWithProgress(url, destArchive, progress, "cloudflared"); err != nil {
 			return fmt.Errorf("download failed: %w", err)
 		}
-		defer os.Remove(tmpFile)
+		defer os.Remove(destArchive)
 
-		if err := i.extractTgz(tmpFile, binPath); err != nil {
+		if err := providers.ExtractArchive(destArchive, i.BaseDir, "cloudflared"); err != nil {
 			return fmt.Errorf("extract failed: %w", err)
 		}
 	} else {
-		if err := i.downloader.Download(url, binPath, progress, "cloudflared"); err != nil {
+		if err := providers.DownloadWithProgress(url, binPath, progress, "cloudflared"); err != nil {
 			return fmt.Errorf("download failed: %w", err)
 		}
 	}
 
 	if _, err := os.Stat(binPath); err != nil {
 		return fmt.Errorf("binary not found after install: %w", err)
-	}
-
-	if err := os.Chmod(binPath, 0755); err != nil {
-		return fmt.Errorf("chmod failed: %w", err)
 	}
 
 	if progress != nil {
@@ -118,28 +108,4 @@ func (i *Installer) cloudflaredURL() (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported OS: %s", os)
 	}
-}
-
-func (i *Installer) extractTgz(src, dest string) error {
-	cmd := exec.Command("tar", "-xzf", src, "-C", filepath.Dir(dest))
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	entries, err := os.ReadDir(filepath.Dir(dest))
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() && entry.Name() == "cloudflared" {
-			extractedPath := filepath.Join(filepath.Dir(dest), entry.Name())
-			if extractedPath != dest {
-				return os.Rename(extractedPath, dest)
-			}
-			return os.Chmod(dest, 0755)
-		}
-	}
-
-	return fmt.Errorf("cloudflared binary not found in extracted archive")
 }
