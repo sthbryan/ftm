@@ -3,10 +3,8 @@ package playit
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/sthbryan/ftm/internal/providers"
 )
@@ -53,7 +51,7 @@ func (i *Installer) IsClaimed() bool {
 	if err != nil {
 		return false
 	}
-	return strings.Contains(string(data), "secret")
+	return len(data) > 100
 }
 
 func (i *Installer) Install(progress chan<- providers.DownloadProgress) error {
@@ -88,15 +86,8 @@ func (i *Installer) Install(progress chan<- providers.DownloadProgress) error {
 		}
 	}
 
-	tmpFile := binPath + ".tar.gz"
-	if err := i.downloader.Download(url, tmpFile, progress, "playit"); err != nil {
-		os.Remove(tmpFile)
+	if err := i.downloader.Download(url, binPath, progress, "playit"); err != nil {
 		return fmt.Errorf("download failed: %w", err)
-	}
-	defer os.Remove(tmpFile)
-
-	if err := extractTarGz(tmpFile, binPath); err != nil {
-		return fmt.Errorf("extract failed: %w", err)
 	}
 
 	if _, err := os.Stat(binPath); err != nil {
@@ -129,46 +120,20 @@ func (i *Installer) playitURL() (string, error) {
 	case "linux":
 		switch arch {
 		case "arm64":
-			return base + "/playit-agent_" + strings.TrimPrefix(version, "v") + "_linux_arm64.tar.gz", nil
+			return base + "/playit-linux-aarch64", nil
 		case "amd64":
-			return base + "/playit-agent_" + strings.TrimPrefix(version, "v") + "_linux_x86_64.tar.gz", nil
+			return base + "/playit-linux-amd64", nil
+		case "arm":
+			return base + "/playit-linux-armv7", nil
+		case "386":
+			return base + "/playit-linux-i686", nil
 		}
 		return "", fmt.Errorf("unsupported architecture for Linux: %s", arch)
 	case "windows":
-		return base + "/playit-agent_" + strings.TrimPrefix(version, "v") + "_windows_x86_64.zip", nil
+		return base + "/playit-windows-x86_64.exe", nil
 	case "darwin":
-
-		return "", fmt.Errorf("macOS builds are discontinued. Please use Docker or compile from source")
+		return "", fmt.Errorf("macOS builds are discontinued")
 	default:
 		return "", fmt.Errorf("unsupported OS: %s", os)
 	}
-}
-
-func extractTarGz(src, dest string) error {
-	cmd := exec.Command("tar", "-xzf", src, "-C", filepath.Dir(dest))
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	entries, err := os.ReadDir(filepath.Dir(dest))
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			name := entry.Name()
-			if name == "playit" || name == "playit.exe" || name == "playit-agent" {
-				extractedPath := filepath.Join(filepath.Dir(dest), name)
-				if extractedPath != dest {
-					if err := os.Rename(extractedPath, dest); err != nil {
-						return err
-					}
-				}
-				return os.Chmod(dest, 0755)
-			}
-		}
-	}
-
-	return fmt.Errorf("playit binary not found in extracted archive")
 }
