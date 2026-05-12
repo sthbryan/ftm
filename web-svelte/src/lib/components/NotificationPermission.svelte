@@ -61,7 +61,7 @@
     )}
   >
     <div class="flex flex-col gap-2">
-      <h3 class="m-0 text-[1.1rem] font-semibold text-text-heading">{t('enable_notifications_title')}</h3>
+      <h3 class="m-0 text-[1.1rem] font-semibold text-text-heading">{t('enable_notifications_web')}</h3>
       <p class="m-0 text-sm leading-relaxed text-text-muted">{t('notifications_prompt')}</p>
       <div class="flex gap-2 mt-1">
         <button
