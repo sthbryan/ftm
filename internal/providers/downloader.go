@@ -2,12 +2,14 @@ package providers
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type DownloadProgress struct {
@@ -99,7 +101,7 @@ func DownloadWithProgress(url, dest string, progress chan<- DownloadProgress, na
 	return downloadWithProgress(url, dest, progress, name)
 }
 
-func ExtractTarGz(src, destDir string) error {
+func ExtractTarGz(src, destDir, binaryName string) error {
 	file, err := os.Open(src)
 	if err != nil {
 		return err
@@ -124,25 +126,77 @@ func ExtractTarGz(src, destDir string) error {
 
 		if header.Typeflag == tar.TypeReg {
 			name := filepath.Base(header.Name)
-			if name == "bore" || name == "bore.exe" || name == "cloudflared" || name == "cloudflared.exe" {
-				destPath := filepath.Join(destDir, name)
-				out, err := os.Create(destPath)
-				if err != nil {
-					return err
-				}
-				defer out.Close()
-
-				if _, err := io.Copy(out, tr); err != nil {
-					return err
-				}
-
-				if err := os.Chmod(destPath, 0755); err != nil {
-					return err
-				}
-				return nil
+			if name == binaryName || name == binaryName+".exe" {
+				return extractFileToDir(tr, destDir, name)
 			}
 		}
 	}
 
-	return fmt.Errorf("executable not found in archive")
+	return fmt.Errorf("executable %s not found in archive", binaryName)
+}
+
+func ExtractZip(src, destDir, binaryName string) error {
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	for _, f := range r.File {
+		if !f.Mode().IsRegular() {
+			continue
+		}
+		name := filepath.Base(f.Name)
+		if name == binaryName || name == binaryName+".exe" {
+			rc, err := f.Open()
+			if err != nil {
+				return err
+			}
+			defer rc.Close()
+			return extractFileToDir(rc, destDir, name)
+		}
+	}
+
+	return fmt.Errorf("executable %s not found in archive", binaryName)
+}
+
+func extractFileToDir(src io.Reader, destDir, filename string) error {
+	destPath := filepath.Join(destDir, filename)
+	tmpPath := destPath + ".tmp"
+
+	out, err := os.Create(tmpPath)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(out, src)
+	out.Close()
+
+	if err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("failed to write %s: %w", filename, err)
+	}
+
+	if err := os.Chmod(tmpPath, 0755); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("failed to chmod %s: %w", filename, err)
+	}
+
+	if err := os.Rename(tmpPath, destPath); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("failed to rename %s: %w", filename, err)
+	}
+
+	return nil
+}
+
+func ExtractArchive(src, destDir, binaryName string) error {
+	src = strings.ToLower(src)
+	if strings.HasSuffix(src, ".zip") {
+		return ExtractZip(src, destDir, binaryName)
+	}
+	if strings.HasSuffix(src, ".tar.gz") || strings.HasSuffix(src, ".tgz") {
+		return ExtractTarGz(src, destDir, binaryName)
+	}
+	return fmt.Errorf("unsupported archive format: %s", src)
 }
