@@ -24,6 +24,7 @@ func (h *Handlers) handleProviders(w http.ResponseWriter) {
 		{"id": "localhostrun", "name": "localhost.run"},
 		{"id": "serveo", "name": "Serveo"},
 		{"id": "pinggy", "name": "Pinggy"},
+		{"id": "bore", "name": "bore"},
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(providers)
