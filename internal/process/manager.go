@@ -9,6 +9,7 @@ import (
 
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/providers/bore"
 	"github.com/sthbryan/ftm/internal/providers/cloudflared"
 	"github.com/sthbryan/ftm/internal/providers/pinggy"
 	"github.com/sthbryan/ftm/internal/providers/ssh"
@@ -85,6 +86,7 @@ func NewManager() *Manager {
 			config.ProviderLocalhostRun: ssh.NewLocalhostRun(),
 			config.ProviderServeo:       ssh.NewServeo(),
 			config.ProviderPinggy:       pinggy.New(),
+			config.ProviderBore:         bore.New(),
 		},
 	}
 }

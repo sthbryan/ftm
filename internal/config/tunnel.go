@@ -8,6 +8,7 @@ const (
 	ProviderLocalhostRun Provider = "localhostrun"
 	ProviderServeo       Provider = "serveo"
 	ProviderPinggy       Provider = "pinggy"
+	ProviderBore         Provider = "bore"
 )
 
 type TunnelState string

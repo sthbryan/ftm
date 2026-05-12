@@ -1,6 +1,8 @@
 package providers
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
@@ -91,4 +93,56 @@ func downloadWithProgress(url, dest string, progress chan<- DownloadProgress, na
 	}
 
 	return nil
+}
+
+func DownloadWithProgress(url, dest string, progress chan<- DownloadProgress, name string) error {
+	return downloadWithProgress(url, dest, progress, name)
+}
+
+func ExtractTarGz(src, destDir string) error {
+	file, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	gzr, err := gzip.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer gzr.Close()
+
+	tr := tar.NewReader(gzr)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		if header.Typeflag == tar.TypeReg {
+			name := filepath.Base(header.Name)
+			if name == "bore" || name == "bore.exe" || name == "cloudflared" || name == "cloudflared.exe" {
+				destPath := filepath.Join(destDir, name)
+				out, err := os.Create(destPath)
+				if err != nil {
+					return err
+				}
+				defer out.Close()
+
+				if _, err := io.Copy(out, tr); err != nil {
+					return err
+				}
+
+				if err := os.Chmod(destPath, 0755); err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+	}
+
+	return fmt.Errorf("executable not found in archive")
 }
