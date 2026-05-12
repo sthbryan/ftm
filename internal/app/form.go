@@ -55,6 +55,7 @@ func (m *Model) handleProviderNav(dir string) {
 		config.ProviderLocalhostRun,
 		config.ProviderServeo,
 		config.ProviderPinggy,
+		config.ProviderBore,
 	}
 
 	current := config.Provider(m.FormValues.Provider)
