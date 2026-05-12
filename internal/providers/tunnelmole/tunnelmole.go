@@ -170,3 +170,5 @@ func (p *TunnelmoleProvider) IsReady(line string) bool {
 	return strings.Contains(lineLower, "your site is available at") ||
 		strings.Contains(lineLower, "tunnelmole.net")
 }
+
+func (p *TunnelmoleProvider) ParseClaimURL(line string) string { return "" }

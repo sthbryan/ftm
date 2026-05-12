@@ -149,6 +149,7 @@ func (m *Model) viewAddForm(isEdit bool) string {
 	view.Name = m.FormValues.Name
 	view.Provider = m.FormValues.Provider
 	view.Port = m.FormValues.Port
+	view.ClaimURL = m.PlayitClaimURL
 
 	return view.Render()
 }

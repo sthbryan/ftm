@@ -29,7 +29,7 @@ const (
 
 type Settings struct {
 	NotificationsEnabled bool
-	NotificationSound   bool
+	NotificationSound    bool
 	Theme                string
 }
 
@@ -147,6 +147,7 @@ type Model struct {
 	PendingTunnel       *config.TunnelConfig
 	ProgressBar         progress.Model
 	SettingsView        *views.SettingsView
+	PlayitClaimURL      string
 }
 
 type FormData struct {

@@ -3,6 +3,7 @@ package app
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/providers"
 )
@@ -44,7 +45,27 @@ func (m *Model) handleTick() (tea.Model, tea.Cmd) {
 			m.Message = ""
 		}
 	}
+
+	if item, ok := m.selectedItem(); ok {
+		if item.Tunnel.Provider == config.ProviderPlayit && m.PlayitClaimURL == "" {
+			m.checkPlayitClaimURL()
+		}
+	}
 	return m, tickCmd()
+}
+
+func (m *Model) checkPlayitClaimURL() {
+	logs := m.App.Manager.GetLogs(m.SelectedTunnel)
+	playitProvider := m.App.Manager.GetProvider(config.ProviderPlayit)
+	if playitProvider != nil {
+		for _, line := range logs {
+			if claimURL := playitProvider.ParseClaimURL(line); claimURL != "" {
+				m.PlayitClaimURL = claimURL
+				m.showMessage("CLAIM: " + claimURL)
+				break
+			}
+		}
+	}
 }
 
 func (m *Model) handleDownloadProgress(msg downloadProgressMsg) (tea.Model, tea.Cmd) {

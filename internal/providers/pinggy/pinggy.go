@@ -129,3 +129,5 @@ func (p *PinggyCliProvider) IsReady(line string) bool {
 		(strings.Contains(lineLower, ".pinggy.io") && !strings.Contains(lineLower, "dashboard")) ||
 		strings.Contains(lineLower, "connected")
 }
+
+func (p *PinggyCliProvider) ParseClaimURL(line string) string { return "" }

@@ -131,3 +131,5 @@ func (p *CloudflaredProvider) IsReady(line string) bool {
 	return strings.Contains(line, "trycloudflare.com") ||
 		strings.Contains(line, "started tunnel")
 }
+
+func (p *CloudflaredProvider) ParseClaimURL(line string) string { return "" }

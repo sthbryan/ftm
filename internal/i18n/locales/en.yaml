@@ -46,6 +46,7 @@ provider_cloudflared: "Cloudflared"
 provider_tunnelmole: "Tunnelmole"
 provider_localhostrun: "LocalhostRun"
 provider_playit: "Playit.gg"
+playit_hint: "Requires manual tunnel setup at playit.gg/account/tunnels"
 
 # Actions
 connect: "Connect"

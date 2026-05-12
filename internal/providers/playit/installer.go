@@ -38,19 +38,17 @@ func (i *Installer) ConfigPath() string {
 	return filepath.Join(home, ".config", "playit", "playit.toml")
 }
 
-// IsInstalled checks if playit binary exists
 func (i *Installer) IsInstalled() bool {
 	_, err := os.Stat(i.PlayitBin())
 	return err == nil
 }
 
-// IsClaimed checks if the agent has been claimed (playit.toml exists with secret key)
 func (i *Installer) IsClaimed() bool {
 	configPath := i.ConfigPath()
 	if _, err := os.Stat(configPath); err != nil {
 		return false
 	}
-	// Check if file has content (contains secret key after claiming)
+
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return false
@@ -139,8 +137,7 @@ func (i *Installer) playitURL() (string, error) {
 	case "windows":
 		return base + "/playit-agent_" + strings.TrimPrefix(version, "v") + "_windows_x86_64.zip", nil
 	case "darwin":
-		// macOS builds have been discontinued, but we provide the download URL structure
-		// Users on Mac need to compile from source or use Docker
+
 		return "", fmt.Errorf("macOS builds are discontinued. Please use Docker or compile from source")
 	default:
 		return "", fmt.Errorf("unsupported OS: %s", os)

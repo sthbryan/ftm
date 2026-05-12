@@ -327,3 +327,9 @@ func (m *Manager) StopAll() {
 	}
 	m.processes = make(map[string]*ManagedProcess)
 }
+
+func (m *Manager) GetProvider(providerType config.Provider) providers.Provider {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.providers[providerType]
+}

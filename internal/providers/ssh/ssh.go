@@ -193,3 +193,5 @@ func (p *SSHProvider) IsReady(line string) bool {
 	return strings.Contains(cleanLower, "serveo") ||
 		strings.Contains(cleanLower, "forwarding")
 }
+
+func (p *SSHProvider) ParseClaimURL(line string) string { return "" }

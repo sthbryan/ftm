@@ -16,6 +16,7 @@ type FormView struct {
 	Name       string
 	Provider   string
 	Port       string
+	ClaimURL   string
 }
 
 func NewFormView() *FormView {
@@ -83,6 +84,13 @@ func (f *FormView) Render() string {
 		f.submitButton(t, inputWidth),
 		"",
 		lipgloss.NewStyle().Foreground(t.TextDim).Render(navHint),
+	}
+
+	if f.Provider == "playit" {
+		hintStyle := lipgloss.NewStyle().
+			Foreground(t.Bronze).
+			Render(i18n.T("playit_hint"))
+		lines = append(lines, "", hintStyle)
 	}
 
 	content := strings.Join(lines, "\n")

@@ -13,6 +13,7 @@ type Provider interface {
 
 	Start(ctx context.Context, tunnel config.TunnelConfig, logWriter io.Writer) (*Process, error)
 	ParseURL(line string) string
+	ParseClaimURL(line string) string
 }
 
 type AutoInstaller interface {
