@@ -45,6 +45,7 @@ provider_serveo: "Serveo"
 provider_cloudflared: "Cloudflared"
 provider_tunnelmole: "Tunnelmole"
 provider_localhostrun: "LocalhostRun"
+provider_playit: "Playit.gg"
 
 # Actions
 connect: "Connect"
