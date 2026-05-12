@@ -11,6 +11,7 @@ import (
 	"github.com/sthbryan/ftm/internal/providers"
 	"github.com/sthbryan/ftm/internal/providers/cloudflared"
 	"github.com/sthbryan/ftm/internal/providers/pinggy"
+	"github.com/sthbryan/ftm/internal/providers/playit"
 	"github.com/sthbryan/ftm/internal/providers/ssh"
 	"github.com/sthbryan/ftm/internal/providers/tunnelmole"
 )
@@ -85,6 +86,7 @@ func NewManager() *Manager {
 			config.ProviderLocalhostRun: ssh.NewLocalhostRun(),
 			config.ProviderServeo:       ssh.NewServeo(),
 			config.ProviderPinggy:       pinggy.New(),
+			config.ProviderPlayit:       playit.New(),
 		},
 	}
 }
