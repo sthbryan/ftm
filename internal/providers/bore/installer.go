@@ -48,24 +48,34 @@ func (i *Installer) Install(progress chan<- providers.DownloadProgress) error {
 
 	switch platform {
 	case "darwin":
-		if arch == "arm64" {
+		switch arch {
+		case "arm64":
 			filename = "bore-v0.6.0-aarch64-apple-darwin.tar.gz"
 			url = "https://github.com/ekzhang/bore/releases/download/v0.6.0/" + filename
-		} else {
+		case "amd64":
 			filename = "bore-v0.6.0-x86_64-apple-darwin.tar.gz"
 			url = "https://github.com/ekzhang/bore/releases/download/v0.6.0/" + filename
+		default:
+			return fmt.Errorf("unsupported architecture for macOS: %s (supported: arm64, amd64)", arch)
 		}
 	case "linux":
-		if arch == "arm64" {
+		switch arch {
+		case "arm64":
 			filename = "bore-v0.6.0-aarch64-unknown-linux-musl.tar.gz"
 			url = "https://github.com/ekzhang/bore/releases/download/v0.6.0/" + filename
-		} else {
+		case "amd64":
 			filename = "bore-v0.6.0-x86_64-unknown-linux-musl.tar.gz"
 			url = "https://github.com/ekzhang/bore/releases/download/v0.6.0/" + filename
+		default:
+			return fmt.Errorf("unsupported architecture for Linux: %s (supported: arm64, amd64)", arch)
 		}
 	case "windows":
-		filename = "bore-v0.6.0-x86_64-pc-windows-msvc.zip"
-		url = "https://github.com/ekzhang/bore/releases/download/v0.6.0/" + filename
+		if arch == "amd64" {
+			filename = "bore-v0.6.0-x86_64-pc-windows-msvc.zip"
+			url = "https://github.com/ekzhang/bore/releases/download/v0.6.0/" + filename
+		} else {
+			return fmt.Errorf("unsupported architecture for Windows: %s (supported: amd64)", arch)
+		}
 	default:
 		return fmt.Errorf("unsupported platform: %s", platform)
 	}
@@ -87,7 +97,7 @@ func (i *Installer) Install(progress chan<- providers.DownloadProgress) error {
 
 	defer os.Remove(destArchive)
 
-	if err := providers.ExtractTarGz(destArchive, i.BaseDir); err != nil {
+	if err := providers.ExtractArchive(destArchive, i.BaseDir, "bore"); err != nil {
 		return fmt.Errorf("failed to extract bore: %w", err)
 	}
 
