@@ -77,10 +77,7 @@ func (p *CloudflaredProvider) FindBinary() string {
 func (p *CloudflaredProvider) Start(ctx context.Context, tunnel config.TunnelConfig, logWriter io.Writer) (*providers.Process, error) {
 	binary := p.FindBinary()
 	if binary == "" {
-		if err := p.installer.Install(nil); err != nil {
-			return nil, fmt.Errorf("failed to install cloudflared: %w", err)
-		}
-		binary = p.installer.CloudflaredBin()
+		return nil, fmt.Errorf("installing")
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -130,4 +127,12 @@ func (p *CloudflaredProvider) IsReady(line string) bool {
 	line = strings.ToLower(line)
 	return strings.Contains(line, "trycloudflare.com") ||
 		strings.Contains(line, "started tunnel")
+}
+
+func (p *CloudflaredProvider) IsInstalled() bool {
+	return p.installer.IsInstalled()
+}
+
+func (p *CloudflaredProvider) Install(progress chan<- providers.DownloadProgress) error {
+	return p.installer.Install(progress)
 }
