@@ -35,6 +35,8 @@ func ProviderText(provider string) string {
 		return T("provider_tunnelmole")
 	case "localhostrun":
 		return T("provider_localhostrun")
+	case "bore":
+		return T("provider_bore")
 	default:
 		return provider
 	}
