@@ -9,6 +9,8 @@ import (
 	"github.com/sthbryan/ftm/internal/providers"
 )
 
+const boreVersion = "v0.6.0"
+
 type Installer struct {
 	BaseDir string
 }
@@ -50,29 +52,29 @@ func (i *Installer) Install(progress chan<- providers.DownloadProgress) error {
 	case "darwin":
 		switch arch {
 		case "arm64":
-			filename = "bore-v0.6.0-aarch64-apple-darwin.tar.gz"
-			url = "https://github.com/ekzhang/bore/releases/download/v0.6.0/" + filename
+			filename = "bore-" + boreVersion + "-aarch64-apple-darwin.tar.gz"
+			url = "https://github.com/ekzhang/bore/releases/download/" + boreVersion + "/" + filename
 		case "amd64":
-			filename = "bore-v0.6.0-x86_64-apple-darwin.tar.gz"
-			url = "https://github.com/ekzhang/bore/releases/download/v0.6.0/" + filename
+			filename = "bore-" + boreVersion + "-x86_64-apple-darwin.tar.gz"
+			url = "https://github.com/ekzhang/bore/releases/download/" + boreVersion + "/" + filename
 		default:
 			return fmt.Errorf("unsupported architecture for macOS: %s (supported: arm64, amd64)", arch)
 		}
 	case "linux":
 		switch arch {
 		case "arm64":
-			filename = "bore-v0.6.0-aarch64-unknown-linux-musl.tar.gz"
-			url = "https://github.com/ekzhang/bore/releases/download/v0.6.0/" + filename
+			filename = "bore-" + boreVersion + "-aarch64-unknown-linux-musl.tar.gz"
+			url = "https://github.com/ekzhang/bore/releases/download/" + boreVersion + "/" + filename
 		case "amd64":
-			filename = "bore-v0.6.0-x86_64-unknown-linux-musl.tar.gz"
-			url = "https://github.com/ekzhang/bore/releases/download/v0.6.0/" + filename
+			filename = "bore-" + boreVersion + "-x86_64-unknown-linux-musl.tar.gz"
+			url = "https://github.com/ekzhang/bore/releases/download/" + boreVersion + "/" + filename
 		default:
 			return fmt.Errorf("unsupported architecture for Linux: %s (supported: arm64, amd64)", arch)
 		}
 	case "windows":
 		if arch == "amd64" {
-			filename = "bore-v0.6.0-x86_64-pc-windows-msvc.zip"
-			url = "https://github.com/ekzhang/bore/releases/download/v0.6.0/" + filename
+			filename = "bore-" + boreVersion + "-x86_64-pc-windows-msvc.zip"
+			url = "https://github.com/ekzhang/bore/releases/download/" + boreVersion + "/" + filename
 		} else {
 			return fmt.Errorf("unsupported architecture for Windows: %s (supported: amd64)", arch)
 		}
