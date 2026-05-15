@@ -50,7 +50,7 @@
   }: TunnelCardProps = $props();
 
   let t = $derived($translate);
-  const dropdownAlign = $derived(index === totalItems - 1 ? "top-left" : "left");
+  const dropdownAlign = $derived(index === 0 ? "left" : "top-left");
 
   const toast = useToast();
 
