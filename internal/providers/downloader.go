@@ -170,7 +170,9 @@ func extractFileToDir(src io.Reader, destDir, filename string) error {
 	}
 
 	_, err = io.Copy(out, src)
-	out.Close()
+	if closeErr := out.Close(); closeErr != nil && err == nil {
+		err = closeErr
+	}
 
 	if err != nil {
 		os.Remove(tmpPath)
@@ -191,11 +193,11 @@ func extractFileToDir(src io.Reader, destDir, filename string) error {
 }
 
 func ExtractArchive(src, destDir, binaryName string) error {
-	src = strings.ToLower(src)
-	if strings.HasSuffix(src, ".zip") {
+	lowerSrc := strings.ToLower(src)
+	if strings.HasSuffix(lowerSrc, ".zip") {
 		return ExtractZip(src, destDir, binaryName)
 	}
-	if strings.HasSuffix(src, ".tar.gz") || strings.HasSuffix(src, ".tgz") {
+	if strings.HasSuffix(lowerSrc, ".tar.gz") || strings.HasSuffix(lowerSrc, ".tgz") {
 		return ExtractTarGz(src, destDir, binaryName)
 	}
 	return fmt.Errorf("unsupported archive format: %s", src)
