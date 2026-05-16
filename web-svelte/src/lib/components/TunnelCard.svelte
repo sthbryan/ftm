@@ -200,7 +200,7 @@
 </script>
 
 <div
-  class="border rounded-3xl cursor-default transition-all duration-150 hover:scale-[1.01] bg-card border-border"
+  class="border rounded-3xl cursor-default transition-all duration-150 bg-card border-border"
 >
   <div class="flex flex-col">
     <div
