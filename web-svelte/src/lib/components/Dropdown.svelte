@@ -38,46 +38,23 @@
   }: DropdownProps = $props();
 
   let isOpen = $state(false);
-  let isAnimating = $state(false);
   let menuEl: HTMLDivElement | undefined = $state();
 
-  const isVisible = $derived(isOpen || isAnimating);
   const menuPosition = $derived.by(() => {
     const vert = align.startsWith("top") ? "" : "top-full mt-1.5";
     return `${POSITION_MAP[align]} ${vert}`;
   });
 
   function open() {
-    if (isOpen) return;
+    if (isOpen || !menuEl) return;
     isOpen = true;
-    isAnimating = true;
-    requestAnimationFrame(() => {
-      if (!menuEl) return;
-      animate(
-        menuEl,
-        { opacity: 1, scale: 1, y: 0 },
-        { type: "spring" },
-      ).finished.then(() => {
-        isAnimating = false;
-      });
-    });
+    animate(menuEl, { opacity: 1, scale: 1, y: 0 }, { type: "spring" });
   }
 
   function close() {
-    if (!isOpen || !menuEl) {
-      isOpen = false;
-      isAnimating = false;
-      return;
-    }
+    if (!isOpen || !menuEl) return;
     isOpen = false;
-    isAnimating = true;
-    animate(
-      menuEl,
-      { opacity: 0, scale: 1, y: -4 },
-      { type: "spring" },
-    ).finished.then(() => {
-      isAnimating = false;
-    });
+    animate(menuEl, { opacity: 0, scale: 1, y: -4 }, { type: "spring" });
   }
 
   function toggle() {
@@ -85,34 +62,45 @@
   }
 
   function handleOutsideClick(e: MouseEvent) {
-    if (!(e.target as HTMLElement).closest(".dropdown-container")) close();
-  }
-
-  $effect(() => {
     if (!isOpen) return;
-    document.addEventListener("click", handleOutsideClick);
-    document.addEventListener("keydown", handleKeydown);
-    return () => {
-      document.removeEventListener("click", handleOutsideClick);
-      document.removeEventListener("keydown", handleKeydown);
-    };
-  });
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(".dropdown-trigger") ||
+      target.closest(".dropdown-menu")
+    ) return;
+    close();
+  }
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") close();
   }
+
+  $effect(() => {
+    if (isOpen) {
+      document.addEventListener("click", handleOutsideClick, true);
+      document.addEventListener("keydown", handleKeydown);
+    } else {
+      document.removeEventListener("click", handleOutsideClick, true);
+      document.removeEventListener("keydown", handleKeydown);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleOutsideClick, true);
+      document.removeEventListener("keydown", handleKeydown);
+    };
+  });
 </script>
 
 <div class={cn("dropdown-container h-fit relative flex", className)}>
   <button
     type="button"
     {id}
-    onclick={() => toggle()}
+    onclick={(e) => { e.stopPropagation(); toggle(); }}
     aria-label={ariaLabel}
     aria-expanded={isOpen}
     aria-haspopup="true"
     class={cn(
-      "flex items-center gap-1.5 px-3 py-2 text-xs h-9 rounded-xl border min-h-9 cursor-pointer",
+      "dropdown-trigger flex items-center gap-1.5 px-3 py-2 text-xs h-9 rounded-xl border min-h-9 cursor-pointer",
       "bg-card border-border text-text hover:bg-hover flex-1",
     )}
   >
@@ -127,49 +115,49 @@
     {/if}
   </button>
 
-  {#if isVisible}
-    <div
-      bind:this={menuEl}
-      id={id ? `${id}-menu` : undefined}
-      role="menu"
-      aria-orientation="vertical"
-      style="opacity: 0; scale: 0.95; transform: translateY(-4px);"
-      class={cn(
-        "absolute min-w-[150px] max-h-[300px] rounded-2xl border p-1 z-50 overflow-y-auto cursor-default",
-        menuPosition,
-        "bg-card border-border",
-      )}
-    >
-      {#each options as option}
-        {#if option.label === "separator"}
-          <div class="h-px my-1 mx-2 bg-border"></div>
-        {:else}
-          <button
-            type="button"
-            role="menuitem"
-            disabled={option.disabled}
-            onclick={() => {
-              close();
-              onSelect?.(option);
-            }}
-            class={cn(
-              "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-xl text-left cursor-pointer",
-              "text-text bg-transparent border-none hover:bg-hover",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              option.danger && "text-red-500 hover:bg-red-500/10",
-            )}
-          >
-            {#if option.icon}
-              {@const IconComponent =
-                option.icon as import("svelte").Component<{
-                  size?: number;
-                }>}
-              <IconComponent size={16} />
-            {/if}
-            <span>{option.label}</span>
-          </button>
-        {/if}
-      {/each}
-    </div>
-  {/if}
+  <!-- Always in DOM, just hidden via opacity when closed -->
+  <div
+    bind:this={menuEl}
+    id={id ? `${id}-menu` : undefined}
+    role="menu"
+    aria-orientation="vertical"
+    style="opacity: 0; scale: 0.95; transform: translateY(-4px);"
+    class={cn(
+      "dropdown-menu absolute min-w-[150px] max-h-[300px] rounded-2xl border p-1 z-[9999] overflow-y-auto cursor-default",
+      menuPosition,
+      "bg-card border-border pointer-events-none",
+      isOpen && "pointer-events-auto",
+    )}
+  >
+    {#each options as option}
+      {#if option.label === "separator"}
+        <div class="h-px my-1 mx-2 bg-border"></div>
+      {:else}
+        <button
+          type="button"
+          role="menuitem"
+          disabled={option.disabled}
+          onclick={() => {
+            close();
+            onSelect?.(option);
+          }}
+          class={cn(
+            "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-xl text-left cursor-pointer",
+            "text-text bg-transparent border-none hover:bg-hover",
+            "disabled:opacity-50 disabled:cursor-not-allowed",
+            option.danger && "text-red-500 hover:bg-red-500/10",
+          )}
+        >
+          {#if option.icon}
+            {@const IconComponent =
+              option.icon as import("svelte").Component<{
+                size?: number;
+              }>}
+            <IconComponent size={16} />
+          {/if}
+          <span>{option.label}</span>
+        </button>
+      {/if}
+    {/each}
+  </div>
 </div>
