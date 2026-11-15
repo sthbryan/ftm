@@ -1,0 +1,35 @@
+{
+  "name": "foundry-tunnel-web",
+  "version": "0.16.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@preact/signals": "^2.5.0",
+    "@zovaris/sephiro": "1.0.0",
+    "clsx": "^2.1.1",
+    "ky": "^2.0.2",
+    "preact": "^10.29.0",
+    "qrcode": "^1.5.4",
+    "tailwind-merge": "^3.6.0",
+    "@phosphor-icons/react": "2.1.10"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.2",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.1.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
+}

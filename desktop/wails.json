@@ -7,7 +7,7 @@
     "email": "bryamu.u@gmail.com"
   },
   "frontend": {
-    "dir": "../web-svelte",
+    "dir": "../web",
     "install": "bun install",
     "build": "../scripts/build-web-assets.sh"
   },

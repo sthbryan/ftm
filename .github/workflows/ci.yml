@@ -92,10 +92,10 @@ jobs:
           bun-version: ${{ env.BUN_VERSION }}
 
       - name: Install
-        run: cd web-svelte && bun install
+        run: cd web && bun install
 
       - name: Typecheck
-        run: cd web-svelte && bun run check
+        run: cd web && bun run check
 
       - name: Test
-        run: cd web-svelte && bun run test
+        run: cd web && bun run test

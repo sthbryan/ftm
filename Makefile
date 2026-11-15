@@ -41,7 +41,7 @@ endif
 ##@ Build
 
 .PHONY: web
-web: ## Build the Svelte UI into internal/web/static (+ desktop dist)
+web: ## Build the Preact UI into internal/web/static (+ desktop dist)
 	@echo "Building web UI..."
 	./scripts/build-web-assets.sh
 	mkdir -p $(DESKTOP_DIR)/build

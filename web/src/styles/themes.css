@@ -1,0 +1,46 @@
+/* Tailwind colour names used across the app. They point at the `--app-*` aliases
+ * in sephiro.css, which read the active Sephiro theme, so `bg-card` or
+ * `text-muted` follow whatever `data-sephiro-theme` is set on <html>. */
+
+@theme {
+  --color-bg: var(--app-bg);
+  --color-card: var(--app-card);
+  --color-text: var(--app-text);
+  --color-heading: var(--app-heading);
+  --color-muted: var(--app-muted);
+  --color-border: var(--app-border);
+  --color-border-light: var(--app-border-light);
+  --color-primary: var(--app-primary);
+  --color-primary-hover: var(--app-primary-hover);
+  --color-hover: var(--app-hover);
+  --color-btn-primary: var(--app-btn-primary);
+  --color-btn-text: var(--app-btn-text);
+  --color-btn-primary-hover: var(--app-btn-primary-hover);
+  --color-btn-start: var(--app-btn-start);
+  --color-btn-start-hover: var(--app-btn-start-hover);
+  --color-btn-stop: var(--app-btn-stop);
+  --color-btn-stop-hover: var(--app-btn-stop-hover);
+  --color-btn-danger: var(--app-btn-danger);
+  --color-btn-danger-hover: var(--app-btn-danger-hover);
+  --color-status-running: var(--app-status-running);
+  --color-status-starting: var(--app-status-starting);
+  --color-status-installing: var(--app-status-installing);
+  --color-status-error: var(--app-status-error);
+  --color-error-text: var(--app-error-text);
+  --color-status-stopped: var(--app-status-stopped);
+  --color-logs-bg: var(--app-logs-bg);
+  --color-logs-text: var(--app-logs-text);
+  --color-url-bg: var(--app-url-bg);
+  --color-url-text: var(--app-url-text);
+  --color-input-bg: var(--app-input-bg);
+  --color-input-text: var(--app-input-text);
+  --color-input-placeholder: var(--app-input-placeholder);
+  --color-input-disabled: var(--app-input-disabled);
+  --color-badge-text: var(--app-badge-text);
+  --color-secondary-btn: var(--app-secondary-btn);
+  --color-secondary-btn-text: var(--app-secondary-btn-text);
+  --color-secondary: var(--app-secondary-btn);
+  --color-text-heading: var(--app-heading);
+  --color-text-muted: var(--app-muted);
+  --color-text-error: var(--app-error-text);
+}
