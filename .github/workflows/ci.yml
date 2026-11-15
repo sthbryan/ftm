@@ -78,7 +78,7 @@ jobs:
         run: go build -trimpath -o ftm-windows-x64.exe ./cmd/ftm
 
       - name: Test the platform-independent packages
-        run: go test ./internal/config/ ./internal/i18n/ ./internal/web/
+        run: go test ./internal/config/ ./internal/i18n/ ./internal/web/ ./internal/store/... ./internal/platform/...
 
   lint-frontend:
     name: Lint & Test Frontend

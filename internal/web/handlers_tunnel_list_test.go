@@ -7,10 +7,11 @@ import (
 	"testing"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/store"
 )
 
 func TestListTunnelsReturnsAnArrayWhenThereAreNone(t *testing.T) {
-	h := &Handlers{config: &config.Config{}}
+	h := &Handlers{store: store.New(store.Dirs{}, &config.Config{})}
 
 	w := httptest.NewRecorder()
 	h.listTunnels(w)

@@ -15,6 +15,8 @@ func isolateHome(t *testing.T) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	t.Setenv("AppData", filepath.Join(home, "appdata"))
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	return home
 }
@@ -26,7 +28,7 @@ func writeConfig(t *testing.T, home, body string) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, config.ConfigFile), []byte(body), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(body), 0644); err != nil {
 		t.Fatal(err)
 	}
 }

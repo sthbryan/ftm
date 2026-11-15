@@ -43,7 +43,7 @@ func TestPublishStatusNeverBlocksTheManager(t *testing.T) {
 }
 
 func TestMessageExpiresOnItsOwnSchedule(t *testing.T) {
-	m := &Model{App: &App{Config: config.DefaultConfig()}}
+	m := &Model{App: &App{Store: testStore(t, config.DefaultConfig())}}
 
 	m.showMessage("URL copied")
 	if m.Message == "" {

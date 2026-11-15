@@ -1,60 +1,8 @@
 package config
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 )
-
-func isolateHome(t *testing.T) string {
-	t.Helper()
-
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-	// os.UserConfigDir reads %AppData% on Windows, so isolate that too.
-	t.Setenv("AppData", filepath.Join(home, "appdata"))
-
-	return home
-}
-
-func TestLoadCreatesDefaultConfigWhenMissing(t *testing.T) {
-	home := isolateHome(t)
-
-	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("Load() failed: %v", err)
-	}
-
-	if cfg.NotificationsStatus != NotificationPending {
-		t.Errorf("NotificationsStatus = %q, want %q", cfg.NotificationsStatus, NotificationPending)
-	}
-	if len(cfg.Tunnels) != 0 {
-		t.Errorf("Tunnels = %v, want empty", cfg.Tunnels)
-	}
-
-	path := ConfigPath()
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("Load() did not persist a default config at %s: %v", path, err)
-	}
-	if !strings.HasPrefix(path, home) {
-		t.Fatalf("ConfigPath() = %s, want it under the isolated home %s", path, home)
-	}
-}
-
-func TestLoadDefaultsToAutoLanguage(t *testing.T) {
-	isolateHome(t)
-
-	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("Load() failed: %v", err)
-	}
-
-	if cfg.Language != LanguageAuto {
-		t.Fatalf("Language = %q on a fresh config, want %q", cfg.Language, LanguageAuto)
-	}
-}
 
 func TestMigrateV1EnglishBecomesAuto(t *testing.T) {
 	tests := []struct {
@@ -94,94 +42,6 @@ func TestMigrateReportsWhetherItChangedAnything(t *testing.T) {
 	old := &Config{Version: 1, Language: "en"}
 	if !old.migrate() {
 		t.Error("migrate() = false for a v1 config, want true")
-	}
-}
-
-func TestLoadPersistsMigration(t *testing.T) {
-	isolateHome(t)
-
-	dir := filepath.Dir(ConfigPath())
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	legacy := "version: 1\nlanguage: en\nnotification_sound: true\ntunnels: []\n"
-	if err := os.WriteFile(filepath.Join(dir, ConfigFile), []byte(legacy), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	first, err := Load()
-	if err != nil {
-		t.Fatalf("Load() failed: %v", err)
-	}
-	if first.Language != LanguageAuto {
-		t.Fatalf("Language = %q after migrating, want %q", first.Language, LanguageAuto)
-	}
-
-	second, err := Load()
-	if err != nil {
-		t.Fatalf("second Load() failed: %v", err)
-	}
-	if second.Version != ConfigVersion {
-		t.Errorf("Version = %d on reload, want the migration persisted as %d", second.Version, ConfigVersion)
-	}
-	if second.Language != LanguageAuto {
-		t.Errorf("Language = %q on reload, want %q", second.Language, LanguageAuto)
-	}
-}
-
-func TestSaveLoadRoundTrip(t *testing.T) {
-	isolateHome(t)
-
-	want := DefaultConfig()
-	want.WebPort = 40507
-	want.NotificationSound = false
-	want.NotificationsStatus = NotificationGranted
-	want.Tunnels = []TunnelConfig{
-		{ID: "a", Name: "Foundry VTT", Provider: ProviderCloudflared, LocalPort: 30000},
-		{ID: "b", Name: "Partida de prueba", Provider: ProviderPinggy, LocalPort: 30001},
-	}
-
-	if err := want.Save(); err != nil {
-		t.Fatalf("Save() failed: %v", err)
-	}
-
-	got, err := Load()
-	if err != nil {
-		t.Fatalf("Load() failed: %v", err)
-	}
-
-	if got.WebPort != want.WebPort {
-		t.Errorf("WebPort = %d, want %d", got.WebPort, want.WebPort)
-	}
-	if got.NotificationSound != want.NotificationSound {
-		t.Errorf("NotificationSound = %v, want %v", got.NotificationSound, want.NotificationSound)
-	}
-	if got.NotificationsStatus != want.NotificationsStatus {
-		t.Errorf("NotificationsStatus = %q, want %q", got.NotificationsStatus, want.NotificationsStatus)
-	}
-	if len(got.Tunnels) != len(want.Tunnels) {
-		t.Fatalf("Tunnels length = %d, want %d", len(got.Tunnels), len(want.Tunnels))
-	}
-	for i, tunnel := range want.Tunnels {
-		if got.Tunnels[i] != tunnel {
-			t.Errorf("Tunnels[%d] = %+v, want %+v", i, got.Tunnels[i], tunnel)
-		}
-	}
-}
-
-func TestLoadRejectsMalformedYAML(t *testing.T) {
-	isolateHome(t)
-
-	dir := filepath.Dir(ConfigPath())
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, ConfigFile), []byte("tunnels: [oops"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := Load(); err == nil {
-		t.Fatal("Load() accepted malformed YAML, want an error")
 	}
 }
 
@@ -262,12 +122,7 @@ func TestMigrateLeavesOnboardedAloneOnCurrentConfigs(t *testing.T) {
 }
 
 func TestFreshConfigIsNotOnboarded(t *testing.T) {
-	isolateHome(t)
-
-	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("Load() failed: %v", err)
-	}
+	cfg := DefaultConfig()
 
 	if cfg.Onboarded {
 		t.Error("Onboarded = true on a fresh config, want false so the welcome screen shows")

@@ -9,26 +9,24 @@ import (
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/process"
+	"github.com/sthbryan/ftm/internal/store"
 	"github.com/sthbryan/ftm/internal/web"
 )
 
 func modelWithTunnels(t *testing.T, names ...string) *Model {
 	t.Helper()
 
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-
 	cfg := config.DefaultConfig()
 	for _, name := range names {
 		cfg.AddTunnel(config.TunnelConfig{ID: cfg.NewTunnelID(name), Name: name, LocalPort: 30000})
 	}
+	st := testStore(t, cfg)
 
 	m := &Model{
 		App: &App{
-			Config:    cfg,
+			Store:     st,
 			Manager:   process.NewManager(),
-			WebServer: web.NewServer(nil, cfg),
+			WebServer: web.NewServer(nil, st),
 		},
 		Keys:   DefaultKeys,
 		State:  viewList,
@@ -71,7 +69,7 @@ func TestClearingAsksBeforeDeleting(t *testing.T) {
 	if strings.Contains(out, i18n.T("confirm_delete_title")) {
 		t.Error("clearing every connection reused the single-delete copy")
 	}
-	if len(m.App.Config.Tunnels) != 2 {
+	if len(m.App.Config().Tunnels) != 2 {
 		t.Error("connections were removed before the user confirmed")
 	}
 }
@@ -94,8 +92,8 @@ func TestConfirmingClearsEveryConnection(t *testing.T) {
 
 	m.handleConfirmKey(tea.KeyPressMsg{Code: 'y', Text: "y"})
 
-	if len(m.App.Config.Tunnels) != 0 {
-		t.Fatalf("Tunnels = %+v, want empty", m.App.Config.Tunnels)
+	if len(m.App.Config().Tunnels) != 0 {
+		t.Fatalf("Tunnels = %+v, want empty", m.App.Config().Tunnels)
 	}
 	if len(m.Items) != 0 {
 		t.Errorf("Items = %d, want the list rebuilt as empty", len(m.Items))
@@ -109,13 +107,13 @@ func TestConfirmingClearsEveryConnection(t *testing.T) {
 	if m.Message != i18n.T("connections_cleared") {
 		t.Errorf("Message = %q, want the cleared confirmation", m.Message)
 	}
-	if !m.App.Config.Onboarded {
+	if !m.App.Config().Onboarded {
 		t.Error("Onboarded = false, want the empty home and not the welcome screen")
 	}
 
-	saved, err := config.Load()
+	saved, err := store.Peek(m.App.Store.Dirs())
 	if err != nil {
-		t.Fatalf("Load() failed: %v", err)
+		t.Fatalf("Peek() failed: %v", err)
 	}
 	if len(saved.Tunnels) != 0 {
 		t.Errorf("persisted Tunnels = %+v, want empty", saved.Tunnels)
@@ -133,8 +131,8 @@ func TestCancellingGoesBackToSettings(t *testing.T) {
 	if m.State != viewSettings {
 		t.Errorf("State = %v, want to land back on the settings panel", m.State)
 	}
-	if len(m.App.Config.Tunnels) != 1 {
-		t.Errorf("Tunnels = %+v, want them untouched", m.App.Config.Tunnels)
+	if len(m.App.Config().Tunnels) != 1 {
+		t.Errorf("Tunnels = %+v, want them untouched", m.App.Config().Tunnels)
 	}
 }
 

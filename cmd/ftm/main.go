@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/sthbryan/ftm/internal/app"
 	"github.com/sthbryan/ftm/internal/cli"
 	"github.com/sthbryan/ftm/internal/i18n"
+	"github.com/sthbryan/ftm/internal/platform/instance"
 	"github.com/sthbryan/ftm/internal/version"
 )
 
@@ -69,12 +71,18 @@ func main() {
 
 	application, err := app.New()
 	if err != nil {
+		var running *instance.RunningError
+		if errors.As(err, &running) {
+			os.Exit(attach(running.Info, *webOnly, *server))
+		}
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
 	if *port > 0 {
-		application.Config.WebPort = *port
+		if err := application.SetWebPort(*port); err != nil {
+			fmt.Fprintf(os.Stderr, "Could not save the web port: %v\n", err)
+		}
 	}
 
 	if err := application.StartWebServer(); err != nil {
@@ -117,4 +125,29 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+// attach runs when another ftm or ftm-desktop already owns the tunnels: it
+// points at that process's dashboard instead of starting a second manager that
+// would fight it over the config and the port. It returns the exit code.
+func attach(info *instance.Info, openBrowser, headless bool) int {
+	if info == nil {
+		fmt.Fprintln(os.Stderr, i18n.T("already_starting"))
+		return 1
+	}
+
+	fmt.Println(i18n.TF("already_running", info.URL()))
+
+	if openBrowser {
+		if err := app.OpenURL(info.URL()); err != nil {
+			fmt.Fprintf(os.Stderr, "Could not open the dashboard: %v\n", err)
+			return 1
+		}
+		return 0
+	}
+
+	if !headless {
+		fmt.Println(i18n.T("already_running_tui"))
+	}
+	return 1
 }

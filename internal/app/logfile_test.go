@@ -12,6 +12,8 @@ func TestLogsGoToAFileNotTheTerminal(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	t.Setenv("AppData", filepath.Join(home, "appdata"))
+	t.Setenv("XDG_CONFIG_HOME", "")
 
 	previous := log.Writer()
 	t.Cleanup(func() { log.SetOutput(previous) })
