@@ -2,16 +2,14 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"runtime"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/sthbryan/ftm/internal/store/dirs"
 )
 
 const (
-	AppName              = "foundry-tunnel"
-	ConfigFile           = "config.yaml"
+	AppName              = dirs.AppName
 	NotificationPending  = "pending"
 	NotificationGranted  = "granted"
 	NotificationRejected = "rejected"
@@ -90,166 +88,55 @@ func (c *Config) NormalizeNotificationsStatus() {
 	}
 }
 
-// ConfigDir returns the directory that holds config.yaml. Windows keeps user
-// data under %AppData%; the other platforms stay on ~/.config.
+// ConfigDir returns the directory that holds config.yaml. It only reads
+// store.Dirs and stays for internal/providers until that package takes a Dirs;
+// new code uses store.Dirs.
 func ConfigDir() string {
-	return configDir(runtime.GOOS, userHomeDir(), userConfigDir())
+	return dirs.Default().Config
 }
 
-// configDir is the pure part of ConfigDir, so the Windows and POSIX layouts can
-// be tested from either host.
-func configDir(goos, userHome, userConfig string) string {
-	if goos == "windows" && userConfig != "" {
-		return filepath.Join(userConfig, AppName)
+// Parse decodes a config file, normalises it and runs the migrations. changed
+// reports whether the result differs from what was on disk and should be
+// written back.
+func Parse(data []byte) (cfg *Config, changed bool, err error) {
+	var c Config
+	if err := yaml.Unmarshal(data, &c); err != nil {
+		return nil, false, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	if userHome == "" {
-		userHome = "."
-	}
+	c.NormalizeNotificationsStatus()
 
-	return filepath.Join(userHome, ".config", AppName)
+	migrated := c.migrate()
+	deduped := c.dedupeTunnelIDs()
+
+	return &c, migrated || deduped, nil
 }
 
-func userHomeDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	return home
-}
-
-func userConfigDir() string {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return ""
-	}
-	return dir
-}
-
-// legacyConfigDir is where every platform used to keep the config. The Windows
-// build still has to read it once to move it to %AppData%.
-func legacyConfigDir() string {
-	home := userHomeDir()
-	if home == "" {
-		home = "."
-	}
-	return filepath.Join(home, ".config", AppName)
-}
-
-func ConfigPath() string {
-	return filepath.Join(ConfigDir(), ConfigFile)
-}
-
-func (c *Config) Save() error {
-	dir := ConfigDir()
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create config dir: %w", err)
-	}
-
+// Marshal encodes the config as it is stored on disk.
+func (c *Config) Marshal() ([]byte, error) {
 	data, err := yaml.Marshal(c)
 	if err != nil {
-		return fmt.Errorf("failed to marshal config: %w", err)
+		return nil, fmt.Errorf("failed to marshal config: %w", err)
 	}
-
-	// Write a sibling temp file and rename it into place. A crash, a full disk
-	// or a scanner holding the file then leaves the previous config intact
-	// instead of a half-written one that cannot be parsed on the next start.
-	tmp, err := os.CreateTemp(dir, ConfigFile+".tmp*")
-	if err != nil {
-		return fmt.Errorf("failed to create a temporary config: %w", err)
-	}
-	tmpPath := tmp.Name()
-
-	if _, err := tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("failed to write config: %w", err)
-	}
-
-	if err := tmp.Sync(); err != nil {
-		_ = tmp.Close()
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("failed to flush config: %w", err)
-	}
-
-	if err := tmp.Close(); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("failed to close config: %w", err)
-	}
-
-	if err := os.Chmod(tmpPath, 0o644); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("failed to set config permissions: %w", err)
-	}
-
-	if err := os.Rename(tmpPath, ConfigPath()); err != nil {
-		_ = os.Remove(tmpPath)
-		return fmt.Errorf("failed to replace config: %w", err)
-	}
-
-	return nil
+	return data, nil
 }
 
-func Load() (*Config, error) {
-	path := ConfigPath()
-
-	migrateLegacyConfig(path)
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		cfg := DefaultConfig()
-		if err := cfg.Save(); err != nil {
-			return nil, err
-		}
-		return cfg, nil
+// Clone returns a deep copy, so a reader can keep it while the store changes.
+func (c *Config) Clone() *Config {
+	out := *c
+	if c.Tunnels != nil {
+		out.Tunnels = append([]TunnelConfig(nil), c.Tunnels...)
 	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
+	if c.ExpirationThresholds != nil {
+		out.ExpirationThresholds = append([]int(nil), c.ExpirationThresholds...)
 	}
-
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	cfg.NormalizeNotificationsStatus()
-
-	migrated := cfg.migrate()
-	deduped := cfg.dedupeTunnelIDs()
-
-	if migrated || deduped {
-		if err := cfg.Save(); err != nil {
-			return nil, fmt.Errorf("failed to persist migrated config: %w", err)
+	if c.ProviderExpirationMinutes != nil {
+		out.ProviderExpirationMinutes = make(map[string]int, len(c.ProviderExpirationMinutes))
+		for k, v := range c.ProviderExpirationMinutes {
+			out.ProviderExpirationMinutes[k] = v
 		}
 	}
-
-	return &cfg, nil
-}
-
-// migrateLegacyConfig copies a config written by an older build, which always
-// used ~/.config, to the location this build reads. It only runs when the
-// destination is missing, so it can never overwrite newer state.
-func migrateLegacyConfig(path string) {
-	if _, err := os.Stat(path); err == nil {
-		return
-	}
-
-	legacy := filepath.Join(legacyConfigDir(), ConfigFile)
-	if legacy == path {
-		return
-	}
-
-	data, err := os.ReadFile(legacy)
-	if err != nil {
-		return
-	}
-
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return
-	}
-
-	_ = os.WriteFile(path, data, 0o644)
+	return &out
 }
 
 func (c *Config) GetTunnel(id string) *TunnelConfig {

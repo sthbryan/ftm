@@ -8,18 +8,16 @@ import (
 
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/process"
+	"github.com/sthbryan/ftm/internal/store"
 )
 
 func clearHandlers(t *testing.T, cfg *config.Config) *Handlers {
 	t.Helper()
 
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-	// os.UserConfigDir reads %AppData% on Windows, so isolate that too.
-	t.Setenv("AppData", filepath.Join(home, "appdata"))
+	root := t.TempDir()
+	dirs := store.Dirs{Config: filepath.Join(root, "config"), Legacy: filepath.Join(root, "legacy")}
 
-	return NewServer(process.NewManager(), cfg).handlers
+	return NewServer(process.NewManager(), store.New(dirs, cfg)).handlers
 }
 
 func decodeDeleted(t *testing.T, body []byte) int {
@@ -48,19 +46,20 @@ func TestClearTunnelsRemovesEveryConnection(t *testing.T) {
 	if got := decodeDeleted(t, w.Body.Bytes()); got != 2 {
 		t.Errorf("deleted = %d, want 2", got)
 	}
-	if len(cfg.Tunnels) != 0 {
-		t.Fatalf("Tunnels = %+v, want empty", cfg.Tunnels)
+	got := h.store.Snapshot()
+	if len(got.Tunnels) != 0 {
+		t.Fatalf("Tunnels = %+v, want empty", got.Tunnels)
 	}
-	if !cfg.Onboarded {
+	if !got.Onboarded {
 		t.Error("Onboarded = false, want the empty home and not the welcome screen")
 	}
-	if cfg.Language != "es" {
-		t.Errorf("Language = %q, want it untouched", cfg.Language)
+	if got.Language != "es" {
+		t.Errorf("Language = %q, want it untouched", got.Language)
 	}
 
-	saved, err := config.Load()
+	saved, err := store.Peek(h.store.Dirs())
 	if err != nil {
-		t.Fatalf("Load() failed: %v", err)
+		t.Fatalf("Peek() failed: %v", err)
 	}
 	if len(saved.Tunnels) != 0 {
 		t.Errorf("persisted Tunnels = %+v, want empty", saved.Tunnels)

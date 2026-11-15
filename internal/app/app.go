@@ -12,39 +12,57 @@ import (
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/notifications"
+	"github.com/sthbryan/ftm/internal/platform/instance"
 	"github.com/sthbryan/ftm/internal/process"
 	"github.com/sthbryan/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/store"
 	"github.com/sthbryan/ftm/internal/updater"
 	"github.com/sthbryan/ftm/internal/web"
 )
 
 type App struct {
-	Config            *config.Config
+	Store             *store.Store
 	Manager           *process.Manager
 	WebServer         *web.Server
 	DownloadProgress  chan providers.DownloadProgress
 	ExpirationMonitor *notifications.ExpirationMonitor
 
+	instance     *instance.Lock
 	shutdownOnce sync.Once
 }
 
+// New takes the single-instance lock and opens the config. When another ftm
+// process already owns them it returns that process as an
+// *instance.RunningError, and the caller attaches to it instead.
 func New() (*App, error) {
 
 	if err := i18n.Load(); err != nil {
 		return nil, fmt.Errorf("failed to load translations: %w", err)
 	}
 
-	cfg, err := config.Load()
+	dirs := store.DefaultDirs()
+
+	lock, err := instance.Acquire(dirs.Runtime)
 	if err != nil {
+		return nil, err
+	}
+
+	st, err := store.Open(dirs)
+	if err != nil {
+		_ = lock.Release()
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
+
+	snapshot := st.Snapshot()
+	cfg := &snapshot
 
 	i18n.InitFromConfig(cfg)
 
 	manager := process.NewManager()
 
 	app := &App{
-		Config:           cfg,
+		Store:            st,
+		instance:         lock,
 		Manager:          manager,
 		DownloadProgress: make(chan providers.DownloadProgress, 10),
 	}
@@ -135,7 +153,7 @@ func (a *App) StartWebServer() error {
 		return nil
 	}
 
-	a.WebServer = web.NewServer(a.Manager, a.Config)
+	a.WebServer = web.NewServer(a.Manager, a.Store)
 	a.Manager.SetStatusChannel(a.WebServer.StatusChannel)
 
 	if err := a.WebServer.Start(); err != nil {
@@ -143,7 +161,21 @@ func (a *App) StartWebServer() error {
 		return err
 	}
 
+	if a.instance != nil {
+		if err := a.instance.Publish(a.WebServer.Port()); err != nil {
+			fmt.Fprintf(os.Stderr, "Could not publish the runtime file: %v\n", err)
+		}
+	}
+
 	return nil
+}
+
+// SetWebPort makes the web server prefer port the next time it starts.
+func (a *App) SetWebPort(port int) error {
+	return a.UpdateConfig(func(c *config.Config) error {
+		c.WebPort = port
+		return nil
+	})
 }
 
 func (a *App) OpenDashboard() error {
@@ -151,8 +183,11 @@ func (a *App) OpenDashboard() error {
 		return fmt.Errorf("web server not started")
 	}
 
-	url := a.WebServer.URL()
+	return OpenURL(a.WebServer.URL())
+}
 
+// OpenURL opens url in the default browser.
+func OpenURL(url string) error {
 	switch runtime.GOOS {
 	case "darwin":
 		return startAndReap(exec.Command("open", url))
@@ -164,7 +199,7 @@ func (a *App) OpenDashboard() error {
 }
 
 func (a *App) OpenConfigDir() error {
-	path := config.ConfigDir()
+	path := a.Store.Dirs().Config
 
 	switch runtime.GOOS {
 	case "darwin":
@@ -191,10 +226,19 @@ func startAndReap(cmd *exec.Cmd) error {
 	return nil
 }
 
-func (a *App) SaveConfig() error {
-	notifications.SetSoundEnabled(a.Config.NotificationSound)
-	notifications.SetNotificationsEnabled(a.Config.NotificationsStatus == config.NotificationGranted)
-	return a.Config.Save()
+// Config returns a copy of the current config.
+func (a *App) Config() config.Config {
+	return a.Store.Snapshot()
+}
+
+// UpdateConfig changes and saves the config through the store, then applies
+// the notification preferences it holds.
+func (a *App) UpdateConfig(fn func(*config.Config) error) error {
+	err := a.Store.Update(fn)
+	cfg := a.Store.Snapshot()
+	notifications.SetSoundEnabled(cfg.NotificationSound)
+	notifications.SetNotificationsEnabled(cfg.NotificationsStatus == config.NotificationGranted)
+	return err
 }
 
 func (a *App) shouldUseNativeNotifications() bool {
@@ -217,6 +261,9 @@ func (a *App) Shutdown() {
 		}
 		if a.ExpirationMonitor != nil {
 			a.ExpirationMonitor.StopAll()
+		}
+		if err := a.instance.Release(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error releasing the instance lock: %v\n", err)
 		}
 	})
 }

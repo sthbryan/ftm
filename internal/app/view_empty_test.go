@@ -14,9 +14,10 @@ func modelWithoutTunnels(t *testing.T, onboarded bool) *Model {
 
 	cfg := config.DefaultConfig()
 	cfg.Onboarded = onboarded
+	st := testStore(t, cfg)
 
 	return &Model{
-		App:    &App{Config: cfg, WebServer: web.NewServer(nil, cfg)},
+		App:    &App{Store: st, WebServer: web.NewServer(nil, st)},
 		Keys:   DefaultKeys,
 		State:  viewList,
 		Width:  100,

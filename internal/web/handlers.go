@@ -8,19 +8,20 @@ import (
 	"github.com/sthbryan/ftm/internal/autostart"
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/process"
+	"github.com/sthbryan/ftm/internal/store"
 )
 
 type Handlers struct {
 	manager   *process.Manager
-	config    *config.Config
+	store     *store.Store
 	server    *Server
 	autostart autostart.Manager
 }
 
-func NewHandlers(manager *process.Manager, cfg *config.Config, server *Server) *Handlers {
+func NewHandlers(manager *process.Manager, st *store.Store, server *Server) *Handlers {
 	return &Handlers{
 		manager:   manager,
-		config:    cfg,
+		store:     st,
 		server:    server,
 		autostart: autostart.New(),
 	}

@@ -52,12 +52,14 @@ func (h *Handlers) settingsPayload() map[string]interface{} {
 		enabled, _ = manager.Enabled()
 	}
 
+	cfg := h.store.Snapshot()
+
 	return map[string]interface{}{
-		"notifications_enabled": h.config.NotificationsStatus,
-		"notification_sound":    h.config.NotificationSound,
-		"language":              h.config.Language,
+		"notifications_enabled": cfg.NotificationsStatus,
+		"notification_sound":    cfg.NotificationSound,
+		"language":              cfg.Language,
 		"language_resolved":     i18n.CurrentLanguage(),
-		"onboarded":             h.config.Onboarded,
+		"onboarded":             cfg.Onboarded,
 		"autostart_supported":   supported,
 		"autostart_enabled":     enabled,
 	}
@@ -95,31 +97,35 @@ func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if req.NotificationsEnabled != nil {
-		h.config.NotificationsStatus = *req.NotificationsEnabled
+	if req.Language != nil && !isSelectableLanguage(*req.Language) {
+		http.Error(w, "Unsupported language", http.StatusBadRequest)
+		return
 	}
 
-	if req.NotificationSound != nil {
-		h.config.NotificationSound = *req.NotificationSound
-	}
-
-	if req.Language != nil {
-		if !isSelectableLanguage(*req.Language) {
-			http.Error(w, "Unsupported language", http.StatusBadRequest)
-			return
+	err := h.store.Update(func(c *config.Config) error {
+		if req.NotificationsEnabled != nil {
+			c.NotificationsStatus = *req.NotificationsEnabled
 		}
-
-		h.config.Language = *req.Language
-
-		i18n.ChangeLanguage(i18n.ResolveLanguage(*req.Language))
-	}
-
-	notifications.SetNotificationsEnabled(h.config.NotificationsStatus == config.NotificationGranted)
-	notifications.SetSoundEnabled(h.config.NotificationSound)
-	if err := h.config.Save(); err != nil {
+		if req.NotificationSound != nil {
+			c.NotificationSound = *req.NotificationSound
+		}
+		if req.Language != nil {
+			c.Language = *req.Language
+		}
+		return nil
+	})
+	if err != nil {
 		http.Error(w, "Failed to save config", http.StatusInternalServerError)
 		return
 	}
+
+	if req.Language != nil {
+		i18n.ChangeLanguage(i18n.ResolveLanguage(*req.Language))
+	}
+
+	cfg := h.store.Snapshot()
+	notifications.SetNotificationsEnabled(cfg.NotificationsStatus == config.NotificationGranted)
+	notifications.SetSoundEnabled(cfg.NotificationSound)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(h.settingsPayload())

@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -23,9 +24,12 @@ func (h *Handlers) handleTunnels(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var errTunnelNotFound = errors.New("tunnel not found")
+
 func (h *Handlers) clearTunnels(w http.ResponseWriter) {
-	ids := make([]string, 0, len(h.config.Tunnels))
-	for _, t := range h.config.Tunnels {
+	tunnels := h.store.Tunnels()
+	ids := make([]string, 0, len(tunnels))
+	for _, t := range tunnels {
 		ids = append(ids, t.ID)
 	}
 
@@ -35,8 +39,14 @@ func (h *Handlers) clearTunnels(w http.ResponseWriter) {
 		}
 	}
 
-	deleted := h.config.ClearTunnels()
-	h.server.updateConfig()
+	var deleted int
+	if err := h.server.updateConfig(func(c *config.Config) error {
+		deleted = c.ClearTunnels()
+		return nil
+	}); err != nil {
+		http.Error(w, "Failed to save config", http.StatusInternalServerError)
+		return
+	}
 
 	for _, id := range ids {
 		h.server.BroadcastTunnelDeleted(id)
@@ -47,8 +57,9 @@ func (h *Handlers) clearTunnels(w http.ResponseWriter) {
 }
 
 func (h *Handlers) listTunnels(w http.ResponseWriter) {
-	result := make([]tunnelStateMessage, 0, len(h.config.Tunnels))
-	for _, t := range h.config.Tunnels {
+	tunnels := h.store.Tunnels()
+	result := make([]tunnelStateMessage, 0, len(tunnels))
+	for _, t := range tunnels {
 		result = append(result, tunnelStateFor(h.manager, t))
 	}
 
@@ -71,15 +82,20 @@ func (h *Handlers) createTunnel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tunnel := config.TunnelConfig{
-		ID:        h.config.NewTunnelID(name),
-		Name:      name,
-		Provider:  config.Provider(providerStr),
-		LocalPort: port,
+	var tunnel config.TunnelConfig
+	if err := h.server.updateConfig(func(c *config.Config) error {
+		tunnel = config.TunnelConfig{
+			ID:        c.NewTunnelID(name),
+			Name:      name,
+			Provider:  config.Provider(providerStr),
+			LocalPort: port,
+		}
+		c.AddTunnel(tunnel)
+		return nil
+	}); err != nil {
+		http.Error(w, "Failed to save config", http.StatusInternalServerError)
+		return
 	}
-
-	h.config.AddTunnel(tunnel)
-	h.server.updateConfig()
 
 	h.server.BroadcastTunnelUpdate(tunnel)
 	h.writeTunnelJSON(w, tunnel)
@@ -168,40 +184,50 @@ func (h *Handlers) handleTunnelActions(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) updateTunnel(w http.ResponseWriter, r *http.Request, id string) {
 	name, providerStr, port := h.parseTunnelRequest(r)
 
-	tunnel := h.server.getTunnel(id)
-	if tunnel == nil {
+	var tunnel config.TunnelConfig
+	err := h.server.updateConfig(func(c *config.Config) error {
+		t := c.GetTunnel(id)
+		if t == nil {
+			return errTunnelNotFound
+		}
+		if name != "" {
+			t.Name = name
+		}
+		if providerStr != "" {
+			t.Provider = config.Provider(providerStr)
+		}
+		if port >= 1 && port <= 65535 {
+			t.LocalPort = port
+		}
+		tunnel = *t
+		return nil
+	})
+	if errors.Is(err, errTunnelNotFound) {
 		http.Error(w, "tunnel not found", http.StatusNotFound)
 		return
 	}
-
-	if name != "" {
-		tunnel.Name = name
+	if err != nil {
+		http.Error(w, "Failed to save config", http.StatusInternalServerError)
+		return
 	}
-	if providerStr != "" {
-		tunnel.Provider = config.Provider(providerStr)
-	}
-	if port >= 1 && port <= 65535 {
-		tunnel.LocalPort = port
-	}
-	h.server.updateConfig()
 
-	h.server.broadcastJSON(tunnelStateFor(h.manager, *tunnel))
+	h.server.broadcastJSON(tunnelStateFor(h.manager, tunnel))
 
-	h.writeTunnelJSON(w, *tunnel)
+	h.writeTunnelJSON(w, tunnel)
 }
 
 func (h *Handlers) getTunnel(w http.ResponseWriter, id string) {
-	tunnel := h.server.getTunnel(id)
-	if tunnel == nil {
+	tunnel, ok := h.server.getTunnel(id)
+	if !ok {
 		http.Error(w, "tunnel not found", http.StatusNotFound)
 		return
 	}
-	h.writeTunnelJSON(w, *tunnel)
+	h.writeTunnelJSON(w, tunnel)
 }
 
 func (h *Handlers) startTunnel(w http.ResponseWriter, id string) {
-	tunnel := h.server.getTunnel(id)
-	if tunnel == nil {
+	tunnel, ok := h.server.getTunnel(id)
+	if !ok {
 		http.Error(w, "tunnel not found", http.StatusNotFound)
 		return
 	}
@@ -213,7 +239,7 @@ func (h *Handlers) startTunnel(w http.ResponseWriter, id string) {
 			State:    string(config.TunnelStateInstall),
 			Provider: string(tunnel.Provider),
 		})
-		h.server.broadcastInstallingNotification(*tunnel)
+		h.server.broadcastInstallingNotification(tunnel)
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -224,17 +250,17 @@ func (h *Handlers) startTunnel(w http.ResponseWriter, id string) {
 			"state":    "installing",
 		})
 
-		go h.installAndStart(*tunnel)
+		go h.installAndStart(tunnel)
 		return
 	}
 
-	err := h.manager.Start(*tunnel, func(status config.TunnelStatus) {})
+	err := h.manager.Start(tunnel, func(status config.TunnelStatus) {})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	h.writeTunnelJSON(w, *tunnel)
+	h.writeTunnelJSON(w, tunnel)
 }
 
 func (h *Handlers) installAndStart(tunnel config.TunnelConfig) {
@@ -266,9 +292,8 @@ func (h *Handlers) stopTunnel(w http.ResponseWriter, id string) {
 		return
 	}
 
-	tunnel := h.server.getTunnel(id)
-	if tunnel != nil {
-		h.writeTunnelJSON(w, *tunnel)
+	if tunnel, ok := h.server.getTunnel(id); ok {
+		h.writeTunnelJSON(w, tunnel)
 	}
 }
 
@@ -277,13 +302,13 @@ func (h *Handlers) deleteTunnel(w http.ResponseWriter, id string) {
 		log.Printf("web: could not stop tunnel %s before deleting it: %v", id, err)
 	}
 
-	for i, t := range h.config.Tunnels {
-		if t.ID == id {
-			h.config.Tunnels = append(h.config.Tunnels[:i], h.config.Tunnels[i+1:]...)
-			break
-		}
+	if err := h.server.updateConfig(func(c *config.Config) error {
+		c.RemoveTunnel(id)
+		return nil
+	}); err != nil {
+		http.Error(w, "Failed to save config", http.StatusInternalServerError)
+		return
 	}
-	h.server.updateConfig()
 	h.server.BroadcastTunnelDeleted(id)
 
 	w.WriteHeader(http.StatusOK)

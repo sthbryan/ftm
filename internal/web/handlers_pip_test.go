@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/store"
 )
 
 func newPiPTestServer() *Server {
@@ -18,8 +19,9 @@ func newPiPTestServer() *Server {
 		},
 	}
 
-	s := &Server{config: cfg}
-	s.handlers = NewHandlers(nil, cfg, s)
+	st := store.New(store.Dirs{}, cfg)
+	s := &Server{store: st}
+	s.handlers = NewHandlers(nil, st, s)
 	return s
 }
 

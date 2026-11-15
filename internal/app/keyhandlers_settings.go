@@ -69,7 +69,7 @@ func (m *Model) handleSettingsSelect() {
 		sv.Language = cycleLanguage(sv.Language, 1)
 		i18n.SetLanguage(sv.Language)
 	case 3:
-		if len(m.App.Config.Tunnels) == 0 {
+		if len(m.App.Store.Tunnels()) == 0 {
 			return
 		}
 		m.pendingConfirm = confirmClearTunnels
@@ -82,8 +82,9 @@ func (m *Model) confirmClearTunnels() (tea.Model, tea.Cmd) {
 	m.saveSettings()
 	m.SettingsView = nil
 
-	ids := make([]string, 0, len(m.App.Config.Tunnels))
-	for _, t := range m.App.Config.Tunnels {
+	tunnels := m.App.Store.Tunnels()
+	ids := make([]string, 0, len(tunnels))
+	for _, t := range tunnels {
 		ids = append(ids, t.ID)
 	}
 
@@ -91,8 +92,10 @@ func (m *Model) confirmClearTunnels() (tea.Model, tea.Cmd) {
 		_ = m.App.Manager.Stop(id)
 	}
 
-	m.App.Config.ClearTunnels()
-	saveErr := m.App.SaveConfig()
+	saveErr := m.App.UpdateConfig(func(c *config.Config) error {
+		c.ClearTunnels()
+		return nil
+	})
 	m.refreshItems()
 
 	if m.App.WebServer != nil {
@@ -132,10 +135,11 @@ func cycleLanguage(current string, dir int) string {
 
 func (m *Model) openSettings() {
 	m.SettingsView = views.NewSettingsView()
-	m.SettingsView.NotificationsEnabled = m.App.Config.NotificationsStatus == config.NotificationGranted
-	m.SettingsView.NotificationSound = m.App.Config.NotificationSound
+	cfg := m.App.Config()
+	m.SettingsView.NotificationsEnabled = cfg.NotificationsStatus == config.NotificationGranted
+	m.SettingsView.NotificationSound = cfg.NotificationSound
 	m.SettingsView.Language = i18n.GetCurrentLang()
-	m.SettingsView.TunnelCount = len(m.App.Config.Tunnels)
+	m.SettingsView.TunnelCount = len(cfg.Tunnels)
 	m.State = viewSettings
 }
 
@@ -146,18 +150,20 @@ func (m *Model) saveSettings() {
 
 	sv := m.SettingsView
 
-	if sv.NotificationsEnabled {
-		m.App.Config.NotificationsStatus = config.NotificationGranted
-	} else {
-		m.App.Config.NotificationsStatus = config.NotificationRejected
-	}
-
-	m.App.Config.NotificationSound = sv.NotificationSound
-	m.App.Config.Language = sv.Language
+	err := m.App.UpdateConfig(func(c *config.Config) error {
+		if sv.NotificationsEnabled {
+			c.NotificationsStatus = config.NotificationGranted
+		} else {
+			c.NotificationsStatus = config.NotificationRejected
+		}
+		c.NotificationSound = sv.NotificationSound
+		c.Language = sv.Language
+		return nil
+	})
 
 	i18n.SetLanguage(sv.Language)
 
-	if err := m.App.SaveConfig(); err != nil {
+	if err != nil {
 		m.showMessage(i18n.T("error_saving_config") + ": " + err.Error())
 	}
 }

@@ -43,8 +43,9 @@ func NewModel(app *App) *Model {
 }
 
 func (m *Model) refreshItems() {
-	items := make([]list.Item, 0, len(m.App.Config.Tunnels))
-	for _, t := range m.App.Config.Tunnels {
+	tunnels := m.App.Store.Tunnels()
+	items := make([]list.Item, 0, len(tunnels))
+	for _, t := range tunnels {
 		status := t.Status()
 		if s, ok := m.App.Manager.GetStatus(t.ID); ok {
 			status = s

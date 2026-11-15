@@ -306,6 +306,9 @@ version_output: "Foundry Tunnel Manager v{0}"
 dashboard_url: "Painel rodando em: {0}"
 press_ctrl_c: "\nPressione Ctrl+C para parar"
 tui_hint: "Pressione 'w' no TUI para abrir o painel"
+already_running: "O Foundry Tunnel Manager já está aberto. O painel está em {0}"
+already_starting: "O Foundry Tunnel Manager está abrindo em outra janela. Tente de novo em instantes."
+already_running_tui: "Feche a outra janela para gerenciar os túneis por aqui."
 
 # Update
 update_check_failed: "Falha ao verificar atualizações: {0}"

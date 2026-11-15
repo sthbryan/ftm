@@ -29,7 +29,7 @@ func (h *Handlers) handlePiP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.config.GetTunnel(req.ID) == nil {
+	if _, ok := h.store.Tunnel(req.ID); !ok {
 		http.Error(w, "tunnel not found", http.StatusNotFound)
 		return
 	}
