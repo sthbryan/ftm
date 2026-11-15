@@ -8,12 +8,16 @@ import {
   tunnels,
   tunnelsError,
   tunnelsLoading,
-  tunnelsOnboarded,
 } from '@/lib/stores/tunnels';
 import { createIntent, selectIntent } from '@/lib/stores/ui';
-import { ConnectionHero } from './ConnectionHero';
-import { ConnectionList } from './ConnectionList';
-import { Welcome } from './Welcome';
+import { arrange } from '@/lib/ritual';
+import { invited, selectedPreset, watchSession } from '@/lib/stores/ritual';
+import { ReadyMoment } from './ritual/ReadyMoment';
+import { OpeningMoment } from './ritual/OpeningMoment';
+import { InviteMoment } from './ritual/InviteMoment';
+import { FailedMoment } from './ritual/FailedMoment';
+import { SessionStrip } from './ritual/SessionStrip';
+import { PresetList } from './ritual/PresetList';
 import { UpdateBanner } from './UpdateBanner';
 import { NotificationPrompt } from './NotificationPrompt';
 import { ConnectionDialog } from './ConnectionDialog';
@@ -22,39 +26,19 @@ import { toast } from '@/lib/stores/toast';
 import { t } from '@/lib/stores/i18n';
 import type { Tunnel } from '@/lib/types';
 
-/** Which connection the hero shows when the user has not picked one. */
-const FOCUS_ORDER: Record<string, number> = {
-  error: 0,
-  timeout: 0,
-  online: 1,
-  connecting: 2,
-  starting: 2,
-  installing: 2,
-  downloading: 2,
-  stopping: 3,
-};
-
+/**
+ * The ritual: one moment on the stage (ready, opening, invite, or what failed),
+ * running tables stacked above it as strips, saved tables under it as presets.
+ */
 export function Dashboard() {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Tunnel | null>(null);
 
   const list = tunnels.value;
-  const focused =
-    list.find((tunnel) => tunnel.id === selectedId) ??
-    list
-      .slice()
-      .sort((a, b) => (FOCUS_ORDER[a.state] ?? 9) - (FOCUS_ORDER[b.state] ?? 9))[0] ??
-    null;
-  const others = list.filter((tunnel) => tunnel.id !== focused?.id);
-  const showWelcome = list.length === 0 && !tunnelsOnboarded.value && !tunnelsError.value;
+  const view = arrange(list, selectedPreset.value, invited.value);
 
-  useEffect(() => {
-    if (selectedId && !list.some((tunnel) => tunnel.id === selectedId)) {
-      setSelectedId(null);
-    }
-  }, [list, selectedId]);
+  useEffect(() => watchSession(), []);
 
   useEffect(() => {
     if (createIntent.value > 0) openCreate();
@@ -63,7 +47,7 @@ export function Dashboard() {
   useEffect(() => {
     const id = selectIntent.value;
     if (!id) return;
-    setSelectedId(id);
+    selectedPreset.value = id;
     selectIntent.value = null;
   }, [selectIntent.value]);
 
@@ -94,11 +78,6 @@ export function Dashboard() {
     setFormOpen(true);
   }
 
-  function select(id: string) {
-    setSelectedId(id);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
   async function confirmDelete() {
     if (!pendingDelete) return;
 
@@ -112,6 +91,10 @@ export function Dashboard() {
       toast.error(t('connection_delete_failed', { error: (error as Error).message }));
     }
   }
+
+  const showPresets =
+    list.length > 0 &&
+    (view.stage === null || view.stage.moment === 'ready' || view.stage.moment === 'failed');
 
   const dialogs = (
     <>
@@ -138,15 +121,6 @@ export function Dashboard() {
     </>
   );
 
-  if (showWelcome) {
-    return (
-      <>
-        <Welcome onCreate={openCreate} />
-        {dialogs}
-      </>
-    );
-  }
-
   return (
     <div class="flex flex-col">
       <UpdateBanner />
@@ -169,15 +143,40 @@ export function Dashboard() {
         />
       ) : (
         <>
-          {focused && (
-            <ConnectionHero
-              key={focused.id}
-              tunnel={focused}
+          {view.strips.length > 0 && (
+            <div class="flex flex-col gap-2">
+              {view.strips.map((tunnel) => (
+                <SessionStrip key={tunnel.id} tunnel={tunnel} />
+              ))}
+            </div>
+          )}
+
+          {view.stage?.moment === 'ready' && (
+            <ReadyMoment tunnel={view.stage.tunnel} onCreate={openCreate} />
+          )}
+          {view.stage?.moment === 'opening' && view.stage.tunnel && (
+            <OpeningMoment key={view.stage.tunnel.id} tunnel={view.stage.tunnel} />
+          )}
+          {view.stage?.moment === 'invite' && view.stage.tunnel && (
+            <InviteMoment key={view.stage.tunnel.id} tunnel={view.stage.tunnel} />
+          )}
+          {view.stage?.moment === 'failed' && view.stage.tunnel && (
+            <FailedMoment key={view.stage.tunnel.id} tunnel={view.stage.tunnel} onEdit={openEdit} />
+          )}
+
+          {showPresets && (
+            <PresetList
+              presets={view.presets}
+              selectedId={view.stage?.moment === 'ready' ? (view.stage.tunnel?.id ?? null) : null}
+              mode={view.stage?.moment === 'ready' ? 'select' : 'start'}
+              onSelect={(id) => {
+                selectedPreset.value = id;
+              }}
+              onCreate={openCreate}
               onEdit={openEdit}
               onDelete={setPendingDelete}
             />
           )}
-          <ConnectionList tunnels={others} onSelect={select} onCreate={openCreate} />
         </>
       )}
 

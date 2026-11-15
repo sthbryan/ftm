@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Button } from '@zovaris/sephiro/button';
 import { SegmentedControl } from '@zovaris/sephiro/segmented-control';
-import { Dialog } from '@zovaris/sephiro/dialog';
+import { HoldButton } from '@zovaris/sephiro/hold-button';
 import {
   Bell,
   BellSlash,
   CircleHalf,
+  DownloadSimple,
   GlobeHemisphereWest,
+  Package,
   Power,
   SpeakerHigh,
   SpeakerSlash,
@@ -22,6 +24,13 @@ import {
 import { availableLanguages, LANGUAGE_AUTO, setLanguage, t } from '@/lib/stores/i18n';
 import { clearAllTunnels, tunnels } from '@/lib/stores/tunnels';
 import { toast } from '@/lib/stores/toast';
+import {
+  installedProviders,
+  loadInstalledProviders,
+  updateProvider,
+  type InstalledProvider,
+} from '@/lib/stores/installed';
+import { unlockSound } from '@/lib/sound';
 import { ThemeGrid } from './ThemeGrid';
 
 function Switch({
@@ -59,12 +68,15 @@ function Row({
   description,
   children,
   last = false,
+  wide = false,
 }: {
   icon: preact.ComponentChildren;
   title: string;
   description: string;
   children: preact.ComponentChildren;
   last?: boolean;
+  /** Puts a wide control (segmented) on its own line on narrow screens. */
+  wide?: boolean;
 }) {
   return (
     <div
@@ -79,7 +91,7 @@ function Row({
         <p class="m-0 text-sm font-medium text-text">{title}</p>
         <p class="m-0 truncate text-2xs text-text-muted">{description}</p>
       </div>
-      {children}
+      {wide ? <div class="max-sm:col-span-3 max-sm:justify-self-end">{children}</div> : children}
     </div>
   );
 }
@@ -87,10 +99,10 @@ function Row({
 export function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [version, setVersion] = useState('');
-  const [confirmReset, setConfirmReset] = useState(false);
 
   useEffect(() => {
     void loadSettings().catch(() => undefined);
+    void loadInstalledProviders();
     statusApi
       .get()
       .then((status) => setVersion(status.version))
@@ -121,7 +133,9 @@ export function SettingsPage() {
   async function toggleSound() {
     setSaving(true);
     try {
-      await updateSettings({ notification_sound: !soundEnabled.value });
+      const next = !soundEnabled.value;
+      await updateSettings({ notification_sound: next });
+      if (next) unlockSound();
     } finally {
       setSaving(false);
     }
@@ -153,7 +167,6 @@ export function SettingsPage() {
   async function resetConnections() {
     try {
       await clearAllTunnels();
-      setConfirmReset(false);
       toast.success(t('connections_cleared'));
     } catch (error) {
       toast.error(t('reset_failed', { 0: (error as Error).message }));
@@ -228,6 +241,7 @@ export function SettingsPage() {
                   title={t('language_section')}
                   description={t('settings_language_desc')}
                   last
+                  wide
                 >
                   <SegmentedControl
                     ariaLabel={t('language_section')}
@@ -250,11 +264,16 @@ export function SettingsPage() {
                   title={t('theme')}
                   description={t('match_system')}
                   last
+                  wide
                 >
                   <ThemeGrid />
                 </Row>
               </div>
             </section>
+
+            {installedProviders.value && installedProviders.value.length > 0 && (
+              <InstalledProviders providers={installedProviders.value} />
+            )}
 
             <section class="sph-card">
               <header class="px-5 pt-4 pb-2">
@@ -269,14 +288,21 @@ export function SettingsPage() {
                   <p class="m-0 text-sm font-medium text-text">{t('reset_connections')}</p>
                   <p class="m-0 text-2xs text-text-muted">{t('reset_connections_desc')}</p>
                 </div>
-                <Button
-                  variant="secondary"
+                <HoldButton
+                  variant="danger"
                   size="sm"
                   disabled={count === 0}
-                  onClick={() => setConfirmReset(true)}
+                  holdLabel={t('keep_holding')}
+                  confirmedLabel={t('deleted_all')}
+                  hint={
+                    count === 1
+                      ? t('confirm_reset_body_one')
+                      : t('confirm_reset_body_other', { 0: count })
+                  }
+                  onConfirm={() => void resetConnections()}
                 >
-                  {t('delete')}
-                </Button>
+                  {t('hold_to_delete')}
+                </HoldButton>
               </div>
             </section>
 
@@ -287,29 +313,61 @@ export function SettingsPage() {
         )}
       </div>
 
-      <Dialog
-        open={confirmReset}
-        onClose={() => setConfirmReset(false)}
-        title={t('confirm_reset_title')}
-        role="alertdialog"
-        closeButton={false}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setConfirmReset(false)}>
-              {t('cancel')}
-            </Button>
-            <Button variant="primary" onClick={resetConnections}>
-              {t('delete')}
-            </Button>
-          </>
-        }
-      >
-        <p class="m-0 text-sm text-text-muted">
-          {count === 1
-            ? t('confirm_reset_body_one')
-            : t('confirm_reset_body_other', { 0: count })}
-        </p>
-      </Dialog>
     </div>
+  );
+}
+
+function InstalledProviders({ providers }: { providers: InstalledProvider[] }) {
+  async function update(provider: InstalledProvider) {
+    try {
+      await updateProvider(provider.id);
+    } catch (error) {
+      toast.error(t('provider_update_failed', { 0: provider.name, 1: (error as Error).message }));
+    }
+  }
+
+  return (
+    <section class="sph-card">
+      <header class="px-5 pt-4 pb-2">
+        <h2 class="m-0 text-sm font-semibold text-text">{t('installed_providers')}</h2>
+        <p class="m-0 mt-0.5 text-2xs text-text-muted">{t('installed_providers_desc')}</p>
+      </header>
+      <div class="border-t border-border-light">
+        {providers.map((provider, index) => (
+          <Row
+            key={provider.id}
+            icon={<Package size={17} />}
+            title={provider.name}
+            description={
+              provider.installed
+                ? [
+                    t('provider_version', { 0: provider.version || '?' }),
+                    provider.hasUpdate && provider.latest
+                      ? t('provider_latest', { 0: provider.latest })
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                : t('provider_not_installed')
+            }
+            last={index === providers.length - 1}
+          >
+            {provider.hasUpdate && provider.updatable ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={provider.updating}
+                onClick={() => void update(provider)}
+              >
+                <DownloadSimple size={14} />
+                {provider.updating ? t('provider_updating') : t('provider_update')}
+              </Button>
+            ) : (
+              <span />
+            )}
+          </Row>
+        ))}
+      </div>
+    </section>
   );
 }
