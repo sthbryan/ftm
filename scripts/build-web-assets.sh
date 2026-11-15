@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-WEB_DIR="$ROOT_DIR/web-svelte"
+WEB_DIR="$ROOT_DIR/web"
 DESKTOP_DIST_DIR="$ROOT_DIR/desktop/frontend/dist"
 STATIC_DIR="$ROOT_DIR/internal/web/static"
 

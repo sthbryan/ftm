@@ -39,7 +39,7 @@ jobs:
 
       - name: Build web assets
         run: |
-          cd web-svelte && bun install && bun run build
+          cd web && bun install && bun run build
           rm -rf ../internal/web/static
           mkdir -p ../internal/web/static
           cp -r dist/* ../internal/web/static/

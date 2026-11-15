@@ -8,7 +8,7 @@
 #
 # Updates:
 #   - internal/version/version.go    (var Version = "...")
-#   - web-svelte/package.json        ("version": "...")
+#   - web/package.json        ("version": "...")
 #   - desktop/wails.json             ("version": "..." AND "productVersion": "...")
 #
 # Usage:
@@ -211,7 +211,7 @@ confirm() {
   printf ' %s %s\n' "$(paint 'version' "$C_DIM")" "$(paint "v$next" "$C_BOLD$C_GREEN")"
   printf ' %s %s\n' "$(paint 'tag' "$C_DIM")"     "$(paint "$tag" "$C_BOLD$C_CYAN")"
   printf ' %s %s\n' "$(paint 'files' "$C_DIM")" \
-    "internal/version/version.go · web-svelte/package.json · desktop/wails.json"
+    "internal/version/version.go · web/package.json · desktop/wails.json"
   if (( NO_PUSH )); then
     printf ' %s %s\n' "$(paint 'git' "$C_DIM")" "commit + annotated tag $(paint '(no push)' "$C_YELLOW")"
   else
@@ -310,11 +310,11 @@ fi
 
 info "writing version files"
 set_go_version       "$NEXT"
-set_npm_version      "web-svelte/package.json" "$NEXT"
+set_npm_version      "web/package.json" "$NEXT"
 set_wails_versions   "desktop/wails.json"     "$NEXT"
 
 info "git commit"
-git add "$VERSION_FILE" "web-svelte/package.json" "desktop/wails.json"
+git add "$VERSION_FILE" "web/package.json" "desktop/wails.json"
 git commit -m "chore(release): ${TAG}"
 
 info "tagging $TAG"

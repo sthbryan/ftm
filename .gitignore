@@ -31,9 +31,8 @@ coverage.txt
 .config/
 
 # Web build artifacts
-web-svelte/node_modules/
-web-svelte/.svelte-kit/
-web-svelte/dist/
+web/node_modules/
+web/dist/
 internal/web/static/*
 !internal/web/static/.gitkeep
 node_modules

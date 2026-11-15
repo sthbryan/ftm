@@ -117,7 +117,7 @@ func (s *Server) setupRoutes() http.Handler {
 
 	mux.HandleFunc("/ws/events", s.handleWebSocket)
 
-	webDist := filepath.Join("web-svelte", "dist")
+	webDist := filepath.Join("web", "dist")
 	var staticFS fs.FS
 	if _, err := os.Stat(webDist); err == nil {
 		staticFS, _ = fs.Sub(os.DirFS(webDist), ".")

@@ -215,7 +215,7 @@ Go 1.25+ and Bun. Desktop uses [Wails v3](https://v3.wails.io) (CGO + platform w
 ```bash
 make build-full   # web assets + bin/ftm with the UI embedded
 make build        # Go only (uses existing embedded static files)
-make web          # Svelte build → internal/web/static (+ desktop dist)
+make web          # Preact build → internal/web/static (+ desktop dist)
 make dev          # web assets, then go run — use this after a frontend change
 make run          # go run only, against the assets already embedded
 make test         # go test ./...
@@ -230,7 +230,7 @@ make help         # full target list
 Hot reload against a running ftm web server:
 
 ```bash
-cd web-svelte && bun run dev
+cd web && bun run dev
 ```
 
 **macOS TUI notifications:** install `alerter` (`brew install alerter`) for native alerts. Desktop/GUI paths use the platform APIs.
@@ -243,7 +243,7 @@ make version ARGS="patch"     # non-interactive bump
 make version ARGS="0.11.0 --dry-run"
 ```
 
-`make version` (alias: `make release`) updates every place that holds the version string (`internal/version/version.go`, `web-svelte/package.json`, `desktop/wails.json` — both `version` and `productVersion`), commits with `chore(release): vX.Y.Z`, creates an annotated tag, and pushes branch + tag to `origin`. Flags: `--dry-run`, `--no-push`, `--allow-dirty`, `--yes`/`-y`. Run `make version ARGS="--help"` for the full reference.
+`make version` (alias: `make release`) updates every place that holds the version string (`internal/version/version.go`, `web/package.json`, `desktop/wails.json` — both `version` and `productVersion`), commits with `chore(release): vX.Y.Z`, creates an annotated tag, and pushes branch + tag to `origin`. Flags: `--dry-run`, `--no-push`, `--allow-dirty`, `--yes`/`-y`. Run `make version ARGS="--help"` for the full reference.
 
 ---
 
