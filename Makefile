@@ -101,6 +101,17 @@ run: ## go run the CLI against the assets already embedded (fast; Go changes onl
 .PHONY: dev
 dev: web run ## Rebuild the web UI, then go run the CLI
 
+##@ Design
+
+.PHONY: tokens
+tokens: ## Regenerate the theme stylesheets from design/tokens.json
+	@echo "Generating themes from design/tokens.json..."
+	go run ./scripts/tokengen
+
+.PHONY: tokens-check
+tokens-check: ## Fail if the generated themes drifted from design/tokens.json
+	go run ./scripts/tokengen -check
+
 ##@ Quality
 
 .PHONY: test
