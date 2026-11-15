@@ -88,11 +88,11 @@ func (m *Model) confirmClearTunnels() (tea.Model, tea.Cmd) {
 	}
 
 	for _, id := range ids {
-		m.App.Manager.Stop(id)
+		_ = m.App.Manager.Stop(id)
 	}
 
 	m.App.Config.ClearTunnels()
-	m.App.SaveConfig()
+	saveErr := m.App.SaveConfig()
 	m.refreshItems()
 
 	if m.App.WebServer != nil {
@@ -104,7 +104,12 @@ func (m *Model) confirmClearTunnels() (tea.Model, tea.Cmd) {
 	m.Cursor = 0
 	m.SelectedTunnel = ""
 	m.State = viewList
-	m.showMessage(i18n.T("connections_cleared"))
+
+	if saveErr != nil {
+		m.showMessage(i18n.T("error_saving_config") + ": " + saveErr.Error())
+	} else {
+		m.showMessage(i18n.T("connections_cleared"))
+	}
 
 	return m, nil
 }
@@ -152,5 +157,7 @@ func (m *Model) saveSettings() {
 
 	i18n.SetLanguage(sv.Language)
 
-	m.App.SaveConfig()
+	if err := m.App.SaveConfig(); err != nil {
+		m.showMessage(i18n.T("error_saving_config") + ": " + err.Error())
+	}
 }

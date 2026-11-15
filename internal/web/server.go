@@ -91,7 +91,9 @@ func (s *Server) Start() error {
 
 	s.port = addr.Port
 	s.config.WebPort = s.port
-	s.config.Save()
+	if err := s.config.Save(); err != nil {
+		log.Printf("web: could not persist the web port: %v", err)
+	}
 
 	s.httpServer = &http.Server{Handler: s.setupRoutes()}
 
@@ -273,7 +275,9 @@ func (s *Server) getTunnel(id string) *config.TunnelConfig {
 }
 
 func (s *Server) updateConfig() {
-	s.config.Save()
+	if err := s.config.Save(); err != nil {
+		log.Printf("web: could not save the config: %v", err)
+	}
 }
 
 func (s *Server) broadcastTunnelNotification(status config.TunnelStatus) {

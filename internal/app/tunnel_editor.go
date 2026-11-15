@@ -134,10 +134,15 @@ func (m *Model) updateTunnel() {
 		}
 	}
 	m.editingTunnelID = ""
-	m.App.SaveConfig()
+	saveErr := m.App.SaveConfig()
 	m.refreshItems()
 	m.State = viewList
-	m.showMessage(i18n.T("tunnel_updated"))
+
+	if saveErr != nil {
+		m.showMessage(i18n.T("error_saving_config") + ": " + saveErr.Error())
+	} else {
+		m.showMessage(i18n.T("tunnel_updated"))
+	}
 }
 
 func (m *Model) createTunnel() {
@@ -149,10 +154,15 @@ func (m *Model) createTunnel() {
 	}
 
 	m.App.Config.AddTunnel(tunnel)
-	m.App.SaveConfig()
+	saveErr := m.App.SaveConfig()
 	m.refreshItems()
 	m.State = viewList
-	m.showMessage(i18n.T("tunnel_added"))
+
+	if saveErr != nil {
+		m.showMessage(i18n.T("error_saving_config") + ": " + saveErr.Error())
+	} else {
+		m.showMessage(i18n.T("tunnel_added"))
+	}
 }
 
 func parsePort(s string) int {

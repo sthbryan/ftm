@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,7 +30,9 @@ func (h *Handlers) clearTunnels(w http.ResponseWriter) {
 	}
 
 	for _, id := range ids {
-		h.manager.Stop(id)
+		if err := h.manager.Stop(id); err != nil {
+			log.Printf("web: could not stop tunnel %s: %v", id, err)
+		}
 	}
 
 	deleted := h.config.ClearTunnels()
@@ -270,7 +273,9 @@ func (h *Handlers) stopTunnel(w http.ResponseWriter, id string) {
 }
 
 func (h *Handlers) deleteTunnel(w http.ResponseWriter, id string) {
-	h.manager.Stop(id)
+	if err := h.manager.Stop(id); err != nil {
+		log.Printf("web: could not stop tunnel %s before deleting it: %v", id, err)
+	}
 
 	for i, t := range h.config.Tunnels {
 		if t.ID == id {

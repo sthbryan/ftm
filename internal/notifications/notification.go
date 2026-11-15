@@ -146,45 +146,45 @@ func IsAvailable() bool {
 }
 
 func NotifyTunnelOnline(name, url string) {
-	Notify("Tunnel Active", fmt.Sprintf("%s - %s", name, url))
-	PlaySound(SoundSuccess)
+	_ = Notify("Tunnel Active", fmt.Sprintf("%s - %s", name, url))
+	_ = PlaySound(SoundSuccess)
 }
 
 func NotifyTunnelError(name, errMsg string) {
-	Notify("Tunnel Error", fmt.Sprintf("%s: %s", name, errMsg))
-	PlaySound(SoundError)
+	_ = Notify("Tunnel Error", fmt.Sprintf("%s: %s", name, errMsg))
+	_ = PlaySound(SoundError)
 }
 
 func NotifyTunnelTimeout(name string) {
-	Notify("Tunnel Timeout", fmt.Sprintf("%s could not connect", name))
-	PlaySound(SoundError)
+	_ = Notify("Tunnel Timeout", fmt.Sprintf("%s could not connect", name))
+	_ = PlaySound(SoundError)
 }
 
 func NotifyTunnelStopped(name string) {
-	Notify("Tunnel Stopped", fmt.Sprintf("%s has been stopped", name))
-	PlaySound(SoundInfo)
+	_ = Notify("Tunnel Stopped", fmt.Sprintf("%s has been stopped", name))
+	_ = PlaySound(SoundInfo)
 }
 
 func NotifyNewVisitor(name string, visitors int) {
-	Notify(i18n.T("notify_visitor_title"), i18n.TF("notify_visitor_body", name, visitors))
+	_ = Notify(i18n.T("notify_visitor_title"), i18n.TF("notify_visitor_body", name, visitors))
 }
 
 func NotifyTunnelExpiring(name string, minutes int) {
 	if minutes == 1 {
-		Notify("Last Minute!", fmt.Sprintf("%s: 1 minute remaining", name))
-		PlaySound(SoundAlert)
+		_ = Notify("Last Minute!", fmt.Sprintf("%s: 1 minute remaining", name))
+		_ = PlaySound(SoundAlert)
 	} else {
-		Notify("Tunnel Expiring", fmt.Sprintf("%s: %d minutes remaining", name, minutes))
-		PlaySound(SoundWarning)
+		_ = Notify("Tunnel Expiring", fmt.Sprintf("%s: %d minutes remaining", name, minutes))
+		_ = PlaySound(SoundWarning)
 	}
 }
 
 func NotifyTunnelExpired(name string) {
-	Notify("Tunnel Expired", fmt.Sprintf("%s session has ended", name))
-	PlaySound(SoundError)
+	_ = Notify("Tunnel Expired", fmt.Sprintf("%s session has ended", name))
+	_ = PlaySound(SoundError)
 }
 
 func NotifyWelcome() {
-	Notify("Welcome!", "Foundry Tunnel Manager started")
-	PlaySound(SoundStartup)
+	_ = Notify("Welcome!", "Foundry Tunnel Manager started")
+	_ = PlaySound(SoundStartup)
 }

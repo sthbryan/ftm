@@ -1,11 +1,5 @@
 # Linters are enabled explicitly so CI stays green and meaningful.
 #
-# errcheck is deliberately NOT enabled yet: the codebase has ~34 unchecked
-# error returns, several of which are real bugs worth fixing individually
-# (Manager.Stop, Config.Save and clipboard.Write all fail silently today).
-# Turning it on wholesale would either bury those in a mechanical sweep or
-# paint CI red. It gets its own pass.
-#
 # Config format is golangci-lint v2 (required for Go 1.25+).
 version: "2"
 
@@ -13,11 +7,20 @@ linters:
   default: none
   enable:
     - bodyclose
+    - errcheck
     - govet
     - ineffassign
     - misspell
     - staticcheck
     - unused
+  settings:
+    errcheck:
+      # A write that fails because the client hung up has no recovery path, and
+      # the caller already owns the response. Everything else must be handled.
+      exclude-functions:
+        - (net/http.ResponseWriter).Write
+        - (*net/http.response).Write
+        - (*encoding/json.Encoder).Encode
   exclusions:
     generated: lax
     presets:

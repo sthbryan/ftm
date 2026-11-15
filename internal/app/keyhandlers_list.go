@@ -140,15 +140,21 @@ func (m *Model) confirmDelete() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	m.App.Manager.Stop(id)
+	// Deleting a tunnel that is not running is expected here.
+	_ = m.App.Manager.Stop(id)
 	m.App.Config.RemoveTunnel(id)
-	m.App.SaveConfig()
+	saveErr := m.App.SaveConfig()
 	m.refreshItems()
 
 	if m.Cursor >= len(m.Items) && m.Cursor > 0 {
 		m.Cursor--
 	}
-	m.showMessage(i18n.T("tunnel_deleted"))
+
+	if saveErr != nil {
+		m.showMessage(i18n.T("error_saving_config") + ": " + saveErr.Error())
+	} else {
+		m.showMessage(i18n.T("tunnel_deleted"))
+	}
 
 	return m, nil
 }
@@ -170,7 +176,10 @@ func (m *Model) cancelConfirm() {
 
 func (m *Model) copyTunnelURL(item TunnelItem) {
 	if item.Status.PublicURL != "" {
-		clipboard.Write(item.Status.PublicURL)
+		if err := clipboard.Write(item.Status.PublicURL); err != nil {
+			m.showMessage(i18n.T("copy_failed") + ": " + err.Error())
+			return
+		}
 		m.showMessage(i18n.T("url_copied"))
 		return
 	}
@@ -207,6 +216,6 @@ func (m *Model) handleListUpdate() (tea.Model, tea.Cmd) {
 
 func (m *Model) playBeep() {
 	if m.App.Config.NotificationSound {
-		notifications.PlaySound(notifications.SoundInfo)
+		_ = notifications.PlaySound(notifications.SoundInfo)
 	}
 }

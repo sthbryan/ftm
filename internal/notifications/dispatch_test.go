@@ -48,7 +48,7 @@ func TestNotifyReturnsWithoutWaitingForTheDesktop(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		Notify("Tunnel Active", "Foundry VTT")
+		_ = Notify("Tunnel Active", "Foundry VTT")
 	}()
 
 	select {
@@ -70,7 +70,7 @@ func TestPlaySoundReturnsWithoutWaitingForThePlayer(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		PlaySound(SoundSuccess)
+		_ = PlaySound(SoundSuccess)
 	}()
 
 	select {
