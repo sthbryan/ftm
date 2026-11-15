@@ -2,7 +2,9 @@ import { useEffect, useState } from 'preact/hooks';
 import { Button } from '@zovaris/sephiro/button';
 import { SegmentedControl } from '@zovaris/sephiro/segmented-control';
 import { HoldButton } from '@zovaris/sephiro/hold-button';
+import { IconButton } from '@zovaris/sephiro/icon-button';
 import {
+  ArrowClockwise,
   Bell,
   BellSlash,
   CircleHalf,
@@ -22,9 +24,11 @@ import {
   soundEnabled,
 } from '@/lib/stores/notification';
 import { availableLanguages, LANGUAGE_AUTO, setLanguage, t } from '@/lib/stores/i18n';
-import { clearAllTunnels, tunnels } from '@/lib/stores/tunnels';
+import { clearAllTunnels, installProgress, tunnels } from '@/lib/stores/tunnels';
 import { toast } from '@/lib/stores/toast';
 import {
+  canUpdate,
+  checkingProviders,
   installedProviders,
   loadInstalledProviders,
   updateProvider,
@@ -317,56 +321,68 @@ export function SettingsPage() {
   );
 }
 
-function InstalledProviders({ providers }: { providers: InstalledProvider[] }) {
-  async function update(provider: InstalledProvider) {
-    try {
-      await updateProvider(provider.id);
-    } catch (error) {
-      toast.error(t('provider_update_failed', { 0: provider.name, 1: (error as Error).message }));
-    }
+function providerDescription(provider: InstalledProvider): string {
+  const parts: string[] = [];
+  if (provider.installed) {
+    parts.push(t('provider_version', { 0: provider.version || '?' }));
+    if (provider.hasUpdate && provider.latest) parts.push(t('provider_latest', { 0: provider.latest }));
+  } else {
+    parts.push(t('provider_not_installed'));
   }
+  if (provider.source !== 'none') parts.push(t(`providers_source_${provider.source}`));
+  return parts.join(' · ');
+}
+
+function InstalledProviders({ providers }: { providers: InstalledProvider[] }) {
+  const progress = installProgress.value;
 
   return (
     <section class="sph-card">
-      <header class="px-5 pt-4 pb-2">
-        <h2 class="m-0 text-sm font-semibold text-text">{t('installed_providers')}</h2>
-        <p class="m-0 mt-0.5 text-2xs text-text-muted">{t('installed_providers_desc')}</p>
+      <header class="flex items-start justify-between gap-3 px-5 pt-4 pb-2">
+        <div class="min-w-0">
+          <h2 class="m-0 text-sm font-semibold text-text">{t('installed_providers')}</h2>
+          <p class="m-0 mt-0.5 text-2xs text-text-muted">{t('installed_providers_desc')}</p>
+        </div>
+        <IconButton
+          icon={<ArrowClockwise size={14} />}
+          label={t('providers_recheck')}
+          size="sm"
+          loading={checkingProviders.value}
+          onClick={() => void loadInstalledProviders(true)}
+        />
       </header>
       <div class="border-t border-border-light">
-        {providers.map((provider, index) => (
-          <Row
-            key={provider.id}
-            icon={<Package size={17} />}
-            title={provider.name}
-            description={
-              provider.installed
-                ? [
-                    t('provider_version', { 0: provider.version || '?' }),
-                    provider.hasUpdate && provider.latest
-                      ? t('provider_latest', { 0: provider.latest })
-                      : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')
-                : t('provider_not_installed')
-            }
-            last={index === providers.length - 1}
-          >
-            {provider.hasUpdate && provider.updatable ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                loading={provider.updating}
-                onClick={() => void update(provider)}
-              >
-                <DownloadSimple size={14} />
-                {provider.updating ? t('provider_updating') : t('provider_update')}
-              </Button>
-            ) : (
-              <span />
-            )}
-          </Row>
-        ))}
+        {providers.map((provider, index) => {
+          const percent = progress[provider.id]?.percent;
+          const external = provider.source === 'path';
+          return (
+            <Row
+              key={provider.id}
+              icon={<Package size={17} />}
+              title={provider.name}
+              description={
+                external && provider.hasUpdate
+                  ? `${providerDescription(provider)} · ${t('providers_external_hint', { 0: provider.name, 1: provider.path })}`
+                  : providerDescription(provider)
+              }
+              last={index === providers.length - 1}
+            >
+              {provider.updating ? (
+                <Button variant="secondary" size="sm" loading disabled>
+                  {t('provider_updating')}
+                  {typeof percent === 'number' ? ` ${Math.round(percent)}%` : ''}
+                </Button>
+              ) : canUpdate(provider) ? (
+                <Button variant="secondary" size="sm" onClick={() => void updateProvider(provider.id)}>
+                  <DownloadSimple size={14} />
+                  {provider.source === 'none' ? t('provider_install') : t('provider_update')}
+                </Button>
+              ) : (
+                <span />
+              )}
+            </Row>
+          );
+        })}
       </div>
     </section>
   );
