@@ -5,6 +5,7 @@ package dirs
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 )
@@ -54,7 +55,7 @@ func Resolve(goos, home, userConfig, xdgRuntime string) Dirs {
 	}
 
 	runtimeDir := filepath.Join(config, "run")
-	if goos == "linux" && xdgRuntime != "" && filepath.IsAbs(xdgRuntime) {
+	if goos == "linux" && path.IsAbs(xdgRuntime) {
 		runtimeDir = filepath.Join(xdgRuntime, AppName)
 	}
 
