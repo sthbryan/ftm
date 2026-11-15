@@ -54,6 +54,10 @@ func (h *Handlers) Route(w http.ResponseWriter, r *http.Request) {
 		h.handleSettings(w, r)
 	case path == "/api/providers":
 		h.handleProviders(w)
+	case path == "/api/providers/installed":
+		h.handleInstalledProviders(w, r)
+	case strings.HasPrefix(path, "/api/providers/"):
+		h.handleProviderActions(w, r, path)
 	case path == "/api/i18n":
 		h.handleI18n(w, r)
 	case path == "/api/i18n/current":

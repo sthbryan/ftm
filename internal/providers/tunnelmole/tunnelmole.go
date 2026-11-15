@@ -31,14 +31,8 @@ type TunnelmoleProvider struct {
 }
 
 func New() providers.Provider {
-	configDir, _ := os.UserHomeDir()
-	if configDir == "" {
-		configDir = "."
-	}
-	baseDir := filepath.Join(configDir, ".config", "foundry-tunnel", "bin")
-
 	return &TunnelmoleProvider{
-		installer: NewInstaller(baseDir),
+		installer: NewInstaller(),
 	}
 }
 
@@ -145,4 +139,16 @@ func (p *TunnelmoleProvider) ParseURL(line string) string {
 		}
 		return providers.IsSubdomainOf(host, "tunnelmole.net", "tunnelmole.com")
 	})
+}
+
+func (p *TunnelmoleProvider) BundledBinary() string {
+	return p.installer.TunnelmoleBin()
+}
+
+func (p *TunnelmoleProvider) LatestRelease(ctx context.Context) (*providers.Release, error) {
+	return p.installer.LatestRelease(ctx)
+}
+
+func (p *TunnelmoleProvider) InstallRelease(ctx context.Context, rel *providers.Release, progress chan<- providers.DownloadProgress) error {
+	return p.installer.InstallRelease(ctx, rel, progress)
 }

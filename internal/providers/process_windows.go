@@ -37,3 +37,12 @@ func terminateGroup(cmd *exec.Cmd) {
 func killGroup(cmd *exec.Cmd) {
 	taskkill(cmd, true)
 }
+
+// hideWindow keeps a console window from flashing up for short-lived helper
+// commands such as `--version`.
+func hideWindow(cmd *exec.Cmd) {
+	if cmd.SysProcAttr == nil {
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+	}
+	cmd.SysProcAttr.HideWindow = true
+}

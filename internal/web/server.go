@@ -40,6 +40,7 @@ type Server struct {
 	handlers      *Handlers
 	StatusChannel chan config.TunnelStatus
 	updateSvc     *updateService
+	providerSvc   *providerUpdateService
 	updateCtx     context.Context
 	updateCancel  context.CancelFunc
 	pipOpener     func(tunnelID string) error
@@ -56,6 +57,7 @@ func NewServer(manager *process.Manager, st *store.Store) *Server {
 	s.handlers = NewHandlers(manager, st, s)
 	s.updateCtx, s.updateCancel = context.WithCancel(context.Background())
 	s.updateSvc = newUpdateService(s.broadcast)
+	s.providerSvc = newProviderUpdateService(manager, s.broadcastJSON)
 	return s
 }
 
@@ -101,6 +103,7 @@ func (s *Server) Start() error {
 	s.httpServer = &http.Server{Handler: s.setupRoutes()}
 
 	s.updateSvc.Start(s.updateCtx)
+	s.providerSvc.Start(s.updateCtx)
 	go s.installProgressLoop()
 	go s.statusUpdateLoop()
 	go s.statsLoop()

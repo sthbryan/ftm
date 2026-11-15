@@ -23,7 +23,7 @@ func (m *Model) handleListKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	case key.Matches(msg, m.Keys.Settings):
 		m.openSettings()
-		return m, nil
+		return m, m.loadProviderSummary()
 
 	case key.Matches(msg, m.Keys.Enter), key.Matches(msg, m.Keys.Toggle):
 		return m.handleListToggle()
