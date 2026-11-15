@@ -2,12 +2,12 @@
 
 <p align="center">
   <strong>Foundry Tunnel Manager</strong><br />
-  Share your Foundry VTT world without port forwarding.
+  Share your Foundry world with players everywhere.
 </p>
 
 <p align="center">
-  One binary. Several tunnel providers. Three ways in.<br />
-  TUI, web dashboard, or native desktop — same tunnels, same config.
+  Start a connection, copy the link, send it to your table. No port forwarding.<br />
+  Runs in the terminal, in your browser, or as a desktop app.
 </p>
 
 <p align="center">
@@ -24,11 +24,11 @@
 
 ---
 
-You want players in your Foundry world. Your router, ISP, or CGNAT has other plans. Port forwarding is a pain; random free tunnels mean memorizing flags and babysitting processes.
+Your players need a way into your Foundry world, and your router, ISP or CGNAT won't open one. Port forwarding is fiddly, and free tunnel tools mean remembering flags and watching a terminal all night.
 
-**ftm starts and stops tunnels for you.** Pick a provider, point it at Foundry’s port, copy the public URL. When a tunnel dies or is about to expire, you get a notification — not a silent failure mid-session.
+**ftm runs the tunnel for you.** Pick a provider, tell it Foundry's port, copy the link. If a link drops or is about to close, you get a notice before your players notice.
 
-**It is a single static binary.** Providers are downloaded on demand. Config lives under your user directory. The web UI is embedded, so the same binary drives the TUI, the dashboard, and the desktop shell.
+**One program, nothing else to install.** ftm downloads the tunnel program you pick the first time you use it. Settings live in your user folder. The terminal view, the web view and the desktop app all run the same connections.
 
 ---
 
