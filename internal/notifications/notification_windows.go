@@ -5,7 +5,39 @@ package notifications
 import (
 	"fmt"
 	"os/exec"
+	"syscall"
+	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
+
+// appUserModelID matches the identity in desktop/winres/winres.json, so a toast
+// is attributed to ftm instead of to the PowerShell host process.
+const appUserModelID = "com.justcallmebryan.ftm"
+
+var (
+	shell32               = windows.NewLazySystemDLL("shell32.dll")
+	procSetAppUserModelID = shell32.NewProc("SetCurrentProcessExplicitAppUserModelID")
+)
+
+func init() {
+	id, err := windows.UTF16PtrFromString(appUserModelID)
+	if err != nil {
+		return
+	}
+
+	// Best effort: without it the toast still fires, it is just attributed to
+	// the host process instead of the app.
+	_, _, _ = procSetAppUserModelID.Call(uintptr(unsafe.Pointer(id)))
+}
+
+// runPowerShell runs a script without flashing a console window. Every
+// notification used to open one.
+func runPowerShell(script string) error {
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	return cmd.Run()
+}
 
 type windowsNotifier struct{}
 
@@ -25,9 +57,10 @@ $template = '<toast><visual><binding template="ToastText02"><text id="1">%s</tex
 $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
 $xml.LoadXml($template)
 $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
-[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('ftm').Show($toast)
-`, escapePowerShell(title), escapePowerShell(body))
-	return exec.Command("powershell", "-Command", script).Run()
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('%s').Show($toast)
+`, escapePowerShell(title), escapePowerShell(body), appUserModelID)
+
+	return runPowerShell(script)
 }
 
 func escapePowerShell(s string) string {
@@ -71,5 +104,5 @@ func (s *windowsSoundPlayer) PlaySound(t SoundType) error {
 		return nil
 	}
 	script := fmt.Sprintf(`Add-Type -AssemblyName System.Windows.Forms; [System.Media.SystemSounds]::%s.Play()`, soundName)
-	return exec.Command("powershell", "-Command", script).Run()
+	return runPowerShell(script)
 }
