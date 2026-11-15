@@ -194,7 +194,7 @@ func (s *Server) installProgressLoop() {
 			step = "Done"
 		}
 
-		update := map[string]interface{}{
+		s.broadcastJSON(map[string]interface{}{
 			"type": "install",
 			"install": map[string]interface{}{
 				"provider": progress.Name,
@@ -205,28 +205,13 @@ func (s *Server) installProgressLoop() {
 			"current": progress.Current,
 			"total":   progress.Total,
 			"done":    progress.Done,
-		}
-		data, _ := MarshalJSON(update)
-		s.broadcast(string(data))
+		})
 	}
 }
 
 func (s *Server) statusUpdateLoop() {
 	for status := range s.StatusChannel {
-		update := map[string]interface{}{
-			"type":         "tunnel_state",
-			"id":           status.ID,
-			"name":         status.Name,
-			"provider":     string(status.Provider),
-			"port":         status.LocalPort,
-			"state":        string(status.State),
-			"publicUrl":    status.PublicURL,
-			"errorMessage": status.ErrorMessage,
-			"expiresAt":    status.ExpiresAt,
-			"startedAt":    status.StartedAt,
-		}
-		data, _ := MarshalJSON(update)
-		s.broadcast(string(data))
+		s.broadcastJSON(tunnelStateFromStatus(status))
 		s.broadcastTunnelNotification(status)
 	}
 }
@@ -258,51 +243,24 @@ func (s *Server) broadcastStats() {
 			continue
 		}
 
-		data, _ := MarshalJSON(map[string]interface{}{
+		s.broadcastJSON(map[string]interface{}{
 			"type":           "tunnel_stats",
 			"id":             t.ID,
 			"visitors":       status.Visitors,
 			"activeSessions": status.ActiveSessions,
 		})
-		s.broadcast(string(data))
 	}
 }
 
 func (s *Server) BroadcastTunnelUpdate(t config.TunnelConfig) {
-	state := "stopped"
-	var publicURL, errorMessage string
-	var expiresAt, startedAt int64
-
-	if status, ok := s.manager.GetStatus(t.ID); ok {
-		state = string(status.State)
-		publicURL = status.PublicURL
-		errorMessage = status.ErrorMessage
-		expiresAt = status.ExpiresAt
-		startedAt = status.StartedAt
-	}
-
-	update := map[string]interface{}{
-		"type":         "tunnel_state",
-		"id":           t.ID,
-		"name":         t.Name,
-		"provider":     string(t.Provider),
-		"port":         t.LocalPort,
-		"state":        state,
-		"publicUrl":    publicURL,
-		"errorMessage": errorMessage,
-		"expiresAt":    expiresAt,
-		"startedAt":    startedAt,
-	}
-	data, _ := MarshalJSON(update)
-	s.broadcast(string(data))
+	s.broadcastJSON(tunnelStateFor(s.manager, t))
 }
 
 func (s *Server) BroadcastTunnelDeleted(id string) {
-	data, _ := MarshalJSON(map[string]interface{}{
+	s.broadcastJSON(map[string]interface{}{
 		"type": "tunnel_deleted",
 		"id":   id,
 	})
-	s.broadcast(string(data))
 }
 
 func (s *Server) getTunnel(id string) *config.TunnelConfig {
@@ -358,7 +316,7 @@ func (s *Server) broadcastNotificationWithSound(title, body, toastType, soundTyp
 		channel = "os"
 	}
 
-	update := map[string]interface{}{
+	s.broadcastJSON(map[string]interface{}{
 		"type": "notification",
 		"notification": map[string]interface{}{
 			"channel":      channel,
@@ -368,7 +326,5 @@ func (s *Server) broadcastNotificationWithSound(title, body, toastType, soundTyp
 			"soundType":    soundType,
 			"soundEnabled": sound,
 		},
-	}
-	data, _ := MarshalJSON(update)
-	s.broadcast(string(data))
+	})
 }

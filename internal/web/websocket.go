@@ -131,7 +131,7 @@ func (s *Server) sendCommandNack(client *wsClient, command, tunnelID, requestID,
 }
 
 func (s *Server) sendClientJSON(client *wsClient, payload map[string]interface{}) {
-	data, err := MarshalJSON(payload)
+	data, err := json.Marshal(payload)
 	if err != nil {
 		return
 	}
@@ -174,7 +174,7 @@ func (s *Server) subscribeLogs(client *wsClient, tunnelID string) error {
 				if !ok {
 					return
 				}
-				payload, err := MarshalJSON(map[string]interface{}{
+				payload, err := json.Marshal(map[string]interface{}{
 					"type": "log",
 					"id":   tunnelID,
 					"line": line,

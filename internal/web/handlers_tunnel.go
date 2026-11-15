@@ -44,10 +44,9 @@ func (h *Handlers) clearTunnels(w http.ResponseWriter) {
 }
 
 func (h *Handlers) listTunnels(w http.ResponseWriter) {
-	result := make([]map[string]interface{}, 0, len(h.config.Tunnels))
+	result := make([]tunnelStateMessage, 0, len(h.config.Tunnels))
 	for _, t := range h.config.Tunnels {
-		item := h.tunnelToMap(t)
-		result = append(result, item)
+		result = append(result, tunnelStateFor(h.manager, t))
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -183,10 +182,7 @@ func (h *Handlers) updateTunnel(w http.ResponseWriter, r *http.Request, id strin
 	}
 	h.server.updateConfig()
 
-	update := h.tunnelToMap(*tunnel)
-	update["type"] = "tunnel_state"
-	data, _ := MarshalJSON(update)
-	h.server.broadcast(string(data))
+	h.server.broadcastJSON(tunnelStateFor(h.manager, *tunnel))
 
 	h.writeTunnelJSON(w, *tunnel)
 }
@@ -208,14 +204,12 @@ func (h *Handlers) startTunnel(w http.ResponseWriter, id string) {
 	}
 
 	if needsInstall, canInstall := h.manager.CheckInstallation(tunnel.Provider); needsInstall && canInstall {
-		update := map[string]interface{}{
-			"type":     "tunnel_state",
-			"id":       tunnel.ID,
-			"state":    "installing",
-			"provider": string(tunnel.Provider),
-		}
-		data, _ := MarshalJSON(update)
-		h.server.broadcast(string(data))
+		h.server.broadcastJSON(tunnelStatePatch{
+			Type:     "tunnel_state",
+			ID:       tunnel.ID,
+			State:    string(config.TunnelStateInstall),
+			Provider: string(tunnel.Provider),
+		})
 		h.server.broadcastInstallingNotification(*tunnel)
 
 		w.Header().Set("Content-Type", "application/json")
@@ -242,27 +236,23 @@ func (h *Handlers) startTunnel(w http.ResponseWriter, id string) {
 
 func (h *Handlers) installAndStart(tunnel config.TunnelConfig) {
 	if err := h.manager.InstallProvider(tunnel.Provider); err != nil {
-		update := map[string]interface{}{
-			"type":         "tunnel_state",
-			"id":           tunnel.ID,
-			"state":        "error",
-			"errorMessage": "Installation failed: " + err.Error(),
-		}
-		data, _ := MarshalJSON(update)
-		h.server.broadcast(string(data))
+		h.server.broadcastJSON(tunnelStatePatch{
+			Type:         "tunnel_state",
+			ID:           tunnel.ID,
+			State:        string(config.TunnelStateError),
+			ErrorMessage: "Installation failed: " + err.Error(),
+		})
 		h.server.broadcastNotification("tunnel_error", "Tunnel Error", tunnel.Name+": Installation failed: "+err.Error(), "error", "error")
 		return
 	}
 
 	if err := h.manager.Start(tunnel, func(status config.TunnelStatus) {}); err != nil {
-		update := map[string]interface{}{
-			"type":         "tunnel_state",
-			"id":           tunnel.ID,
-			"state":        "error",
-			"errorMessage": err.Error(),
-		}
-		data, _ := MarshalJSON(update)
-		h.server.broadcast(string(data))
+		h.server.broadcastJSON(tunnelStatePatch{
+			Type:         "tunnel_state",
+			ID:           tunnel.ID,
+			State:        string(config.TunnelStateError),
+			ErrorMessage: err.Error(),
+		})
 		h.server.broadcastNotification("tunnel_error", "Tunnel Error", tunnel.Name+": "+err.Error(), "error", "error")
 	}
 }
