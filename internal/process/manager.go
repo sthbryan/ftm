@@ -20,23 +20,29 @@ import (
 )
 
 type Manager struct {
-	mu                  sync.RWMutex
-	processes           map[string]*ManagedProcess
-	providers           map[config.Provider]providers.Provider
-	providerExpiration  map[string]int
-	visitorTracking     bool
-	DownloadProgress    chan providers.DownloadProgress
-	StatusChannel       chan config.TunnelStatus
-	NotificationHandler func(status config.TunnelStatus)
-	VisitorHandler      func(status config.TunnelStatus)
-	ExpirationCallbacks struct {
-		OnStart func(tunnelID, name, provider string, startedAt time.Time)
-		OnStop  func(tunnelID string)
-	}
+	mu                 sync.RWMutex
+	processes          map[string]*ManagedProcess
+	providers          map[config.Provider]providers.Provider
+	providerExpiration map[string]int
+	visitorTracking    bool
+
+	// handlersMu guards everything below. These are set while the manager is
+	// running and read from the process watchers, so they cannot share mu: a
+	// blocking callback would stall the tunnel map.
+	handlersMu          sync.RWMutex
+	downloadProgress    chan providers.DownloadProgress
+	statusChannel       chan config.TunnelStatus
+	notificationHandler func(status config.TunnelStatus)
+	visitorHandler      func(status config.TunnelStatus)
+	expirationStart     func(tunnelID, name, provider string, startedAt time.Time)
+	expirationStop      func(tunnelID string)
 }
 
 func (m *Manager) SetProgressChannel(ch chan providers.DownloadProgress) {
-	m.DownloadProgress = ch
+	m.handlersMu.Lock()
+	m.downloadProgress = ch
+	m.handlersMu.Unlock()
+
 	for _, p := range m.providers {
 		if installer, ok := p.(interface {
 			SetProgressChannel(chan providers.DownloadProgress)
@@ -46,26 +52,39 @@ func (m *Manager) SetProgressChannel(ch chan providers.DownloadProgress) {
 	}
 }
 
+// ProgressEvents returns the stream of install progress updates.
+func (m *Manager) ProgressEvents() chan providers.DownloadProgress {
+	m.handlersMu.RLock()
+	defer m.handlersMu.RUnlock()
+	return m.downloadProgress
+}
+
 func (m *Manager) SetNotificationHandler(handler func(config.TunnelStatus)) {
-	m.NotificationHandler = handler
+	m.handlersMu.Lock()
+	m.notificationHandler = handler
+	m.handlersMu.Unlock()
 }
 
 func (m *Manager) callNotificationHandler(status config.TunnelStatus) {
-	if m.NotificationHandler != nil {
-		m.NotificationHandler(status)
+	m.handlersMu.RLock()
+	handler := m.notificationHandler
+	m.handlersMu.RUnlock()
+
+	if handler != nil {
+		handler(status)
 	}
 }
 
 func (m *Manager) SetVisitorHandler(handler func(config.TunnelStatus)) {
-	m.mu.Lock()
-	m.VisitorHandler = handler
-	m.mu.Unlock()
+	m.handlersMu.Lock()
+	m.visitorHandler = handler
+	m.handlersMu.Unlock()
 }
 
 func (m *Manager) reportNewVisitor(tunnelID string) {
-	m.mu.RLock()
-	handler := m.VisitorHandler
-	m.mu.RUnlock()
+	m.handlersMu.RLock()
+	handler := m.visitorHandler
+	m.handlersMu.RUnlock()
 
 	if handler == nil {
 		return
@@ -77,7 +96,9 @@ func (m *Manager) reportNewVisitor(tunnelID string) {
 }
 
 func (m *Manager) SetStatusChannel(ch chan config.TunnelStatus) {
-	m.StatusChannel = ch
+	m.handlersMu.Lock()
+	m.statusChannel = ch
+	m.handlersMu.Unlock()
 }
 
 const visitorWindow = 5 * time.Minute
@@ -107,31 +128,45 @@ func (m *Manager) expiresAtLocked(provider config.Provider, startedAt time.Time)
 }
 
 func (m *Manager) callStatusUpdate(status config.TunnelStatus) {
-	if m.StatusChannel == nil {
+	m.handlersMu.RLock()
+	ch := m.statusChannel
+	m.handlersMu.RUnlock()
+
+	if ch == nil {
 		return
 	}
 
 	select {
-	case m.StatusChannel <- status:
+	case ch <- status:
 	default:
 		log.Printf("process: status channel full, dropped %q update for tunnel %s", status.State, status.ID)
 	}
 }
 
 func (m *Manager) SetExpirationCallbacks(start func(string, string, string, time.Time), stop func(string)) {
-	m.ExpirationCallbacks.OnStart = start
-	m.ExpirationCallbacks.OnStop = stop
+	m.handlersMu.Lock()
+	m.expirationStart = start
+	m.expirationStop = stop
+	m.handlersMu.Unlock()
 }
 
 func (m *Manager) callExpirationStart(tunnelID, name, provider string, startedAt time.Time) {
-	if m.ExpirationCallbacks.OnStart != nil {
-		m.ExpirationCallbacks.OnStart(tunnelID, name, provider, startedAt)
+	m.handlersMu.RLock()
+	start := m.expirationStart
+	m.handlersMu.RUnlock()
+
+	if start != nil {
+		start(tunnelID, name, provider, startedAt)
 	}
 }
 
 func (m *Manager) callExpirationStop(tunnelID string) {
-	if m.ExpirationCallbacks.OnStop != nil {
-		m.ExpirationCallbacks.OnStop(tunnelID)
+	m.handlersMu.RLock()
+	stop := m.expirationStop
+	m.handlersMu.RUnlock()
+
+	if stop != nil {
+		stop(tunnelID)
 	}
 }
 
@@ -179,7 +214,7 @@ func (m *Manager) InstallProvider(providerType config.Provider) error {
 		return fmt.Errorf("provider %s does not support auto-install", providerType)
 	}
 
-	return installer.Install(m.DownloadProgress)
+	return installer.Install(m.ProgressEvents())
 }
 
 func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelStatus)) error {

@@ -188,7 +188,7 @@ func (s *Server) URL() string {
 }
 
 func (s *Server) installProgressLoop() {
-	for progress := range s.manager.DownloadProgress {
+	for progress := range s.manager.ProgressEvents() {
 		step := "Installing..."
 		if progress.Done {
 			step = "Done"
