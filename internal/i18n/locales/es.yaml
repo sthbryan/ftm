@@ -277,7 +277,6 @@ tunnel_logs: "Registro"
 logs_nav_hint: "esc volver  •  ↑/↓ desplazar"
 complete: "Listo"
 esc_cancel: "esc cancelar"
-download_complete: "Descarga terminada"
 
 # TUI: respuestas
 tunnel_added: "Conexión agregada"
