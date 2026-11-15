@@ -51,7 +51,7 @@ param(
 
     [string] $DisplayName = "Foundry Tunnel Manager",
     [string] $PublisherDisplayName = "sthbryan",
-    [string] $Description = "Share your Foundry VTT world without port forwarding.",
+    [string] $Description = "Share your Foundry VTT world with your players. No port forwarding.",
     [string] $ExeName = "ftm-desktop.exe",
 
     # Architecture inside the package (Wails release builds are typically x64).
