@@ -3,7 +3,6 @@ import { settingsApi, tunnelsApi, type Settings } from '@/lib/api';
 import { subscribeWsMessages } from '@/lib/api/ws';
 import { renderNotificationEvent, syncNotificationSettings } from './notification';
 import { startExpiration, stopAllExpirations, stopExpiration } from './expiration';
-import { forgetHistory, recordSample, startHistorySampler } from './history';
 import type { Tunnel, TunnelState } from '@/lib/types';
 
 export interface InstallProgress {
@@ -73,7 +72,6 @@ function processMessage(msg: TunnelMessage): void {
 
   if (msg.type === 'tunnel_deleted' && msg.id) {
     stopExpiration(msg.id);
-    forgetHistory(msg.id);
     const { [msg.id]: _removed, ...rest } = tunnelsById.value;
     tunnelsById.value = rest;
     return;
@@ -128,7 +126,6 @@ function processMessage(msg: TunnelMessage): void {
   }
 
   tunnelsById.value = { ...tunnelsById.value, [msg.id]: updated };
-  recordSample(updated);
 
   if (newState === 'online' && updated.expiresAt) startExpiration(updated);
   if (newState === 'stopped') stopExpiration(msg.id);
@@ -146,7 +143,6 @@ async function syncTunnels(): Promise<void> {
 
     stopAllExpirations();
     for (const tunnel of data) {
-      recordSample(tunnel);
       if (tunnel.state === 'online' && tunnel.expiresAt) startExpiration(tunnel);
       if (tunnel.state === 'online' && tunnel.provider) {
         const { [tunnel.provider]: _cleared, ...rest } = installProgress.value;
@@ -173,7 +169,6 @@ async function loadTunnels(): Promise<void> {
     );
 
     for (const tunnel of data as Tunnel[]) {
-      recordSample(tunnel);
       if (tunnel.state === 'online' && tunnel.expiresAt) startExpiration(tunnel);
     }
 
@@ -210,7 +205,6 @@ export function connectTunnels(): void {
 
   void syncNotificationSettings();
   void loadTunnels();
-  startHistorySampler(() => tunnels.value);
 }
 
 export function disconnectTunnels(): void {
@@ -266,7 +260,6 @@ export async function deleteTunnel(id: string): Promise<void> {
   if (!current) throw new Error(`Tunnel ${id} not found`);
 
   stopExpiration(id);
-  forgetHistory(id);
   const { [id]: _removed, ...rest } = tunnelsById.value;
   tunnelsById.value = rest;
 

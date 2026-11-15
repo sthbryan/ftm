@@ -1,29 +1,25 @@
+/**
+ * The app mark: the faceted d20 on the orange ground, the same drawing as
+ * favicon.svg and the desktop icons. Its colours are the brand's, not the
+ * theme's, so it reads the same in Tinta dark and light.
+ */
 export function Mark({ class: className = '' }: { class?: string }) {
   return (
-    <svg
-      class={className}
-      viewBox="0 0 48 48"
-      role="img"
-      aria-label="Foundry Tunnel Manager"
-      fill="none"
-    >
-      <rect width="48" height="48" rx="12" fill="var(--color-primary)" />
-      <path
-        d="M24 9.5 36.5 17v14L24 38.5 11.5 31V17L24 9.5Z"
-        stroke="var(--color-btn-text)"
-        stroke-width="1.6"
-        stroke-linejoin="round"
-        opacity="0.55"
-      />
-      <path
-        d="M24 9.5 36.5 17 24 24.5 11.5 17 24 9.5Z"
-        fill="var(--color-btn-text)"
-        opacity="0.18"
-      />
-      <circle cx="24" cy="24" r="2.4" fill="var(--color-btn-text)" />
-      <circle cx="24" cy="9.5" r="1.6" fill="var(--color-btn-text)" />
-      <circle cx="36.5" cy="31" r="1.6" fill="var(--color-btn-text)" />
-      <circle cx="11.5" cy="31" r="1.6" fill="var(--color-btn-text)" />
+    <svg class={className} viewBox="0 0 40 40" role="img" aria-label="Foundry Tunnel Manager">
+      <rect width="40" height="40" rx="9" fill="#ac4f06" />
+      <g transform="translate(8 8)">
+        <path d="M3.34 7 L12 2 L20.66 7 L20.66 17 L12 22 L3.34 17 Z" fill="#e3c05c" />
+        <g
+          fill="none"
+          stroke="#ac4f06"
+          stroke-width="1.15"
+          stroke-linejoin="round"
+          stroke-linecap="round"
+        >
+          <path d="M12 5.82 L17.352 15.09 L6.648 15.09 Z" />
+          <path d="M12 2 L12 5.82 M3.34 7 L12 5.82 M20.66 7 L12 5.82 M3.34 7 L6.648 15.09 M20.66 7 L17.352 15.09 M3.34 17 L6.648 15.09 M20.66 17 L17.352 15.09 M12 22 L6.648 15.09 M12 22 L17.352 15.09" />
+        </g>
+      </g>
     </svg>
   );
 }
