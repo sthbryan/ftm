@@ -63,7 +63,7 @@ func main() {
 
 	wailsApp := application.New(application.Options{
 		Name:        "Foundry Tunnel Manager",
-		Description: "Share your Foundry VTT world without port forwarding",
+		Description: "Share your Foundry VTT world with your players",
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
 		},

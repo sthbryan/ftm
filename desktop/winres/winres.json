@@ -10,7 +10,7 @@
         "identity": {
           "name": "com.justcallmebryan.ftm"
         },
-        "description": "Share your Foundry VTT world without port forwarding",
+        "description": "Share your Foundry VTT world with your players",
         "minimum-os": "win10",
         "execution-level": "as invoker",
         "dpi-awareness": "per monitor v2"

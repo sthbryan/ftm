@@ -37,7 +37,7 @@ cat > "$APPDIR/usr/share/applications/ftm-desktop.desktop" <<DESKTOP
 Type=Application
 Name=Foundry Tunnel Manager
 GenericName=Tunnel Manager
-Comment=Share your Foundry VTT world without port forwarding
+Comment=Share your Foundry VTT world with your players
 Exec=ftm-desktop
 Icon=ftm-desktop
 Categories=Network;Game;
