@@ -121,7 +121,9 @@ func (i *Installer) download(url, dest string, progress chan<- providers.Downloa
 	for {
 		n, err := resp.Body.Read(buf)
 		if n > 0 {
-			out.Write(buf[:n])
+			if _, werr := out.Write(buf[:n]); werr != nil {
+				return fmt.Errorf("failed to write %s: %w", out.Name(), werr)
+			}
 			downloaded += int64(n)
 			if total > 0 && progress != nil {
 				percent := 10 + float64(downloaded)/float64(total)*80
@@ -152,8 +154,11 @@ func (i *Installer) download(url, dest string, progress chan<- providers.Downloa
 	if err != nil {
 		return err
 	}
-	f.Read(headerBytes)
-	f.Close()
+	if _, err := io.ReadFull(f, headerBytes); err != nil {
+		_ = f.Close()
+		return fmt.Errorf("failed to read the archive header: %w", err)
+	}
+	_ = f.Close()
 
 	if headerBytes[0] != 0x1f || headerBytes[1] != 0x8b {
 		return fmt.Errorf("not a valid gzip archive")
@@ -194,11 +199,20 @@ func (i *Installer) download(url, dest string, progress chan<- providers.Downloa
 		if err != nil {
 			return err
 		}
-		io.Copy(outFile, gzReader)
-		outFile.Close()
+		if _, err := io.Copy(outFile, gzReader); err != nil {
+			_ = outFile.Close()
+			return fmt.Errorf("failed to decompress the archive: %w", err)
+		}
+		if err := outFile.Close(); err != nil {
+			return err
+		}
 
-		os.Remove(dest)
-		os.Rename(rawDest, dest)
+		if err := os.Remove(dest); err != nil {
+			return err
+		}
+		if err := os.Rename(rawDest, dest); err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -232,8 +246,13 @@ func (i *Installer) download(url, dest string, progress chan<- providers.Downloa
 			if err != nil {
 				return err
 			}
-			io.Copy(outFile, tarReader)
-			outFile.Close()
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				_ = outFile.Close()
+				return fmt.Errorf("failed to extract tmole: %w", err)
+			}
+			if err := outFile.Close(); err != nil {
+				return err
+			}
 			return nil
 		}
 	}

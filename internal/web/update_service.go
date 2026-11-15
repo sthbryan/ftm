@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"sync"
 	"time"
@@ -94,6 +95,10 @@ func (s *updateService) broadcastUpdate(info *updater.Info) {
 		"releaseUrl": info.ReleaseURL,
 		"method":     string(info.Method),
 	}
-	data, _ := MarshalJSON(payload)
+	data, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("web: could not encode the update notification: %v", err)
+		return
+	}
 	s.broadcast(string(data))
 }

@@ -41,7 +41,9 @@ func (d *BaseDownloader) Download(url, dest string, progress chan<- DownloadProg
 	for {
 		n, err := resp.Body.Read(buf)
 		if n > 0 {
-			out.Write(buf[:n])
+			if _, werr := out.Write(buf[:n]); werr != nil {
+				return fmt.Errorf("failed to write %s: %w", out.Name(), werr)
+			}
 			downloaded += int64(n)
 			if total > 0 && progress != nil {
 				percent := 10 + float64(downloaded)/float64(total)*80

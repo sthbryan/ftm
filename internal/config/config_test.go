@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -12,6 +13,8 @@ func isolateHome(t *testing.T) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	// os.UserConfigDir reads %AppData% on Windows, so isolate that too.
+	t.Setenv("AppData", filepath.Join(home, "appdata"))
 
 	return home
 }
@@ -31,9 +34,12 @@ func TestLoadCreatesDefaultConfigWhenMissing(t *testing.T) {
 		t.Errorf("Tunnels = %v, want empty", cfg.Tunnels)
 	}
 
-	path := filepath.Join(home, ".config", AppName, ConfigFile)
+	path := ConfigPath()
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("Load() did not persist a default config at %s: %v", path, err)
+	}
+	if !strings.HasPrefix(path, home) {
+		t.Fatalf("ConfigPath() = %s, want it under the isolated home %s", path, home)
 	}
 }
 
@@ -92,9 +98,9 @@ func TestMigrateReportsWhetherItChangedAnything(t *testing.T) {
 }
 
 func TestLoadPersistsMigration(t *testing.T) {
-	home := isolateHome(t)
+	isolateHome(t)
 
-	dir := filepath.Join(home, ".config", AppName)
+	dir := filepath.Dir(ConfigPath())
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -164,9 +170,9 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 }
 
 func TestLoadRejectsMalformedYAML(t *testing.T) {
-	home := isolateHome(t)
+	isolateHome(t)
 
-	dir := filepath.Join(home, ".config", AppName)
+	dir := filepath.Dir(ConfigPath())
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatal(err)
 	}

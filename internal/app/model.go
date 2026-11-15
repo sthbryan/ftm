@@ -101,7 +101,7 @@ func (m *Model) installProvider(providerType config.Provider) tea.Cmd {
 
 func (m *Model) stopTunnel(item TunnelItem) tea.Cmd {
 	return func() tea.Msg {
-		m.App.Manager.Stop(item.Tunnel.ID)
+		_ = m.App.Manager.Stop(item.Tunnel.ID)
 		return nil
 	}
 }

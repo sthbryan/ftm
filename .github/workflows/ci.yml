@@ -50,6 +50,36 @@ jobs:
       - name: Test
         run: go test -race -v $(go list ./... | grep -v '/desktop')
 
+  build-windows:
+    name: Build & Vet on Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Stub embedded assets
+        run: |
+          mkdir -p internal/web/static
+          touch internal/web/static/index.html
+
+      # Windows is the primary target and none of this used to be compiled on
+      # it. unsafeptr is disabled because the COM vtable glue in
+      # internal/autostart is uintptr by design.
+      - name: Vet
+        run: go vet -unsafeptr=false $(go list ./... | grep -v '/desktop')
+
+      - name: Build the CLI
+        run: go build -trimpath -o ftm-windows-x64.exe ./cmd/ftm
+
+      - name: Test the platform-independent packages
+        run: go test ./internal/config/ ./internal/i18n/ ./internal/web/
+
   lint-frontend:
     name: Lint & Test Frontend
     runs-on: ubuntu-24.04-arm

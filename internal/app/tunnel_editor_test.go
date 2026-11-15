@@ -117,6 +117,6 @@ func TestEveryOfferedProviderCanActuallyStart(t *testing.T) {
 				t.Errorf("the editor offers %q but the manager cannot start it", provider)
 			}
 		}
-		manager.Stop("x")
+		_ = manager.Stop("x")
 	}
 }

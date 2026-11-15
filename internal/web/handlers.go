@@ -86,45 +86,7 @@ func (h *Handlers) setCORS(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func (h *Handlers) tunnelToMap(t config.TunnelConfig) map[string]interface{} {
-	item := map[string]interface{}{
-		"id":             t.ID,
-		"name":           t.Name,
-		"provider":       string(t.Provider),
-		"port":           t.LocalPort,
-		"state":          "stopped",
-		"publicUrl":      "",
-		"errorMessage":   "",
-		"expiresAt":      int64(0),
-		"startedAt":      int64(0),
-		"visitors":       0,
-		"activeSessions": 0,
-	}
-
-	if status, ok := h.manager.GetStatus(t.ID); ok {
-		item["publicUrl"] = status.PublicURL
-		item["errorMessage"] = status.ErrorMessage
-		item["state"] = string(status.State)
-		item["expiresAt"] = status.ExpiresAt
-		item["startedAt"] = status.StartedAt
-		item["visitors"] = status.Visitors
-		item["activeSessions"] = status.ActiveSessions
-	}
-
-	if item["state"] == "stopped" {
-		if needsInstall, canInstall := h.manager.CheckInstallation(t.Provider); needsInstall && canInstall {
-			item["state"] = "need_installing"
-		}
-	}
-
-	return item
-}
-
 func (h *Handlers) writeTunnelJSON(w http.ResponseWriter, t config.TunnelConfig) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(h.tunnelToMap(t))
-}
-
-func MarshalJSON(v interface{}) ([]byte, error) {
-	return json.Marshal(v)
+	json.NewEncoder(w).Encode(tunnelStateFor(h.manager, t))
 }

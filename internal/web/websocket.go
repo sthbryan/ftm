@@ -32,9 +32,11 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	defer s.removeClient(client)
 
-	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	// A failed deadline write leaves the connection unusable, and the next read
+	// or write reports it; there is nothing to recover here.
+	_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return nil
 	})
 
@@ -58,13 +60,13 @@ func (s *Server) writePump(client *wsClient) {
 		case <-client.done:
 			return
 		case msg := <-client.send:
-			client.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			_ = client.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err := client.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
 				s.removeClient(client)
 				return
 			}
 		case <-pingTicker.C:
-			client.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			_ = client.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				s.removeClient(client)
 				return
@@ -131,7 +133,7 @@ func (s *Server) sendCommandNack(client *wsClient, command, tunnelID, requestID,
 }
 
 func (s *Server) sendClientJSON(client *wsClient, payload map[string]interface{}) {
-	data, err := MarshalJSON(payload)
+	data, err := json.Marshal(payload)
 	if err != nil {
 		return
 	}
@@ -165,7 +167,7 @@ func (s *Server) subscribeLogs(client *wsClient, tunnelID string) error {
 	client.subsMu.Unlock()
 
 	go func() {
-		defer s.unsubscribeLogs(client, tunnelID)
+		defer func() { _ = s.unsubscribeLogs(client, tunnelID) }()
 		for {
 			select {
 			case <-ctx.Done():
@@ -174,7 +176,7 @@ func (s *Server) subscribeLogs(client *wsClient, tunnelID string) error {
 				if !ok {
 					return
 				}
-				payload, err := MarshalJSON(map[string]interface{}{
+				payload, err := json.Marshal(map[string]interface{}{
 					"type": "log",
 					"id":   tunnelID,
 					"line": line,

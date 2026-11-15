@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/sthbryan/ftm/internal/config"
@@ -19,23 +20,29 @@ import (
 )
 
 type Manager struct {
-	mu                  sync.RWMutex
-	processes           map[string]*ManagedProcess
-	providers           map[config.Provider]providers.Provider
-	providerExpiration  map[string]int
-	visitorTracking     bool
-	DownloadProgress    chan providers.DownloadProgress
-	StatusChannel       chan config.TunnelStatus
-	NotificationHandler func(status config.TunnelStatus)
-	VisitorHandler      func(status config.TunnelStatus)
-	ExpirationCallbacks struct {
-		OnStart func(tunnelID, name, provider string, startedAt time.Time)
-		OnStop  func(tunnelID string)
-	}
+	mu                 sync.RWMutex
+	processes          map[string]*ManagedProcess
+	providers          map[config.Provider]providers.Provider
+	providerExpiration map[string]int
+	visitorTracking    bool
+
+	// handlersMu guards everything below. These are set while the manager is
+	// running and read from the process watchers, so they cannot share mu: a
+	// blocking callback would stall the tunnel map.
+	handlersMu          sync.RWMutex
+	downloadProgress    chan providers.DownloadProgress
+	statusChannel       chan config.TunnelStatus
+	notificationHandler func(status config.TunnelStatus)
+	visitorHandler      func(status config.TunnelStatus)
+	expirationStart     func(tunnelID, name, provider string, startedAt time.Time)
+	expirationStop      func(tunnelID string)
 }
 
 func (m *Manager) SetProgressChannel(ch chan providers.DownloadProgress) {
-	m.DownloadProgress = ch
+	m.handlersMu.Lock()
+	m.downloadProgress = ch
+	m.handlersMu.Unlock()
+
 	for _, p := range m.providers {
 		if installer, ok := p.(interface {
 			SetProgressChannel(chan providers.DownloadProgress)
@@ -45,26 +52,39 @@ func (m *Manager) SetProgressChannel(ch chan providers.DownloadProgress) {
 	}
 }
 
+// ProgressEvents returns the stream of install progress updates.
+func (m *Manager) ProgressEvents() chan providers.DownloadProgress {
+	m.handlersMu.RLock()
+	defer m.handlersMu.RUnlock()
+	return m.downloadProgress
+}
+
 func (m *Manager) SetNotificationHandler(handler func(config.TunnelStatus)) {
-	m.NotificationHandler = handler
+	m.handlersMu.Lock()
+	m.notificationHandler = handler
+	m.handlersMu.Unlock()
 }
 
 func (m *Manager) callNotificationHandler(status config.TunnelStatus) {
-	if m.NotificationHandler != nil {
-		m.NotificationHandler(status)
+	m.handlersMu.RLock()
+	handler := m.notificationHandler
+	m.handlersMu.RUnlock()
+
+	if handler != nil {
+		handler(status)
 	}
 }
 
 func (m *Manager) SetVisitorHandler(handler func(config.TunnelStatus)) {
-	m.mu.Lock()
-	m.VisitorHandler = handler
-	m.mu.Unlock()
+	m.handlersMu.Lock()
+	m.visitorHandler = handler
+	m.handlersMu.Unlock()
 }
 
 func (m *Manager) reportNewVisitor(tunnelID string) {
-	m.mu.RLock()
-	handler := m.VisitorHandler
-	m.mu.RUnlock()
+	m.handlersMu.RLock()
+	handler := m.visitorHandler
+	m.handlersMu.RUnlock()
 
 	if handler == nil {
 		return
@@ -76,7 +96,9 @@ func (m *Manager) reportNewVisitor(tunnelID string) {
 }
 
 func (m *Manager) SetStatusChannel(ch chan config.TunnelStatus) {
-	m.StatusChannel = ch
+	m.handlersMu.Lock()
+	m.statusChannel = ch
+	m.handlersMu.Unlock()
 }
 
 const visitorWindow = 5 * time.Minute
@@ -106,31 +128,45 @@ func (m *Manager) expiresAtLocked(provider config.Provider, startedAt time.Time)
 }
 
 func (m *Manager) callStatusUpdate(status config.TunnelStatus) {
-	if m.StatusChannel == nil {
+	m.handlersMu.RLock()
+	ch := m.statusChannel
+	m.handlersMu.RUnlock()
+
+	if ch == nil {
 		return
 	}
 
 	select {
-	case m.StatusChannel <- status:
+	case ch <- status:
 	default:
 		log.Printf("process: status channel full, dropped %q update for tunnel %s", status.State, status.ID)
 	}
 }
 
 func (m *Manager) SetExpirationCallbacks(start func(string, string, string, time.Time), stop func(string)) {
-	m.ExpirationCallbacks.OnStart = start
-	m.ExpirationCallbacks.OnStop = stop
+	m.handlersMu.Lock()
+	m.expirationStart = start
+	m.expirationStop = stop
+	m.handlersMu.Unlock()
 }
 
 func (m *Manager) callExpirationStart(tunnelID, name, provider string, startedAt time.Time) {
-	if m.ExpirationCallbacks.OnStart != nil {
-		m.ExpirationCallbacks.OnStart(tunnelID, name, provider, startedAt)
+	m.handlersMu.RLock()
+	start := m.expirationStart
+	m.handlersMu.RUnlock()
+
+	if start != nil {
+		start(tunnelID, name, provider, startedAt)
 	}
 }
 
 func (m *Manager) callExpirationStop(tunnelID string) {
-	if m.ExpirationCallbacks.OnStop != nil {
-		m.ExpirationCallbacks.OnStop(tunnelID)
+	m.handlersMu.RLock()
+	stop := m.expirationStop
+	m.handlersMu.RUnlock()
+
+	if stop != nil {
+		stop(tunnelID)
 	}
 }
 
@@ -178,26 +214,33 @@ func (m *Manager) InstallProvider(providerType config.Provider) error {
 		return fmt.Errorf("provider %s does not support auto-install", providerType)
 	}
 
-	return installer.Install(m.DownloadProgress)
+	return installer.Install(m.ProgressEvents())
 }
 
 func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelStatus)) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	if existing, ok := m.processes[tunnel.ID]; ok && existing.Process != nil {
+		m.mu.Unlock()
 		return fmt.Errorf("tunnel %s is already running", tunnel.ID)
 	}
 
 	provider, ok := m.providers[tunnel.Provider]
 	if !ok {
+		m.mu.Unlock()
 		return fmt.Errorf("unknown provider: %s", tunnel.Provider)
 	}
 
 	if installer, ok := provider.(providers.AutoInstaller); ok && !installer.IsInstalled() {
+		m.mu.Unlock()
 		return fmt.Errorf("installing")
 	}
 
+	visitorTracking := m.visitorTracking
+	m.mu.Unlock()
+
+	// Everything from here on can block on the filesystem, the network or a
+	// process spawn, so it must not run while holding the manager lock. Holding
+	// it froze every status read and every other tunnel start.
 	logBuffer := NewLogBuffer()
 	mp := &ManagedProcess{
 		Config:         tunnel,
@@ -209,7 +252,7 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	}
 
 	exposed := tunnel
-	if m.visitorTracking {
+	if visitorTracking {
 		opts := proxy.Options{
 			Window:       visitorWindow,
 			OnNewVisitor: func() { m.reportNewVisitor(tunnel.ID) },
@@ -226,7 +269,14 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 		mp.publishLog(line)
 	}
 
-	urlCapture := newURLCapture(provider, func(url string) { m.updateURL(tunnel.ID, url) })
+	// A provider can print its public URL before Start returns, while the
+	// process is still not registered. Keep the first URL seen so it is applied
+	// once the process is in the map instead of being dropped.
+	var earlyURL atomic.Value
+	urlCapture := newURLCapture(provider, func(url string) {
+		earlyURL.Store(url)
+		m.updateURL(tunnel.ID, url)
+	})
 	writer := io.MultiWriter(logBuffer, urlCapture)
 
 	ctx := context.Background()
@@ -236,17 +286,33 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 		return err
 	}
 	startedAt := time.Now()
+
+	m.mu.Lock()
+	// A concurrent Start for the same tunnel may have won the race while this
+	// one was spawning.
+	if existing, ok := m.processes[tunnel.ID]; ok && existing.Process != nil {
+		m.mu.Unlock()
+		mp.closeProxy()
+		proc.Stop()
+		return fmt.Errorf("tunnel %s is already running", tunnel.ID)
+	}
+
 	mp.Process = proc
 	mp.Status.State = config.TunnelStateStarting
 	mp.Status.ExpiresAt = m.expiresAtLocked(tunnel.Provider, startedAt)
 	mp.Status.StartedAt = startedAt.UnixMilli()
 
-	m.processes[tunnel.ID] = mp
-
-	if onUpdate != nil {
-		onUpdate(mp.Status)
+	if url, ok := earlyURL.Load().(string); ok && url != "" {
+		mp.PublicURL = url
+		mp.Status.PublicURL = url
+		mp.Status.State = config.TunnelStateOnline
 	}
-	m.callStatusUpdate(mp.Status)
+
+	m.processes[tunnel.ID] = mp
+	status := mp.Status
+	m.mu.Unlock()
+
+	m.publishStatus(mp, status)
 
 	go m.startupTimeoutMonitor(tunnel.ID, proc)
 	go m.watchExit(tunnel.ID, proc)
@@ -255,11 +321,13 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	return nil
 }
 
-func (m *Manager) publishLocked(mp *ManagedProcess) {
+// publishStatus notifies the owner and the status channel outside the manager
+// lock, so a slow callback can never freeze the tunnel map.
+func (m *Manager) publishStatus(mp *ManagedProcess, status config.TunnelStatus) {
 	if mp.OnUpdate != nil {
-		mp.OnUpdate(mp.Status)
+		mp.OnUpdate(status)
 	}
-	m.callStatusUpdate(mp.Status)
+	m.callStatusUpdate(status)
 }
 
 func (m *Manager) watchExit(tunnelID string, proc *providers.Process) {
@@ -286,9 +354,9 @@ func (m *Manager) watchExit(tunnelID string, proc *providers.Process) {
 	}
 
 	status := mp.Status
-	m.publishLocked(mp)
 	m.mu.Unlock()
 
+	m.publishStatus(mp, status)
 	m.callNotificationHandler(status)
 	m.callExpirationStop(tunnelID)
 }
@@ -311,11 +379,17 @@ func (m *Manager) startupTimeoutMonitor(tunnelID string, proc *providers.Process
 		m.mu.Unlock()
 		return
 	}
+	changed := false
 	if mp.Status.PublicURL == "" && mp.Status.State != config.TunnelStateOnline {
 		mp.Status.State = config.TunnelStateConnecting
-		m.publishLocked(mp)
+		changed = true
 	}
+	status := mp.Status
 	m.mu.Unlock()
+
+	if changed {
+		m.publishStatus(mp, status)
+	}
 
 	select {
 	case <-proc.Exited():
@@ -343,10 +417,10 @@ func (m *Manager) startupTimeoutMonitor(tunnelID string, proc *providers.Process
 	if reported := reportedFailure(mp.LogBuffer.GetLines()); reported != "" {
 		mp.Status.ErrorMessage = reported
 	}
-	status := mp.Status
-	m.publishLocked(mp)
+	status = mp.Status
 	m.mu.Unlock()
 
+	m.publishStatus(mp, status)
 	m.callNotificationHandler(status)
 	m.callExpirationStop(tunnelID)
 
@@ -370,9 +444,9 @@ func (m *Manager) Stop(tunnelID string) error {
 	mp.Status.State = config.TunnelStateStopping
 	mp.Status.PublicURL = ""
 	stopping := mp.Status
-	m.publishLocked(mp)
 	m.mu.Unlock()
 
+	m.publishStatus(mp, stopping)
 	m.callNotificationHandler(stopping)
 
 	if proc != nil {
@@ -382,8 +456,10 @@ func (m *Manager) Stop(tunnelID string) error {
 	m.mu.Lock()
 	mp.Status.State = config.TunnelStateStopped
 	mp.Status.ErrorMessage = ""
-	m.publishLocked(mp)
+	stopped := mp.Status
 	m.mu.Unlock()
+
+	m.publishStatus(mp, stopped)
 
 	m.callExpirationStop(tunnelID)
 
@@ -428,9 +504,9 @@ func (m *Manager) updateURL(tunnelID, url string) {
 	mp.Status.State = config.TunnelStateOnline
 
 	status := mp.Status
-	m.publishLocked(mp)
 	m.mu.Unlock()
 
+	m.publishStatus(mp, status)
 	m.callNotificationHandler(status)
 }
 

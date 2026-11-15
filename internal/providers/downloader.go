@@ -52,7 +52,9 @@ func downloadWithProgress(url, dest string, progress chan<- DownloadProgress, na
 	for {
 		n, err := resp.Body.Read(buf)
 		if n > 0 {
-			out.Write(buf[:n])
+			if _, werr := out.Write(buf[:n]); werr != nil {
+				return fmt.Errorf("failed to write %s: %w", out.Name(), werr)
+			}
 			current += int64(n)
 
 			if progress != nil && total > 0 {
