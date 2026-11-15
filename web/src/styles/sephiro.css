@@ -1,13 +1,21 @@
-/* Sephiro bridge.
+/* Sephiro owns the palette.
  *
- * The app renders Sephiro components, which are plain CSS classes, so the
- * component styles come straight from the package. Its tokens are named --sph-*
- * and our themes name theirs --color-*; instead of maintaining both, the aliases
- * below resolve our palette into the Sephiro contract once, for every theme.
+ * Each theme is one `data-sephiro-theme` value on <html>: the package sheets
+ * below, plus ./ftm.css, which is written against the same contract. The app
+ * maps those `--sph-*` tokens onto the Tailwind colour names once (themes.css),
+ * so a theme swap repaints the utilities and the components together.
  *
- * Structural values (motion, easings, radii, control heights) are copied from
- * @zovaris/sephiro 1.0.0 themes.css because they do not vary per theme.
+ * Structural values (motion, easings, radii, control heights) come from the
+ * Sephiro sheets as well.
  */
+
+@import "@zovaris/sephiro/css/theme-dark.css";
+@import "@zovaris/sephiro/css/theme-light.css";
+@import "@zovaris/sephiro/css/theme-asterism.css";
+@import "@zovaris/sephiro/css/theme-curie.css";
+@import "@zovaris/sephiro/css/theme-fizza.css";
+@import "@zovaris/sephiro/css/theme-pulso.css";
+@import "./ftm.css";
 
 @import "@zovaris/sephiro/css/spinner.css";
 @import "@zovaris/sephiro/css/button.css";
@@ -34,94 +42,89 @@
 @import "@zovaris/sephiro/css/toast.css";
 
 :root {
-  --sph-radius-xs: 4px;
-  --sph-radius-sm: 6px;
-  --sph-radius-md: 10px;
-  --sph-shadow-popover: 0 14px 36px rgb(0 0 0 / 0.38);
-
-  --sph-motion-fast: 120ms;
-  --sph-motion-normal: 180ms;
-  --sph-motion-slow: 240ms;
-  --sph-motion-panel: 320ms;
-  --sph-motion-stagger: 40ms;
-
-  --sph-ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --sph-ease-emphasis: cubic-bezier(0.23, 1, 0.32, 1);
-  --sph-ease-exit: cubic-bezier(0.4, 0, 0.2, 1);
-  --sph-ease-spring: cubic-bezier(0.34, 1.06, 0.5, 1);
-  --sph-ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
-  --sph-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  --sph-ease-sweep: linear;
-
-  --sph-control-height-sm: 32px;
-  --sph-control-height-md: 36px;
-  --sph-control-height-lg: 40px;
-  --sph-control-density: 1;
-}
-
-/* Palette: one alias block for all 24 themes, resolved against whichever
- * [data-theme] is active on <html>. */
-:root {
+  /* ftm ships Inter and JetBrains Mono; Sephiro's sheets ask for Geist. */
   --sph-font-sans: var(--font-sans);
   --sph-font-mono: var(--font-mono);
-
-  --sph-bg: var(--color-bg);
-  --sph-surface: var(--color-card);
-  --sph-surface-elevated: var(--color-card);
-  --sph-raised: var(--color-hover);
-  --sph-border: var(--color-border);
-  --sph-border-strong: var(--color-border);
-
-  --sph-text: var(--color-text);
-  --sph-text-muted: var(--color-muted);
-
-  --sph-accent: var(--color-primary);
-  --sph-accent-hover: var(--color-primary-hover);
-  --sph-accent-pressed: var(--color-primary-hover);
-  --sph-accent-soft: color-mix(in srgb, var(--color-primary) 16%, transparent);
-  --sph-accent-strong: var(--color-primary);
-  --sph-on-accent: var(--color-btn-text);
-
-  --sph-success: var(--color-status-running);
-  --sph-success-soft: color-mix(in srgb, var(--color-status-running) 15%, transparent);
-  --sph-warning: var(--color-status-starting);
-  --sph-warning-soft: color-mix(in srgb, var(--color-status-starting) 15%, transparent);
-  --sph-danger: var(--color-status-error);
-  --sph-danger-soft: color-mix(in srgb, var(--color-status-error) 15%, transparent);
-
-  --sph-focus: var(--color-primary);
-  --sph-focus-ring: color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
 
-/* ftm runs a tunnel, so start and stop carry meaning Sephiro's accent does not.
- * They stay inside the contract: same class, extra data-variant values. */
+/* The app contract: every colour the UI uses, derived from the active theme so
+ * there is exactly one place a palette value is written. */
+:root {
+  --app-bg: var(--sph-bg);
+  --app-card: var(--sph-surface);
+  --app-heading: var(--sph-text);
+  --app-text: var(--sph-text);
+  --app-muted: var(--sph-text-muted);
+
+  --app-border: var(--sph-border);
+  --app-border-light: color-mix(in srgb, var(--sph-border) 60%, transparent);
+
+  --app-primary: var(--sph-accent);
+  --app-primary-hover: var(--sph-accent-hover);
+  --app-hover: var(--sph-raised);
+
+  --app-btn-primary: var(--sph-accent);
+  --app-btn-primary-hover: var(--sph-accent-hover);
+  --app-btn-text: var(--sph-on-accent);
+  --app-btn-start: var(--sph-success);
+  --app-btn-start-hover: color-mix(in srgb, var(--sph-success) 85%, var(--sph-text));
+  --app-btn-stop: var(--sph-danger);
+  --app-btn-stop-hover: color-mix(in srgb, var(--sph-danger) 85%, var(--sph-text));
+  --app-btn-danger: var(--sph-danger);
+  --app-btn-danger-hover: color-mix(in srgb, var(--sph-danger) 85%, var(--sph-text));
+
+  --app-status-running: var(--sph-success);
+  --app-status-starting: var(--sph-warning);
+  --app-status-installing: var(--sph-accent);
+  --app-status-error: var(--sph-danger);
+  --app-status-stopped: var(--sph-text-muted);
+  --app-error-text: var(--sph-danger);
+
+  --app-logs-bg: var(--sph-bg);
+  --app-logs-text: var(--sph-text);
+
+  --app-url-bg: color-mix(in srgb, var(--sph-accent) 12%, var(--sph-bg));
+  --app-url-text: var(--sph-accent-strong);
+
+  --app-input-bg: var(--sph-surface-elevated);
+  --app-input-text: var(--sph-text);
+  --app-input-placeholder: var(--sph-text-muted);
+  --app-input-disabled: var(--sph-raised);
+
+  --app-badge-text: var(--sph-text);
+  --app-secondary-btn: var(--sph-raised);
+  --app-secondary-btn-text: var(--sph-text);
+}
+
+/* ftm runs a tunnel, so start and stop carry meaning the accent does not. They
+ * stay inside the contract: same class, extra data-variant values. */
 .sph-button[data-variant="success"] {
-  background-color: var(--color-btn-start);
-  color: var(--color-btn-text);
+  background-color: var(--app-btn-start);
+  color: var(--app-btn-text);
 }
 
 .sph-button[data-variant="success"]:hover:not(:disabled),
 .sph-button[data-variant="success"]:active:not(:disabled) {
-  background-color: var(--color-btn-start-hover);
+  background-color: var(--app-btn-start-hover);
 }
 
 .sph-button[data-variant="danger"] {
-  background-color: var(--color-btn-stop);
-  color: var(--color-btn-text);
+  background-color: var(--app-btn-stop);
+  color: var(--app-btn-text);
 }
 
 .sph-button[data-variant="danger"]:hover:not(:disabled),
 .sph-button[data-variant="danger"]:active:not(:disabled) {
-  background-color: var(--color-btn-stop-hover);
+  background-color: var(--app-btn-stop-hover);
 }
 
 .sph-icon-button[data-variant="danger"] {
-  color: var(--color-error-text);
+  color: var(--app-error-text);
 }
 
 .sph-icon-button[data-variant="danger"]:hover:not(:disabled) {
   background-color: var(--sph-danger-soft);
-  color: var(--color-error-text);
+  color: var(--app-error-text);
 }
 
 /* Sephiro's sheets are not in a cascade layer, so they beat Tailwind utilities.
@@ -130,10 +133,10 @@
   padding-inline-start: 2rem;
 }
 
-/* Sephiro's surfaces are flat; the dashboard still wants the URL and log wells
- * to read as inset. Same tokens, no new colours. */
+/* Sephiro's surfaces are flat; the dashboard still wants the URL well to read as
+ * inset. Same tokens, no new colours. */
 .sph-well {
   border-radius: var(--sph-radius-sm);
-  border: 1px solid var(--color-border-light);
-  background-color: var(--color-url-bg);
+  border: 1px solid var(--app-border-light);
+  background-color: var(--app-url-bg);
 }

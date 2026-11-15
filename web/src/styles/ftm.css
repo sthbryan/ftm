@@ -1,0 +1,39 @@
+/* Foundry — the FTM theme.
+ *
+ * Written against the same contract as the Sephiro sheets so it can move into
+ * the package as theme-ftm.css unchanged: one attribute selector, no components.
+ * Warm graphite for the shell, brass for anything the user is meant to press or
+ * read as live, and a muted sage/ember pair for tunnel state.
+ */
+
+[data-sephiro-theme="ftm"] {
+  --sph-bg: #12100d;
+  --sph-surface: #191612;
+  --sph-surface-elevated: #211d18;
+  --sph-raised: #2a251e;
+  --sph-border: #3a332a;
+  --sph-border-strong: #6d5a35;
+
+  --sph-text: #f4efe6;
+  --sph-text-muted: #b6ada0;
+
+  --sph-accent: #b98c2f;
+  --sph-accent-hover: #cda03f;
+  --sph-accent-pressed: #9d7525;
+  --sph-accent-strong: #e0b355;
+  --sph-accent-soft: color-mix(in srgb, var(--sph-accent) 18%, transparent);
+  --sph-on-accent: #1a1409;
+
+  --sph-success: #7cbc8a;
+  --sph-success-soft: color-mix(in srgb, var(--sph-success) 16%, transparent);
+  --sph-warning: #d9a441;
+  --sph-warning-soft: color-mix(in srgb, var(--sph-warning) 16%, transparent);
+  --sph-danger: #e58a80;
+  --sph-danger-soft: color-mix(in srgb, var(--sph-danger) 16%, transparent);
+
+  --sph-focus: #e0b355;
+  --sph-focus-ring: color-mix(in srgb, var(--sph-accent) 26%, transparent);
+  --sph-shadow-popover: 0 14px 36px rgb(0 0 0 / 0.55);
+
+  color-scheme: dark;
+}

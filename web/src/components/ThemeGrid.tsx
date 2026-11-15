@@ -1,49 +1,63 @@
-import { currentTheme, isAutoTheme, setTheme, setThemeFamily, systemScheme } from '@/lib/stores/theme';
-import { themeFamilies } from '@/lib/data/themes';
+import { Check } from '@phosphor-icons/react';
+import { currentTheme, followSystem, isAutoTheme, setTheme } from '@/lib/stores/theme';
+import { themeOptions } from '@/lib/data/themes';
 import { t } from '@/lib/stores/i18n';
 
 export function ThemeGrid() {
   return (
-    <div class="grid gap-1 px-5 pb-4">
-      {themeFamilies.map((family) => (
-        <div
-          key={family.id}
-          class="flex items-center justify-between gap-3 rounded-[var(--sph-radius-sm)] px-1 py-1.5"
+    <div class="px-5 pb-4">
+      <div class="mb-2.5 flex items-center justify-between gap-3">
+        <p class="m-0 text-2xs text-text-muted">{t('match_system')}</p>
+        <button
+          type="button"
+          class="sph-button"
+          data-variant={isAutoTheme.value ? 'primary' : 'secondary'}
+          data-size="sm"
+          aria-pressed={isAutoTheme.value}
+          onClick={followSystem}
         >
-          <button
-            type="button"
-            class="cursor-pointer bg-transparent text-start text-xs text-text"
-            onClick={() => setThemeFamily(family.id)}
-            aria-pressed={isAutoTheme.value && systemScheme.value === 'dark'}
-          >
-            {family.name}
-          </button>
+          {t('theme_match_system')}
+        </button>
+      </div>
 
-          <div class="flex items-center gap-1.5">
-            {([family.dark, family.light] as const).map((variant) => {
-              const selected = currentTheme.value === variant.id;
-              return (
-                <button
-                  key={variant.id}
-                  type="button"
-                  class="size-5 cursor-pointer rounded-full border transition-transform hover:scale-110"
-                  style={{
-                    backgroundColor: variant.color,
-                    borderColor: selected ? 'var(--color-text)' : 'var(--color-border)',
-                    boxShadow: selected ? '0 0 0 2px var(--sph-accent-soft)' : 'none',
-                  }}
-                  onClick={() => setTheme(variant.id)}
-                  aria-label={variant.id}
-                  aria-pressed={selected}
-                  title={variant.id}
+      <div class="grid gap-2 sm:grid-cols-2">
+        {themeOptions.map((option) => {
+          const selected = currentTheme.value === option.id;
+
+          return (
+            <button
+              key={option.id}
+              type="button"
+              class="flex cursor-pointer items-center gap-3 rounded-[var(--sph-radius-sm)] border px-2.5 py-2 text-start transition-colors"
+              style={{
+                borderColor: selected ? 'var(--sph-accent)' : 'var(--sph-border)',
+                backgroundColor: selected ? 'var(--sph-accent-soft)' : 'transparent',
+              }}
+              aria-pressed={selected}
+              onClick={() => setTheme(option.id)}
+            >
+              <span
+                class="flex shrink-0 items-center gap-1 rounded-[var(--sph-radius-xs)] border p-1"
+                style={{
+                  borderColor: 'var(--sph-border)',
+                  backgroundColor: option.bg,
+                }}
+                aria-hidden="true"
+              >
+                <span
+                  class="size-3 rounded-[2px]"
+                  style={{ backgroundColor: option.surface, boxShadow: 'inset 0 0 0 1px rgb(255 255 255 / 0.06)' }}
                 />
-              );
-            })}
-          </div>
-        </div>
-      ))}
+                <span class="size-3 rounded-full" style={{ backgroundColor: option.accent }} />
+              </span>
 
-      <p class="m-0 mt-1 px-1 text-2xs text-text-muted">{t('match_system')}</p>
+              <span class="min-w-0 flex-1 truncate text-xs text-text">{option.label}</span>
+
+              {selected && <Check size={13} className="shrink-0 text-primary" />}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
