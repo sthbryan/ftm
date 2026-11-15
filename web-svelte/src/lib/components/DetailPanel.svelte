@@ -226,14 +226,12 @@
 </script>
 
 <section
-  class="ftm-enter flex h-full min-h-0 flex-col overflow-hidden rounded-card border border-border bg-card max-md:h-auto"
+  class="ftm-enter sph-card flex h-full min-h-0 flex-col max-md:h-auto"
 >
   <div
-    class="flex shrink-0 items-center justify-between gap-2 border-b border-border-light bg-url-bg px-3 py-2"
+    class="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3.5 py-2.5"
   >
-    <h2
-      class="m-0 truncate font-serif text-base font-semibold tracking-tight text-text-heading"
-    >
+    <h2 class="m-0 truncate text-sm font-semibold tracking-tight text-text">
       {t("detail_title")}
     </h2>
     {#if tunnel}
@@ -265,16 +263,13 @@
     {/if}
   </div>
 
-  <div class="relative min-h-0 flex-1 overflow-hidden">
-    <div class="panel-pattern" aria-hidden="true"></div>
-
-    <div class="relative z-10 h-full min-h-0 overflow-y-auto p-3 max-md:h-auto max-md:overflow-visible">
+  <div
+    class="min-h-0 flex-1 overflow-y-auto p-3.5 max-md:h-auto max-md:overflow-visible"
+  >
     {#if !tunnel}
-      <div
-        class="flex h-full flex-col items-center justify-center gap-2 px-3 text-center text-text-muted"
-      >
-        <MousePointerClick size={26} />
-        <p class="m-0 text-xs leading-relaxed">{t("detail_empty")}</p>
+      <div class="sph-empty-state" data-compact="true">
+        <span class="sph-empty-state__icon"><MousePointerClick size={20} /></span>
+        <p class="sph-empty-state__description">{t("detail_empty")}</p>
       </div>
     {:else}
       <h3
@@ -315,9 +310,7 @@
       </dl>
 
       {#if tunnel.publicUrl}
-        <div
-          class="mb-3 flex items-center gap-1 rounded-control border border-border bg-url-bg py-1 pr-1 pl-2.5"
-        >
+        <div class="sph-well mb-3 flex items-center gap-1 py-1 pr-1 pl-2.5">
           <span
             class="min-w-0 flex-1 truncate font-mono text-xs text-url-text"
             title={tunnel.publicUrl}
@@ -347,7 +340,7 @@
             type="button"
             onclick={toggleQr}
             aria-expanded={qrOpen}
-            class="flex w-full cursor-pointer items-center justify-between gap-2 text-xs font-medium text-text-muted transition-colors hover:text-text"
+            class="flex w-full cursor-pointer items-center justify-between gap-2 rounded-[var(--sph-radius-xs)] px-1 py-1.5 text-2xs font-medium text-text-muted transition-colors hover:text-text"
           >
             <span>{t("qr_for_phones")}</span>
             <ChevronDown
@@ -398,7 +391,7 @@
           type="button"
           onclick={toggleLogs}
           aria-expanded={logsOpen}
-          class="mb-1.5 flex w-full cursor-pointer items-center justify-between gap-2 text-xs font-medium text-text-muted transition-colors hover:text-text"
+          class="mb-1.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-[var(--sph-radius-xs)] px-1 py-1.5 text-2xs font-medium text-text-muted transition-colors hover:text-text"
         >
           <span>{t("detail_logs")}</span>
           <span class="flex items-center gap-1">
@@ -429,6 +422,5 @@
       </div>
 
     {/if}
-    </div>
   </div>
 </section>

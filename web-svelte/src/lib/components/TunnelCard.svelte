@@ -5,7 +5,6 @@
   import { AlertCircle, Check, Copy, Pause, Play } from "lucide-svelte";
   import { t } from "$lib/stores/i18n.svelte";
   import { useClock } from "$lib/stores/clock.svelte";
-  import { cn } from "$lib/utils/cn";
   import { formatDuration } from "$lib/utils/duration";
   import { providerErrorHint } from "$lib/utils/providerError";
   import { copyText } from "$lib/utils/clipboard";
@@ -33,8 +32,6 @@
     onStart,
     onStop,
     onAction,
-    index = 0,
-    totalItems = 1,
     selected = false,
     installProgress = null,
   }: TunnelCardProps = $props();
@@ -110,40 +107,34 @@
   const errorHint = $derived(providerErrorHint(tunnel.errorMessage));
 </script>
 
-<div
-  class={cn(
-    "rounded-card border bg-card transition-colors duration-150",
-    selected
-      ? "border-primary bg-primary/5"
-      : "border-border hover:border-primary/40",
-  )}
->
-  <div class="flex flex-col">
-    <div
-      class="flex flex-row items-start justify-between gap-2 p-2.5 sm:items-stretch"
+<article class="sph-card" data-selected={selected ? "true" : undefined}>
+  <div class="flex items-start gap-2 p-3">
+    <button
+      type="button"
+      aria-pressed={selected}
+      onclick={() => onAction("select", tunnel.id)}
+      class="flex min-w-0 flex-1 cursor-pointer items-start gap-2.5 text-start"
     >
-      <button
-        type="button"
-        aria-pressed={selected}
-        onclick={() => onAction("select", tunnel.id)}
-        class="flex min-w-0 flex-1 cursor-pointer gap-2.5 text-left"
+      <span
+        aria-hidden="true"
+        class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[var(--sph-radius-xs)] border border-border-light bg-secondary-btn font-mono text-2xs font-semibold text-secondary-btn-text uppercase"
       >
-        <span
-          aria-hidden="true"
-          class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-control bg-secondary-btn font-mono text-2xs font-semibold text-secondary-btn-text uppercase"
-        >
-          {providerLabel.slice(0, 2)}
-        </span>
-        <span class="min-w-0 flex-1">
-        <span
-          class="mb-0.5 block overflow-hidden text-ellipsis whitespace-nowrap text-sm font-semibold"
-        >
+        {providerLabel.slice(0, 2)}
+      </span>
+
+      <span class="min-w-0 flex-1">
+        <span class="block truncate text-sm leading-snug font-semibold text-text">
           {tunnel.name}
         </span>
-        <span class="mb-1.5 block text-xs text-text-muted">
-          {providerLabel} · <span class="font-mono">localhost:{tunnel.port}</span>
+        <span
+          class="mt-0.5 flex items-center gap-1.5 truncate text-2xs text-text-muted"
+        >
+          <span class="truncate">{providerLabel}</span>
+          <span aria-hidden="true">·</span>
+          <span class="font-mono">localhost:{tunnel.port}</span>
         </span>
-        <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
+
+        <span class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
           <StatusBadge
             state={tunnelState}
             {stale}
@@ -152,102 +143,96 @@
               : null}
           />
           {#if stale}
-            <span class="text-xs text-text-muted">{t("connection_lost")}</span>
+            <span class="text-2xs text-text-muted">{t("connection_lost")}</span>
           {/if}
           {#if uptime}
-            <span class="text-xs text-text-muted">
-              {t("card_uptime", { 0: uptime })}
-            </span>
+            <span class="font-mono text-2xs text-text-muted tabular-nums"
+              >{uptime}</span
+            >
           {/if}
           {#if expiryLabel}
             <span
-              class={cn(
-                "text-xs",
-                remaining > 0 ? "text-text-muted" : "text-text-error",
-              )}
+              class="text-2xs"
+              class:text-text-error={remaining <= 0}
+              class:text-text-muted={remaining > 0}
             >
               {expiryLabel}
             </span>
           {/if}
         </span>
-        </span>
-      </button>
-      <div class="flex shrink-0 gap-2">
-        {#if isRunning}
-          <Button
-            variant="error"
-            icon={Pause}
-            onclick={() => onStop(tunnel.id)}
-            disabled={isInstalling || tunnelState === "stopping"}
-          >
-            {actionLabel}
-          </Button>
-        {:else}
-          <Button
-            variant="success"
-            icon={Play}
-            onclick={() => onStart(tunnel.id)}
-          >
-            {t("start")}
-          </Button>
-        {/if}
-      </div>
+      </span>
+    </button>
+
+    <div class="flex shrink-0">
+      {#if isRunning}
+        <Button
+          variant="error"
+          size="sm"
+          icon={Pause}
+          onclick={() => onStop(tunnel.id)}
+          disabled={isInstalling || tunnelState === "stopping"}
+          ariaLabel={actionLabel}
+        >
+          <span class="max-sm:hidden">{actionLabel}</span>
+        </Button>
+      {:else}
+        <Button
+          variant="success"
+          size="sm"
+          icon={Play}
+          onclick={() => onStart(tunnel.id)}
+          ariaLabel={t("start")}
+        >
+          <span class="max-sm:hidden">{t("start")}</span>
+        </Button>
+      {/if}
     </div>
-
-    {#if tunnelState === "installing" && installProgress}
-      <div class="px-2.5 pb-2.5">
-        <div class="h-1 w-full overflow-hidden rounded bg-border">
-          <div
-            class="h-full rounded bg-status-installing"
-            style="width: {installPercent}%"
-          ></div>
-        </div>
-        <div
-          class="mt-1 overflow-hidden text-ellipsis whitespace-nowrap text-xs text-text-muted"
-        >
-          {installStep}
-        </div>
-      </div>
-    {/if}
-
-    {#if tunnel.publicUrl}
-      <button
-        type="button"
-        class={cn(
-          "flex w-full cursor-pointer items-center gap-2 border-t border-t-status-stopped bg-url-bg px-2.5 py-2",
-          "transition-colors hover:bg-hover",
-          { "rounded-b-card": !tunnel.errorMessage },
-        )}
-        onclick={() => tunnel.publicUrl && copyUrl(tunnel.publicUrl)}
-      >
-        <span class="flex h-4 w-4 shrink-0 text-text-muted">
-          {#if copied}<Check size={14} />{:else}<Copy size={14} />{/if}
-        </span>
-        <span
-          class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-start font-mono text-xs text-url-text"
-          >{tunnel.publicUrl}</span
-        >
-        <span class="shrink-0 text-xs text-text-muted">
-          {copied ? t("copied") : t("click_to_copy")}
-        </span>
-      </button>
-    {/if}
-
-    {#if tunnel.errorMessage}
-      <div
-        class="flex items-start gap-2 rounded-b-card border-t border-t-status-error/70 bg-status-error/15 px-2.5 py-2 text-text-error"
-      >
-        <span class="mt-0.5 h-4 w-4 shrink-0"><AlertCircle size={16} /></span>
-        <span class="min-w-0 flex-1">
-          {#if errorHint}
-            <span class="block text-xs font-medium">{t(errorHint)}</span>
-          {/if}
-          <span class="block font-mono text-xs break-words opacity-80">
-            {tunnel.errorMessage}
-          </span>
-        </span>
-      </div>
-    {/if}
-
   </div>
-</div>
+
+  {#if tunnelState === "installing" && installProgress}
+    <div class="px-3 pb-2.5">
+      <div class="h-1 w-full overflow-hidden rounded-full bg-border-light">
+        <div
+          class="h-full rounded-full bg-status-installing transition-[width] duration-300"
+          style="width: {installPercent}%"
+        ></div>
+      </div>
+      <div class="mt-1 truncate text-2xs text-text-muted">{installStep}</div>
+    </div>
+  {/if}
+
+  {#if tunnel.publicUrl}
+    <button
+      type="button"
+      class="flex w-full cursor-pointer items-center gap-2 border-t border-border-light px-3 py-1.5 transition-colors hover:bg-hover"
+      onclick={() => tunnel.publicUrl && copyUrl(tunnel.publicUrl)}
+    >
+      <span class="flex shrink-0 text-text-muted">
+        {#if copied}<Check size={13} />{:else}<Copy size={13} />{/if}
+      </span>
+      <span
+        class="min-w-0 flex-1 truncate text-start font-mono text-2xs text-url-text"
+        >{tunnel.publicUrl}</span
+      >
+      <span class="shrink-0 text-2xs text-text-muted">
+        {copied ? t("copied") : t("click_to_copy")}
+      </span>
+    </button>
+  {/if}
+
+  {#if tunnel.errorMessage}
+    <div
+      class="flex items-start gap-2 border-t border-status-error/40 bg-status-error/10 px-3 py-2 text-text-error"
+    >
+      <span class="mt-0.5 shrink-0"><AlertCircle size={14} /></span>
+      <span class="min-w-0 flex-1">
+        {#if errorHint}
+          <span class="block text-2xs font-medium">{t(errorHint)}</span>
+        {/if}
+        <span class="block font-mono text-2xs break-words opacity-80">
+          {tunnel.errorMessage}
+        </span>
+      </span>
+    </div>
+  {/if}
+</article>

@@ -4,7 +4,6 @@
   import { useTunnels } from "$lib/stores/tunnels.svelte";
   import { useClock } from "$lib/stores/clock.svelte";
   import { t } from "$lib/stores/i18n.svelte";
-  import { cn } from "$lib/utils/cn";
   import { formatDuration } from "$lib/utils/duration";
 
   const store = useTunnels();
@@ -76,51 +75,46 @@
   });
 </script>
 
-{#snippet tile(
+{#snippet metric(
   Icon: typeof Radio,
   value: string,
   label: string,
   tone: "muted" | "good" | "bad",
 )}
-  <div
-    class="flex flex-1 basis-40 items-center gap-2.5 rounded-card border border-border bg-card px-3 py-2"
-  >
+  <div class="sph-card flex min-w-0 items-center gap-2.5 px-3 py-2">
     <span
-      class={cn(
-        "flex h-7 w-7 shrink-0 items-center justify-center rounded-control",
-        tone === "good" && "bg-status-running text-btn-text",
-        tone === "bad" && "bg-status-error text-btn-text",
-        tone === "muted" && "bg-secondary text-text-muted",
-      )}
+      class="shrink-0"
+      class:text-status-running={tone === "good"}
+      class:text-text-error={tone === "bad"}
+      class:text-text-muted={tone === "muted"}
     >
-      <Icon size={15} />
+      <Icon size={14} />
     </span>
     <span class="min-w-0">
-      <span class="block leading-tight font-semibold text-text-heading"
+      <span
+        class="block font-mono text-base leading-none font-semibold text-text tabular-nums"
         >{value}</span
       >
-      <span class="block truncate text-xs text-text-muted">{label}</span>
+      <span class="mt-1 block truncate text-2xs text-text-muted">{label}</span>
     </span>
   </div>
 {/snippet}
 
-<section
-  class="ftm-enter mb-app flex shrink-0 flex-wrap items-stretch gap-app text-sm"
->
+<section class="ftm-enter mb-app flex shrink-0 flex-wrap items-stretch gap-1.5">
   {#if active.length > 0}
-    {@render tile(Radio, String(active.length), t("overview_online"), "good")}
+    {@render metric(Radio, String(active.length), t("overview_online"), "good")}
   {:else}
-    {@render tile(Radio, "—", t("overview_idle"), "muted")}
+    {@render metric(Radio, "—", t("overview_idle"), "muted")}
   {/if}
 
   {#if failing > 0}
-    {@render tile(Activity, String(failing), t("overview_failing"), "bad")}
+    {@render metric(Activity, String(failing), t("overview_failing"), "bad")}
   {:else if players !== null}
-    {@render tile(Users, String(players), t("overview_players"), "good")}
+    {@render metric(Users, String(players), t("overview_players"), "good")}
   {/if}
 
   {#if active.length > 0 || !store.connected}
-    {@render tile(
+    {@render metric(
       third.icon,
       third.value,
       third.label,

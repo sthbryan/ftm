@@ -17,18 +17,11 @@
     onclick?: (e: MouseEvent) => void;
   }
 
-  const VARIANT_CLASSES: Record<IconButtonVariant, string> = {
-    ghost:
-      "border-transparent bg-transparent text-text-muted hover:bg-hover hover:text-text",
-    outline:
-      "border-border bg-input-bg text-text hover:border-primary/50 hover:bg-hover",
-    danger:
-      "border-status-error/40 bg-status-error/10 text-text-error hover:bg-status-error/20",
-  };
-
-  const SIZE_CLASSES: Record<IconButtonSize, string> = {
-    sm: "h-7 w-7",
-    md: "h-9 w-9",
+  // ghost is Sephiro's default icon button; the other two are data-variant values.
+  const VARIANT: Record<IconButtonVariant, string | undefined> = {
+    ghost: undefined,
+    outline: "outline",
+    danger: "danger",
   };
 
   let {
@@ -51,14 +44,9 @@
   {onclick}
   aria-label={label}
   title={label}
-  class={cn(
-    "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-control border",
-    "transition-all duration-150 active:scale-[0.98]",
-    "disabled:cursor-not-allowed disabled:opacity-50",
-    VARIANT_CLASSES[variant],
-    SIZE_CLASSES[size],
-    className,
-  )}
+  data-variant={VARIANT[variant]}
+  data-size={size}
+  class={cn("sph-icon-button", className)}
 >
   <Icon size={iconSize} />
 </button>

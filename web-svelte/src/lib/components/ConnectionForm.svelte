@@ -1,31 +1,22 @@
 <script lang="ts">
-  import { Plus, X } from "lucide-svelte";
+  import { Plus } from "lucide-svelte";
   import { onMount } from "svelte";
   import { useProviders, detectPort } from "$lib/stores/providers.svelte";
   import { useToast } from "$lib/stores/toast.svelte";
   import { useTunnels } from "$lib/stores/tunnels.svelte";
   import { t } from "$lib/stores/i18n.svelte";
   import Button from "./Button.svelte";
-  import IconButton from "./IconButton.svelte";
   import Dropdown from "./Dropdown.svelte";
   import type { DropdownOption } from "$lib/types";
-  import { cn } from "$lib/utils/cn";
 
   type Props = {
     mode?: "create" | "edit";
     tunnelId?: string | null;
     onCancel?: () => void;
     onSaved?: () => void;
-    class?: string;
   };
 
-  let {
-    mode = "create",
-    tunnelId = null,
-    onCancel,
-    onSaved,
-    class: className = "",
-  }: Props = $props();
+  let { mode = "create", tunnelId = null, onCancel, onSaved }: Props = $props();
 
   const store = useTunnels();
   const toast = useToast();
@@ -128,42 +119,39 @@
   }
 </script>
 
-<section
-  class={cn(
-    "relative flex min-h-0 flex-col overflow-hidden rounded-panel border border-border bg-card",
-    className,
-  )}
->
-  <div class="panel-pattern pointer-events-none absolute inset-0 opacity-30" aria-hidden="true"></div>
-
-  <div class="relative z-10 flex shrink-0 items-center justify-between border-b border-border-light bg-card px-3.5 py-2.5">
-    <h2 class="m-0 text-sm font-semibold text-text-heading">
-      {isEdit ? t("edit_connection") : t("new_connection")}
-    </h2>
+<form onsubmit={handleSubmit} class="contents">
+  <div class="sph-dialog__header">
+    <div class="sph-dialog__heading">
+      <h2 class="sph-dialog__title">
+        {isEdit ? t("edit_connection") : t("new_connection")}
+      </h2>
+    </div>
     {#if onCancel}
       <button
         type="button"
-        onclick={onCancel}
-        class="cursor-pointer rounded-control border-none bg-transparent p-1 text-text-muted transition-colors hover:bg-hover hover:text-text aspect-square size-6 flex items-center justify-center"
+        class="sph-dialog__close"
         aria-label={t("cancel")}
+        onclick={onCancel}
       >
         ×
       </button>
     {/if}
   </div>
 
-  <div class="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto p-3.5">
+  <div class="sph-dialog__content">
     {#if providerStore.error}
-      <p class="mb-2 rounded-control border border-status-error/40 bg-status-error/10 px-2.5 py-1.5 text-xs text-text-error">
+      <p
+        class="m-0 mb-3 rounded-[var(--sph-radius-sm)] border border-status-error/40 bg-status-error/10 px-2.5 py-1.5 text-2xs text-text-error"
+      >
         {providerStore.error}
       </p>
     {/if}
 
-    <form onsubmit={handleSubmit}>
-      <div class="mb-2.5">
-        <label for="conn-name" class="mb-1 block text-xs font-medium text-text-muted">
-          {isEdit ? t("connection_name_label") : t("tunnel_name")}
-        </label>
+    <div class="sph-field">
+      <label class="sph-field__label" for="conn-name">
+        {isEdit ? t("connection_name_label") : t("tunnel_name")}
+      </label>
+      <div class="sph-field__control">
         <input
           type="text"
           id="conn-name"
@@ -171,15 +159,17 @@
           placeholder={isEdit ? t("name_placeholder") : t("tunnel_name_hint")}
           required
           autocomplete="off"
-          class="h-8 w-full rounded-control border border-border bg-input-bg px-2.5 py-1.5 text-sm text-text transition-colors duration-150 hover:border-primary/50"
+          class="sph-input"
         />
       </div>
+    </div>
 
-      <div class="grid grid-cols-2 gap-2.5">
-        <div class="mb-2.5">
-          <label for="conn-port" class="mb-1 block text-xs font-medium text-text-muted">
-            {isEdit ? t("port") : t("local_port")}
-          </label>
+    <div class="mt-3 grid grid-cols-2 gap-3">
+      <div class="sph-field">
+        <label class="sph-field__label" for="conn-port">
+          {isEdit ? t("port") : t("local_port")}
+        </label>
+        <div class="sph-field__control">
           <input
             type="number"
             id="conn-port"
@@ -187,13 +177,15 @@
             min="1"
             max="65535"
             required
-            class="h-8 w-full rounded-control border border-border bg-input-bg px-2.5 py-1.5 text-sm text-text transition-colors duration-150 hover:border-primary/50"
+            class="sph-input"
           />
         </div>
-        <div class="mb-2.5">
-          <label for="conn-provider" class="mb-1 block text-xs font-medium text-text-muted">
-            {isEdit ? t("provider_label") : t("select_provider")}
-          </label>
+      </div>
+      <div class="sph-field">
+        <label class="sph-field__label" for="conn-provider">
+          {isEdit ? t("provider_label") : t("select_provider")}
+        </label>
+        <div class="sph-field__control">
           <Dropdown
             id="conn-provider"
             class="w-full"
@@ -205,56 +197,45 @@
           />
         </div>
       </div>
-
-      <div class={cn("mt-3", isEdit && "flex gap-2")}>
-        {#if isEdit}
-          <Button
-            variant="default"
-            
-            type="button"
-            onclick={onCancel}
-            class="flex-1"
-          >
-            {t("cancel")}
-          </Button>
-          <Button variant="primary"  type="submit" class="flex-1" disabled={submitting}>
-            {t("save")}
-          </Button>
-        {:else}
-          <Button
-            variant="primary"
-            
-            type="submit"
-            class="w-full"
-            icon={Plus}
-            disabled={submitting}
-          >
-            {t("create_connection")}
-          </Button>
-        {/if}
-      </div>
-    </form>
+    </div>
 
     {#if !isEdit}
-      <div class="mt-4 rounded-control border border-border-light bg-bg/40 p-3 text-xs leading-relaxed text-text-muted">
+      <div
+        class="mt-4 rounded-[var(--sph-radius-sm)] border border-border-light bg-bg/40 p-3 text-2xs leading-relaxed text-text-muted"
+      >
         <p class="m-0 mb-1.5 font-semibold text-text-heading">
           {t("form_tips_title")}
         </p>
-        <ul class="m-0 list-none space-y-1 p-0">
+        <ul class="m-0 grid list-none gap-1 p-0">
           <li class="flex gap-2">
-            <span class="text-text-muted">·</span>
+            <span aria-hidden="true">·</span>
             <span>{t("form_tips_port")}</span>
           </li>
           <li class="flex gap-2">
-            <span class="text-text-muted">·</span>
+            <span aria-hidden="true">·</span>
             <span>{t("form_tips_provider")}</span>
           </li>
           <li class="flex gap-2">
-            <span class="text-text-muted">·</span>
+            <span aria-hidden="true">·</span>
             <span>{t("form_tips_name")}</span>
           </li>
         </ul>
       </div>
     {/if}
   </div>
-</section>
+
+  <div class="sph-dialog__footer">
+    {#if isEdit}
+      <Button variant="default" type="button" onclick={onCancel}>
+        {t("cancel")}
+      </Button>
+      <Button variant="primary" type="submit" disabled={submitting}>
+        {t("save")}
+      </Button>
+    {:else}
+      <Button variant="primary" type="submit" icon={Plus} disabled={submitting}>
+        {t("create_connection")}
+      </Button>
+    {/if}
+  </div>
+</form>

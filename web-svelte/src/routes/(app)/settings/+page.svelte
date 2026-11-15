@@ -159,7 +159,7 @@
       </div>
     {:else}
       <section
-        class="relative overflow-hidden rounded-card border border-border bg-card"
+        class="relative sph-card"
       >
         <div class="panel-pattern" aria-hidden="true"></div>
         <header class="relative z-10 px-5 pt-5 pb-3">
@@ -313,7 +313,7 @@
       </section>
 
       <section
-        class="relative mt-4 overflow-hidden rounded-card border border-border bg-card"
+        class="relative mt-4 sph-card"
       >
         <div class="panel-pattern" aria-hidden="true"></div>
         <header class="relative z-10 px-5 pt-5 pb-3">
@@ -330,7 +330,7 @@
       </section>
 
       <section
-        class="relative mt-4 overflow-hidden rounded-card border border-status-error/40 bg-card"
+        class="relative mt-4 sph-card border-status-error/40"
       >
         <div class="panel-pattern" aria-hidden="true"></div>
         <header class="relative z-10 px-5 pt-5 pb-3">

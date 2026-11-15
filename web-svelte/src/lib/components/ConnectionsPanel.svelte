@@ -3,7 +3,6 @@
   import { useTunnels } from "$lib/stores/tunnels.svelte";
   import { useToast } from "$lib/stores/toast.svelte";
   import { t } from "$lib/stores/i18n.svelte";
-  import { cn } from "$lib/utils/cn";
   import TunnelCard from "./TunnelCard.svelte";
   import Button from "./Button.svelte";
 
@@ -74,36 +73,31 @@
 </script>
 
 <section
-  class={cn(
-    "ftm-enter flex h-full min-h-56 w-full flex-col overflow-hidden rounded-card border border-border bg-card",
-    "max-md:h-auto",
-  )}
+  class="ftm-enter sph-card flex h-full min-h-56 w-full flex-col max-md:h-auto"
 >
-  <div
-    class="ftm-enter ftm-enter-delay-1 flex shrink-0 items-center justify-between gap-3 border-b border-border-light bg-url-bg px-3 py-2"
-  >
-    <h2
-      class="m-0 flex min-w-0 items-center gap-2 font-serif text-base font-semibold tracking-tight text-text-heading"
-    >
-      {t("connections")}
-      <span
-        class="rounded-control bg-primary px-2 py-0.5 font-sans text-2xs font-semibold text-btn-text"
-      >
-        {store.tunnels.length}
-      </span>
-    </h2>
-    {#if onCreate}
-      <Button
-        variant="primary"
-        size="sm"
-        icon={Plus}
-        onclick={onCreate}
-        class="max-sm:aspect-square max-sm:px-0"
-        ariaLabel={t("new_connection_action")}
-      >
-        <span class="max-sm:hidden">{t("new_connection_action")}</span>
-      </Button>
-    {/if}
+  <div class="sph-card__header">
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex min-w-0 items-center gap-2">
+        <h2 class="m-0 truncate text-sm font-semibold tracking-tight text-text">
+          {t("connections")}
+        </h2>
+        <span class="sph-badge font-mono tabular-nums" data-size="sm">
+          {store.tunnels.length}
+        </span>
+      </div>
+      {#if onCreate}
+        <Button
+          variant="primary"
+          size="sm"
+          icon={Plus}
+          onclick={onCreate}
+          class="max-sm:aspect-square max-sm:px-0"
+          ariaLabel={t("new_connection_action")}
+        >
+          <span class="max-sm:hidden">{t("new_connection_action")}</span>
+        </Button>
+      {/if}
+    </div>
   </div>
 
   {#if searchable}
@@ -118,85 +112,74 @@
           bind:value={query}
           placeholder={t("search_placeholder")}
           aria-label={t("search_placeholder")}
-          class="h-8 w-full rounded-control border border-border bg-input-bg py-1.5 pr-2.5 pl-8 text-sm text-text transition-colors duration-150 hover:border-primary/50"
+          class="sph-input sph-input--icon"
+          data-size="sm"
         />
       </div>
     </div>
   {/if}
 
-  <div class="ftm-enter ftm-enter-delay-2 relative min-h-0 flex-1 overflow-hidden">
-    <div class="panel-pattern" aria-hidden="true"></div>
-
-    <div class="relative z-10 h-full min-h-0 overflow-y-auto p-2.5 max-md:h-auto max-md:overflow-visible">
-      {#if store.loading}
-        <div
-          class="flex flex-col items-center justify-center gap-2 py-8 text-text-muted"
-        >
-          <div
-            class="h-7 w-7 animate-spin rounded-full border-2 border-border border-t-primary"
-          ></div>
-          <span>{t("loading")}</span>
-        </div>
-      {:else if store.error}
-        <div
-          class="flex h-full min-h-40 flex-col items-center justify-center px-3 py-6 text-center text-text-muted"
-        >
-          <PlugZap class="mx-auto mb-2 h-8 w-8 text-text-error" size={32} />
-          <h3 class="mt-0 mb-1 text-sm text-text-heading">
-            {t("panel_unreachable")}
-          </h3>
-          <p class="m-0 mb-3 max-w-xs text-xs leading-relaxed">
-            {t("panel_unreachable_desc")}
-          </p>
-          <p class="m-0 mb-3 max-w-xs font-mono text-xs break-words">
-            {store.error}
-          </p>
+  <div class="ftm-enter ftm-enter-delay-2 min-h-0 flex-1 overflow-y-auto p-2 max-md:h-auto max-md:overflow-visible">
+    {#if store.loading}
+      <div class="flex flex-col items-center justify-center gap-3 py-10">
+        <span class="sph-spinner sph-spinner--md" aria-hidden="true"></span>
+        <span class="text-2xs text-text-muted">{t("loading")}</span>
+      </div>
+    {:else if store.error}
+      <div class="sph-empty-state" data-compact="true">
+        <span class="sph-empty-state__icon text-text-error">
+          <PlugZap size={20} />
+        </span>
+        <h3 class="sph-empty-state__title">{t("panel_unreachable")}</h3>
+        <p class="sph-empty-state__description">
+          {t("panel_unreachable_desc")}
+        </p>
+        <p class="m-0 max-w-xs font-mono text-2xs break-words text-text-muted">
+          {store.error}
+        </p>
+        <div class="sph-empty-state__action">
           <Button variant="primary" icon={RefreshCw} onclick={() => store.retry()}>
             {t("retry")}
           </Button>
         </div>
-      {:else if store.tunnels.length === 0}
-        <div
-          class="flex h-full min-h-40 flex-col items-center justify-center px-3 py-6 text-center text-text-muted"
-        >
-          <Radio class="mx-auto mb-2 h-8 w-8" size={32} />
-          <h3 class="mt-0 mb-3 text-sm text-text-heading">
-            {t("no_tunnels")}
-          </h3>
-          {#if onCreateFirst}
+      </div>
+    {:else if store.tunnels.length === 0}
+      <div class="sph-empty-state" data-compact="true">
+        <span class="sph-empty-state__icon"><Radio size={20} /></span>
+        <h3 class="sph-empty-state__title">{t("no_tunnels")}</h3>
+        {#if onCreateFirst}
+          <div class="sph-empty-state__action">
             <Button variant="primary" icon={Plus} onclick={onCreateFirst}>
               {t("new_connection_action")}
             </Button>
-          {/if}
-        </div>
-      {:else if visible.length === 0}
-        <p class="px-3 py-6 text-center text-xs text-text-muted">
-          {t("search_empty")}
-        </p>
-      {:else}
-        <div class="flex flex-col gap-1.5">
-          {#each visible as tunnel, index (tunnel.id)}
-            <TunnelCard
-              {tunnel}
-              {index}
-              totalItems={visible.length}
-              selected={tunnel.id === selectedId}
-              onStart={start}
-              onStop={stop}
-              {onAction}
-              installProgress={store.installProgress[
-                tunnel.provider as keyof typeof store.installProgress
-              ]}
-            />
-          {/each}
-        </div>
-      {/if}
-    </div>
+          </div>
+        {/if}
+      </div>
+    {:else if visible.length === 0}
+      <p class="m-0 px-3 py-8 text-center text-2xs text-text-muted">
+        {t("search_empty")}
+      </p>
+    {:else}
+      <div class="flex flex-col gap-1.5">
+        {#each visible as tunnel (tunnel.id)}
+          <TunnelCard
+            {tunnel}
+            selected={tunnel.id === selectedId}
+            onStart={start}
+            onStop={stop}
+            {onAction}
+            installProgress={store.installProgress[
+              tunnel.provider as keyof typeof store.installProgress
+            ]}
+          />
+        {/each}
+      </div>
+    {/if}
   </div>
 
   {#if store.tunnels.length > 0}
     <p
-      class="shrink-0 border-t border-border-light px-3 py-1.5 text-center text-2xs text-text-muted max-md:hidden"
+      class="m-0 shrink-0 border-t border-border-light px-3 py-1.5 text-center text-2xs text-text-muted max-md:hidden"
     >
       {t("list_hint_new")}
     </p>
