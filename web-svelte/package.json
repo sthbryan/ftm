@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",
+    "@zovaris/sephiro": "1.0.0",
     "qrcode": "^1.5.4",
     "runed": "^0.37.1",
     "svelte-sonner": "^1.1.1"
