@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/sthbryan/ftm/internal/config"
@@ -15,6 +16,8 @@ func clearHandlers(t *testing.T, cfg *config.Config) *Handlers {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+	// os.UserConfigDir reads %AppData% on Windows, so isolate that too.
+	t.Setenv("AppData", filepath.Join(home, "appdata"))
 
 	return NewServer(process.NewManager(), cfg).handlers
 }
