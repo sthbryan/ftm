@@ -25,6 +25,7 @@ type Manager struct {
 	providers          map[config.Provider]providers.Provider
 	providerExpiration map[string]int
 	visitorTracking    bool
+	binaries           *binaryState
 
 	// handlersMu guards everything below. These are set while the manager is
 	// running and read from the process watchers, so they cannot share mu: a
@@ -171,9 +172,12 @@ func (m *Manager) callExpirationStop(tunnelID string) {
 }
 
 func NewManager() *Manager {
+	providers.MigrateLegacyBinDir()
+
 	return &Manager{
 		processes:       make(map[string]*ManagedProcess),
 		visitorTracking: true,
+		binaries:        newBinaryState(),
 		providers: map[config.Provider]providers.Provider{
 			config.ProviderCloudflared:  cloudflared.New(),
 			config.ProviderTunnelmole:   tunnelmole.New(),
@@ -233,6 +237,11 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	if installer, ok := provider.(providers.AutoInstaller); ok && !installer.IsInstalled() {
 		m.mu.Unlock()
 		return fmt.Errorf("installing")
+	}
+
+	if m.IsUpdating(tunnel.Provider) {
+		m.mu.Unlock()
+		return fmt.Errorf("%s is being updated, try again in a moment", tunnel.Provider)
 	}
 
 	visitorTracking := m.visitorTracking

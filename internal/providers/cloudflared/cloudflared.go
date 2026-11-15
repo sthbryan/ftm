@@ -19,14 +19,8 @@ type CloudflaredProvider struct {
 }
 
 func New() providers.Provider {
-	configDir, _ := os.UserHomeDir()
-	if configDir == "" {
-		configDir = "."
-	}
-	baseDir := filepath.Join(configDir, ".config", "foundry-tunnel", "bin")
-
 	return &CloudflaredProvider{
-		installer: NewInstaller(baseDir),
+		installer: NewInstaller(),
 	}
 }
 
@@ -114,4 +108,16 @@ func (p *CloudflaredProvider) IsInstalled() bool {
 
 func (p *CloudflaredProvider) Install(progress chan<- providers.DownloadProgress) error {
 	return p.installer.Install(progress)
+}
+
+func (p *CloudflaredProvider) BundledBinary() string {
+	return p.installer.CloudflaredBin()
+}
+
+func (p *CloudflaredProvider) LatestRelease(ctx context.Context) (*providers.Release, error) {
+	return p.installer.LatestRelease(ctx)
+}
+
+func (p *CloudflaredProvider) InstallRelease(ctx context.Context, rel *providers.Release, progress chan<- providers.DownloadProgress) error {
+	return p.installer.InstallRelease(ctx, rel, progress)
 }

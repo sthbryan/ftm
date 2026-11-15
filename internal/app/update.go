@@ -41,6 +41,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case updateApplyMsg:
 		return m.handleUpdateApply(msg)
+
+	case providerSummaryMsg:
+		return m.handleProviderSummary(msg)
 	}
 
 	return m, nil

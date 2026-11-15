@@ -35,3 +35,5 @@ func terminateGroup(cmd *exec.Cmd) {
 func killGroup(cmd *exec.Cmd) {
 	signalGroup(cmd, syscall.SIGKILL)
 }
+
+func hideWindow(*exec.Cmd) {}

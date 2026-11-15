@@ -19,14 +19,8 @@ type BoreProvider struct {
 }
 
 func New() providers.Provider {
-	configDir, _ := os.UserHomeDir()
-	if configDir == "" {
-		configDir = "."
-	}
-	baseDir := filepath.Join(configDir, ".config", "foundry-tunnel", "bin")
-
 	return &BoreProvider{
-		installer: NewInstaller(baseDir),
+		installer: NewInstaller(),
 	}
 }
 
@@ -61,9 +55,7 @@ func (p *BoreProvider) FindBinary() string {
 		return p.installer.BoreBin()
 	}
 
-	home, _ := os.UserHomeDir()
 	candidates := []string{
-		filepath.Join(home, ".config", "foundry-tunnel", "bin", p.BinaryName()),
 		"/usr/local/bin/" + p.BinaryName(),
 		"/usr/bin/" + p.BinaryName(),
 	}
@@ -121,4 +113,16 @@ func (p *BoreProvider) ParseURL(line string) string {
 	}
 
 	return ""
+}
+
+func (p *BoreProvider) BundledBinary() string {
+	return p.installer.BoreBin()
+}
+
+func (p *BoreProvider) LatestRelease(ctx context.Context) (*providers.Release, error) {
+	return p.installer.LatestRelease(ctx)
+}
+
+func (p *BoreProvider) InstallRelease(ctx context.Context, rel *providers.Release, progress chan<- providers.DownloadProgress) error {
+	return p.installer.InstallRelease(ctx, rel, progress)
 }

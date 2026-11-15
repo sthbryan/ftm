@@ -15,6 +15,9 @@ type SettingsView struct {
 	Language             string
 	TunnelCount          int
 	Focused              int
+	// Providers is a read-only summary of the downloaded provider binaries,
+	// filled in once it has loaded.
+	Providers string
 }
 
 const SettingsRows = 4
@@ -39,6 +42,8 @@ func (s *SettingsView) Render() string {
 		s.languages(inner),
 		"",
 		s.clearAll(inner),
+		"",
+		s.providers(inner),
 		"",
 		lipgloss.NewStyle().
 			Foreground(t.TextDim).
@@ -134,4 +139,19 @@ func (s *SettingsView) languages(width int) string {
 	gap := ui.Clamp(width-lipgloss.Width(marker)-lipgloss.Width(label)-lipgloss.Width(values), 1)
 
 	return marker + labelStyle.Render(label) + ui.Repeat(" ", gap) + values
+}
+
+func (s *SettingsView) providers(width int) string {
+	t := ui.ThemeDefault
+
+	value := s.Providers
+	if value == "" {
+		value = "…"
+	}
+
+	label := lipgloss.NewStyle().Foreground(t.Text).Render(i18n.T("providers_settings_label") + ": ")
+	return lipgloss.NewStyle().
+		Foreground(t.TextDim).
+		Width(width).
+		Render("  " + label + value)
 }

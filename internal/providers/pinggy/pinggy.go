@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/sthbryan/ftm/internal/config"
@@ -18,14 +16,8 @@ type PinggyCliProvider struct {
 }
 
 func New() providers.Provider {
-	configDir, _ := os.UserHomeDir()
-	if configDir == "" {
-		configDir = "."
-	}
-	baseDir := filepath.Join(configDir, ".config", "foundry-tunnel", "bin")
-
 	return &PinggyCliProvider{
-		installer: NewInstaller(baseDir),
+		installer: NewInstaller(),
 	}
 }
 
@@ -107,4 +99,16 @@ func isPinggyTunnelHost(host string) bool {
 	}
 
 	return false
+}
+
+func (p *PinggyCliProvider) BundledBinary() string {
+	return p.installer.PinggyBin()
+}
+
+func (p *PinggyCliProvider) LatestRelease(ctx context.Context) (*providers.Release, error) {
+	return p.installer.LatestRelease(ctx)
+}
+
+func (p *PinggyCliProvider) InstallRelease(ctx context.Context, rel *providers.Release, progress chan<- providers.DownloadProgress) error {
+	return p.installer.InstallRelease(ctx, rel, progress)
 }
