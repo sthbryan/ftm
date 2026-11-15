@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/sthbryan/ftm/internal/config"
@@ -183,21 +184,28 @@ func (m *Manager) InstallProvider(providerType config.Provider) error {
 
 func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelStatus)) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	if existing, ok := m.processes[tunnel.ID]; ok && existing.Process != nil {
+		m.mu.Unlock()
 		return fmt.Errorf("tunnel %s is already running", tunnel.ID)
 	}
 
 	provider, ok := m.providers[tunnel.Provider]
 	if !ok {
+		m.mu.Unlock()
 		return fmt.Errorf("unknown provider: %s", tunnel.Provider)
 	}
 
 	if installer, ok := provider.(providers.AutoInstaller); ok && !installer.IsInstalled() {
+		m.mu.Unlock()
 		return fmt.Errorf("installing")
 	}
 
+	visitorTracking := m.visitorTracking
+	m.mu.Unlock()
+
+	// Everything from here on can block on the filesystem, the network or a
+	// process spawn, so it must not run while holding the manager lock. Holding
+	// it froze every status read and every other tunnel start.
 	logBuffer := NewLogBuffer()
 	mp := &ManagedProcess{
 		Config:         tunnel,
@@ -209,7 +217,7 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	}
 
 	exposed := tunnel
-	if m.visitorTracking {
+	if visitorTracking {
 		opts := proxy.Options{
 			Window:       visitorWindow,
 			OnNewVisitor: func() { m.reportNewVisitor(tunnel.ID) },
@@ -226,7 +234,14 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 		mp.publishLog(line)
 	}
 
-	urlCapture := newURLCapture(provider, func(url string) { m.updateURL(tunnel.ID, url) })
+	// A provider can print its public URL before Start returns, while the
+	// process is still not registered. Keep the first URL seen so it is applied
+	// once the process is in the map instead of being dropped.
+	var earlyURL atomic.Value
+	urlCapture := newURLCapture(provider, func(url string) {
+		earlyURL.Store(url)
+		m.updateURL(tunnel.ID, url)
+	})
 	writer := io.MultiWriter(logBuffer, urlCapture)
 
 	ctx := context.Background()
@@ -236,17 +251,33 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 		return err
 	}
 	startedAt := time.Now()
+
+	m.mu.Lock()
+	// A concurrent Start for the same tunnel may have won the race while this
+	// one was spawning.
+	if existing, ok := m.processes[tunnel.ID]; ok && existing.Process != nil {
+		m.mu.Unlock()
+		mp.closeProxy()
+		proc.Stop()
+		return fmt.Errorf("tunnel %s is already running", tunnel.ID)
+	}
+
 	mp.Process = proc
 	mp.Status.State = config.TunnelStateStarting
 	mp.Status.ExpiresAt = m.expiresAtLocked(tunnel.Provider, startedAt)
 	mp.Status.StartedAt = startedAt.UnixMilli()
 
-	m.processes[tunnel.ID] = mp
-
-	if onUpdate != nil {
-		onUpdate(mp.Status)
+	if url, ok := earlyURL.Load().(string); ok && url != "" {
+		mp.PublicURL = url
+		mp.Status.PublicURL = url
+		mp.Status.State = config.TunnelStateOnline
 	}
-	m.callStatusUpdate(mp.Status)
+
+	m.processes[tunnel.ID] = mp
+	status := mp.Status
+	m.mu.Unlock()
+
+	m.publishStatus(mp, status)
 
 	go m.startupTimeoutMonitor(tunnel.ID, proc)
 	go m.watchExit(tunnel.ID, proc)
@@ -255,11 +286,13 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	return nil
 }
 
-func (m *Manager) publishLocked(mp *ManagedProcess) {
+// publishStatus notifies the owner and the status channel outside the manager
+// lock, so a slow callback can never freeze the tunnel map.
+func (m *Manager) publishStatus(mp *ManagedProcess, status config.TunnelStatus) {
 	if mp.OnUpdate != nil {
-		mp.OnUpdate(mp.Status)
+		mp.OnUpdate(status)
 	}
-	m.callStatusUpdate(mp.Status)
+	m.callStatusUpdate(status)
 }
 
 func (m *Manager) watchExit(tunnelID string, proc *providers.Process) {
@@ -286,9 +319,9 @@ func (m *Manager) watchExit(tunnelID string, proc *providers.Process) {
 	}
 
 	status := mp.Status
-	m.publishLocked(mp)
 	m.mu.Unlock()
 
+	m.publishStatus(mp, status)
 	m.callNotificationHandler(status)
 	m.callExpirationStop(tunnelID)
 }
@@ -311,11 +344,17 @@ func (m *Manager) startupTimeoutMonitor(tunnelID string, proc *providers.Process
 		m.mu.Unlock()
 		return
 	}
+	changed := false
 	if mp.Status.PublicURL == "" && mp.Status.State != config.TunnelStateOnline {
 		mp.Status.State = config.TunnelStateConnecting
-		m.publishLocked(mp)
+		changed = true
 	}
+	status := mp.Status
 	m.mu.Unlock()
+
+	if changed {
+		m.publishStatus(mp, status)
+	}
 
 	select {
 	case <-proc.Exited():
@@ -343,10 +382,10 @@ func (m *Manager) startupTimeoutMonitor(tunnelID string, proc *providers.Process
 	if reported := reportedFailure(mp.LogBuffer.GetLines()); reported != "" {
 		mp.Status.ErrorMessage = reported
 	}
-	status := mp.Status
-	m.publishLocked(mp)
+	status = mp.Status
 	m.mu.Unlock()
 
+	m.publishStatus(mp, status)
 	m.callNotificationHandler(status)
 	m.callExpirationStop(tunnelID)
 
@@ -370,9 +409,9 @@ func (m *Manager) Stop(tunnelID string) error {
 	mp.Status.State = config.TunnelStateStopping
 	mp.Status.PublicURL = ""
 	stopping := mp.Status
-	m.publishLocked(mp)
 	m.mu.Unlock()
 
+	m.publishStatus(mp, stopping)
 	m.callNotificationHandler(stopping)
 
 	if proc != nil {
@@ -382,8 +421,10 @@ func (m *Manager) Stop(tunnelID string) error {
 	m.mu.Lock()
 	mp.Status.State = config.TunnelStateStopped
 	mp.Status.ErrorMessage = ""
-	m.publishLocked(mp)
+	stopped := mp.Status
 	m.mu.Unlock()
+
+	m.publishStatus(mp, stopped)
 
 	m.callExpirationStop(tunnelID)
 
@@ -428,9 +469,9 @@ func (m *Manager) updateURL(tunnelID, url string) {
 	mp.Status.State = config.TunnelStateOnline
 
 	status := mp.Status
-	m.publishLocked(mp)
 	m.mu.Unlock()
 
+	m.publishStatus(mp, status)
 	m.callNotificationHandler(status)
 }
 
