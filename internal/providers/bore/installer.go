@@ -1,6 +1,7 @@
 package bore
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,111 +10,127 @@ import (
 	"github.com/sthbryan/ftm/internal/providers"
 )
 
-const boreVersion = "v0.6.0"
+const (
+	githubRepo = "ekzhang/bore"
+	// fallbackVersion is installed when the GitHub API cannot be reached, so a
+	// first install still works while rate limited.
+	fallbackVersion = "v0.6.0"
+)
 
-type Installer struct {
-	BaseDir string
+type Installer struct{}
+
+func NewInstaller() *Installer {
+	return &Installer{}
 }
 
-func NewInstaller(baseDir string) *Installer {
-	return &Installer{BaseDir: baseDir}
+func binaryFile() string {
+	if runtime.GOOS == "windows" {
+		return "bore.exe"
+	}
+	return "bore"
 }
 
 func (i *Installer) BoreBin() string {
-	if runtime.GOOS == "windows" {
-		return filepath.Join(i.BaseDir, "bore.exe")
-	}
-	return filepath.Join(i.BaseDir, "bore")
+	return providers.BundledPath(binaryFile())
 }
 
 func (i *Installer) IsInstalled() bool {
-	if _, err := os.Stat(i.BoreBin()); err == nil {
-		return true
-	}
-	return false
+	_, err := os.Stat(i.BoreBin())
+	return err == nil
 }
 
 func (i *Installer) Install(progress chan<- providers.DownloadProgress) error {
-	if err := os.MkdirAll(i.BaseDir, 0755); err != nil {
-		return fmt.Errorf("failed to create base dir: %w", err)
-	}
-
 	if i.IsInstalled() {
 		return nil
 	}
 
-	platform := runtime.GOOS
-	arch := runtime.GOARCH
+	ctx := context.Background()
+	rel, err := i.LatestRelease(ctx)
+	if err != nil {
+		name, nameErr := assetName(fallbackVersion, runtime.GOOS, runtime.GOARCH)
+		if nameErr != nil {
+			return nameErr
+		}
+		rel = &providers.Release{
+			Version: providers.NormalizeVersion(fallbackVersion),
+			Asset: providers.Asset{
+				Name: name,
+				URL:  "https://github.com/" + githubRepo + "/releases/download/" + fallbackVersion + "/" + name,
+			},
+		}
+	}
 
-	var url string
-	var filename string
+	return i.InstallRelease(ctx, rel, progress)
+}
 
-	switch platform {
+func (i *Installer) LatestRelease(ctx context.Context) (*providers.Release, error) {
+	gh, err := providers.FetchLatestGitHubRelease(ctx, githubRepo)
+	if err != nil {
+		return nil, err
+	}
+
+	name, err := assetName(gh.TagName, runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		return nil, err
+	}
+	return gh.Release(name)
+}
+
+func (i *Installer) InstallRelease(ctx context.Context, rel *providers.Release, progress chan<- providers.DownloadProgress) error {
+	sendProgress(progress, 10, false)
+
+	dest := filepath.Join(providers.BinDir(), binaryFile())
+	etag, err := providers.InstallAsset(ctx, rel.Asset, dest, "bore", progress, "bore")
+	if err != nil {
+		return fmt.Errorf("install bore: %w", err)
+	}
+
+	if err := providers.RecordRelease("bore", dest, rel, etag); err != nil {
+		return fmt.Errorf("record bore install: %w", err)
+	}
+
+	sendProgress(progress, 100, true)
+	return nil
+}
+
+func sendProgress(progress chan<- providers.DownloadProgress, percent float64, done bool) {
+	if progress != nil {
+		progress <- providers.DownloadProgress{Percent: percent, Total: 100, Done: done, Name: "bore"}
+	}
+}
+
+// assetName is the release archive for a platform, e.g.
+// bore-v0.6.0-aarch64-apple-darwin.tar.gz.
+func assetName(tag, goos, goarch string) (string, error) {
+	var target string
+	switch goos {
 	case "darwin":
-		switch arch {
+		switch goarch {
 		case "arm64":
-			filename = "bore-" + boreVersion + "-aarch64-apple-darwin.tar.gz"
-			url = "https://github.com/ekzhang/bore/releases/download/" + boreVersion + "/" + filename
+			target = "aarch64-apple-darwin.tar.gz"
 		case "amd64":
-			filename = "bore-" + boreVersion + "-x86_64-apple-darwin.tar.gz"
-			url = "https://github.com/ekzhang/bore/releases/download/" + boreVersion + "/" + filename
-		default:
-			return fmt.Errorf("unsupported architecture for macOS: %s (supported: arm64, amd64)", arch)
+			target = "x86_64-apple-darwin.tar.gz"
 		}
 	case "linux":
-		switch arch {
+		switch goarch {
 		case "arm64":
-			filename = "bore-" + boreVersion + "-aarch64-unknown-linux-musl.tar.gz"
-			url = "https://github.com/ekzhang/bore/releases/download/" + boreVersion + "/" + filename
+			target = "aarch64-unknown-linux-musl.tar.gz"
 		case "amd64":
-			filename = "bore-" + boreVersion + "-x86_64-unknown-linux-musl.tar.gz"
-			url = "https://github.com/ekzhang/bore/releases/download/" + boreVersion + "/" + filename
-		default:
-			return fmt.Errorf("unsupported architecture for Linux: %s (supported: arm64, amd64)", arch)
+			target = "x86_64-unknown-linux-musl.tar.gz"
+		case "386":
+			target = "i686-unknown-linux-musl.tar.gz"
 		}
 	case "windows":
-		if arch == "amd64" {
-			filename = "bore-" + boreVersion + "-x86_64-pc-windows-msvc.zip"
-			url = "https://github.com/ekzhang/bore/releases/download/" + boreVersion + "/" + filename
-		} else {
-			return fmt.Errorf("unsupported architecture for Windows: %s (supported: amd64)", arch)
-		}
-	default:
-		return fmt.Errorf("unsupported platform: %s", platform)
-	}
-
-	destArchive := filepath.Join(i.BaseDir, filename)
-
-	if progress != nil {
-		progress <- providers.DownloadProgress{
-			Percent: 10,
-			Current: 0,
-			Total:   100,
-			Name:    "bore",
+		switch goarch {
+		case "amd64":
+			target = "x86_64-pc-windows-msvc.zip"
+		case "386":
+			target = "i686-pc-windows-msvc.zip"
 		}
 	}
 
-	if err := providers.DownloadWithProgress(url, destArchive, progress, "bore"); err != nil {
-		return fmt.Errorf("failed to download bore: %w", err)
+	if target == "" {
+		return "", fmt.Errorf("bore: unsupported platform %s/%s", goos, goarch)
 	}
-
-	defer os.Remove(destArchive)
-
-	if err := providers.ExtractArchive(destArchive, i.BaseDir, "bore"); err != nil {
-		return fmt.Errorf("failed to extract bore: %w", err)
-	}
-
-	if _, err := os.Stat(i.BoreBin()); err != nil {
-		return fmt.Errorf("binary not found after install: %w", err)
-	}
-
-	if progress != nil {
-		progress <- providers.DownloadProgress{
-			Percent: 100,
-			Done:    true,
-			Name:    "bore",
-		}
-	}
-
-	return nil
+	return "bore-" + tag + "-" + target, nil
 }

@@ -2,7 +2,10 @@ package tunnelmole
 
 import (
 	"archive/tar"
+	"bufio"
 	"compress/gzip"
+	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,23 +13,33 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/sthbryan/ftm/internal/providers"
 )
 
-type Installer struct {
-	BaseDir string
+// npmLatest names the newest published client. The prebuilt binaries on
+// tunnelmole.com are not versioned, so the npm version is only a label; whether
+// the download changed is decided by its ETag.
+const npmLatest = "https://registry.npmjs.org/tunnelmole/latest"
+
+var httpClient = &http.Client{Timeout: 15 * time.Second}
+
+type Installer struct{}
+
+func NewInstaller() *Installer {
+	return &Installer{}
 }
 
-func NewInstaller(baseDir string) *Installer {
-	return &Installer{BaseDir: baseDir}
+func binaryFile() string {
+	if runtime.GOOS == "windows" {
+		return "tmole.exe"
+	}
+	return "tmole"
 }
 
 func (i *Installer) TunnelmoleBin() string {
-	if runtime.GOOS == "windows" {
-		return filepath.Join(i.BaseDir, "tmole.exe")
-	}
-	return filepath.Join(i.BaseDir, "tmole")
+	return providers.BundledPath(binaryFile())
 }
 
 func (i *Installer) IsInstalled() bool {
@@ -35,57 +48,94 @@ func (i *Installer) IsInstalled() bool {
 }
 
 func (i *Installer) Install(progress chan<- providers.DownloadProgress) error {
-	if err := os.MkdirAll(i.BaseDir, 0755); err != nil {
-		return fmt.Errorf("failed to create base dir: %w", err)
-	}
-
 	if i.IsInstalled() {
 		return nil
 	}
 
-	url := i.tunnelmoleURL()
+	url := downloadURL(runtime.GOOS)
 	if url == "" {
 		return fmt.Errorf("unsupported platform: %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 
-	if progress != nil {
-		progress <- providers.DownloadProgress{
-			Percent: 10,
-			Current: 0,
-			Total:   100,
-			Name:    "tunnelmole",
-		}
+	ctx := context.Background()
+	rel, err := i.LatestRelease(ctx)
+	if err != nil {
+		rel = &providers.Release{Asset: providers.Asset{Name: filepath.Base(url), URL: url}}
+	}
+	return i.InstallRelease(ctx, rel, progress)
+}
+
+func (i *Installer) LatestRelease(ctx context.Context) (*providers.Release, error) {
+	url := downloadURL(runtime.GOOS)
+	if url == "" {
+		return nil, fmt.Errorf("tunnelmole: unsupported platform %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 
-	dest := i.TunnelmoleBin() + ".tmp"
-	if err := i.download(url, dest, progress); err != nil {
-		os.Remove(dest)
+	etag, err := headETag(ctx, url)
+	if err != nil {
+		return nil, err
+	}
+
+	// The npm version is a nice-to-have label; the ETag alone is enough to
+	// tell whether there is something new to download.
+	version, _ := npmVersion(ctx)
+
+	return &providers.Release{
+		Version:    version,
+		ReleaseURL: "https://www.npmjs.com/package/tunnelmole",
+		ETag:       etag,
+		Asset:      providers.Asset{Name: filepath.Base(url), URL: url},
+	}, nil
+}
+
+func (i *Installer) InstallRelease(ctx context.Context, rel *providers.Release, progress chan<- providers.DownloadProgress) error {
+	sendProgress(progress, 10, false)
+
+	staging, err := providers.StagingDir()
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(staging)
+
+	downloaded := filepath.Join(staging, rel.Asset.Name)
+	etag, err := providers.Download(ctx, rel.Asset.URL, downloaded, rel.Asset.SHA256, progress, "tunnelmole")
+	if err != nil {
 		return fmt.Errorf("failed to download tunnelmole: %w", err)
 	}
 
-	if err := os.Chmod(dest, 0755); err != nil {
-		os.Remove(dest)
-		return fmt.Errorf("failed to set executable permission: %w", err)
-	}
-
-	if err := os.Rename(dest, i.TunnelmoleBin()); err != nil {
-		os.Remove(dest)
-		return fmt.Errorf("failed to move binary to final location: %w", err)
-	}
-
-	if progress != nil {
-		progress <- providers.DownloadProgress{
-			Percent: 100,
-			Done:    true,
-			Name:    "tunnelmole",
+	binary := downloaded
+	if strings.HasSuffix(downloaded, ".gz") {
+		binary = filepath.Join(staging, binaryFile())
+		if err := unpack(downloaded, binary); err != nil {
+			return fmt.Errorf("failed to unpack tunnelmole: %w", err)
 		}
 	}
 
+	dest := filepath.Join(providers.BinDir(), binaryFile())
+	if err := providers.ReplaceBinary(binary, dest); err != nil {
+		return fmt.Errorf("install tunnelmole: %w", err)
+	}
+
+	installed := *rel
+	if version, err := providers.DetectVersion(ctx, dest); err == nil {
+		installed.Version = version
+	}
+	if err := providers.RecordRelease("tunnelmole", dest, &installed, etag); err != nil {
+		return fmt.Errorf("record tunnelmole install: %w", err)
+	}
+
+	sendProgress(progress, 100, true)
 	return nil
 }
 
-func (i *Installer) tunnelmoleURL() string {
-	switch runtime.GOOS {
+func sendProgress(progress chan<- providers.DownloadProgress, percent float64, done bool) {
+	if progress != nil {
+		progress <- providers.DownloadProgress{Percent: percent, Total: 100, Done: done, Name: "tunnelmole"}
+	}
+}
+
+func downloadURL(goos string) string {
+	switch goos {
 	case "darwin":
 		return "https://tunnelmole.com/downloads/tmole-mac.gz"
 	case "linux":
@@ -97,165 +147,105 @@ func (i *Installer) tunnelmoleURL() string {
 	}
 }
 
-func (i *Installer) download(url, dest string, progress chan<- providers.DownloadProgress) error {
-	resp, err := http.Get(url)
+func headETag(ctx context.Context, url string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
 	if err != nil {
-		return fmt.Errorf("http.Get failed: %w", err)
+		return "", err
+	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("tunnelmole: %w", err)
+	}
+	resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("tunnelmole: %s returned %s", url, resp.Status)
+	}
+
+	if etag := resp.Header.Get("ETag"); etag != "" {
+		return etag, nil
+	}
+	if modified := resp.Header.Get("Last-Modified"); modified != "" {
+		return modified, nil
+	}
+	return "", fmt.Errorf("tunnelmole: %s has no ETag or Last-Modified header", url)
+}
+
+func npmVersion(ctx context.Context) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, npmLatest, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
+		return "", fmt.Errorf("npm registry returned %s", resp.Status)
+	}
+
+	var pkg struct {
+		Version string `json:"version"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&pkg); err != nil {
+		return "", err
+	}
+	return providers.NormalizeVersion(pkg.Version), nil
+}
+
+// unpack writes the tmole executable inside a .gz download to dest. The file
+// has shipped both as a bare gzip of the binary and as a gzipped tarball.
+func unpack(src, dest string) error {
+	f, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		return err
+	}
+	defer gz.Close()
+
+	br := bufio.NewReaderSize(gz, 1024)
+	header, err := br.Peek(512)
+	if err != nil && err != io.EOF {
+		return err
+	}
+
+	var body io.Reader = br
+	if isTar(header) {
+		tr := tar.NewReader(br)
+		for {
+			h, err := tr.Next()
+			if err == io.EOF {
+				return fmt.Errorf("tmole binary not found in archive")
+			}
+			if err != nil {
+				return err
+			}
+			if h.Typeflag == tar.TypeReg && strings.HasPrefix(filepath.Base(h.Name), "tmole") {
+				body = tr
+				break
+			}
+		}
 	}
 
 	out, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
-
-	total := resp.ContentLength
-	downloaded := int64(0)
-	buf := make([]byte, 32*1024)
-
-	for {
-		n, err := resp.Body.Read(buf)
-		if n > 0 {
-			if _, werr := out.Write(buf[:n]); werr != nil {
-				return fmt.Errorf("failed to write %s: %w", out.Name(), werr)
-			}
-			downloaded += int64(n)
-			if total > 0 && progress != nil {
-				percent := 10 + float64(downloaded)/float64(total)*80
-				progress <- providers.DownloadProgress{
-					Percent: percent,
-					Current: downloaded,
-					Total:   total,
-					Name:    "tunnelmole",
-				}
-			}
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-	}
-
-	if runtime.GOOS == "windows" {
-		return nil
-	}
-
-	out.Close()
-
-	headerBytes := make([]byte, 2)
-	f, err := os.Open(dest)
-	if err != nil {
+	if _, err := io.Copy(out, body); err != nil {
+		out.Close()
 		return err
 	}
-	if _, err := io.ReadFull(f, headerBytes); err != nil {
-		_ = f.Close()
-		return fmt.Errorf("failed to read the archive header: %w", err)
-	}
-	_ = f.Close()
+	return out.Close()
+}
 
-	if headerBytes[0] != 0x1f || headerBytes[1] != 0x8b {
-		return fmt.Errorf("not a valid gzip archive")
-	}
-
-	gzFile, err := os.Open(dest)
-	if err != nil {
-		return err
-	}
-	defer gzFile.Close()
-
-	gzReader, err := gzip.NewReader(gzFile)
-	if err != nil {
-		return fmt.Errorf("failed to create gzip reader: %w", err)
-	}
-	defer gzReader.Close()
-
-	testTarReader := tar.NewReader(gzReader)
-	_, err = testTarReader.Next()
-
-	if err != nil && strings.Contains(err.Error(), "invalid tar header") {
-		rawDest := dest + ".raw"
-
-		gzFile.Close()
-		gzFile, err = os.Open(dest)
-		if err != nil {
-			return err
-		}
-		defer gzFile.Close()
-
-		gzReader, err = gzip.NewReader(gzFile)
-		if err != nil {
-			return err
-		}
-		defer gzReader.Close()
-
-		outFile, err := os.Create(rawDest)
-		if err != nil {
-			return err
-		}
-		if _, err := io.Copy(outFile, gzReader); err != nil {
-			_ = outFile.Close()
-			return fmt.Errorf("failed to decompress the archive: %w", err)
-		}
-		if err := outFile.Close(); err != nil {
-			return err
-		}
-
-		if err := os.Remove(dest); err != nil {
-			return err
-		}
-		if err := os.Rename(rawDest, dest); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	gzFile.Close()
-	gzFile, err = os.Open(dest)
-	if err != nil {
-		return err
-	}
-	defer gzFile.Close()
-
-	gzReader, err = gzip.NewReader(gzFile)
-	if err != nil {
-		return err
-	}
-	defer gzReader.Close()
-
-	tarReader := tar.NewReader(gzReader)
-
-	for {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("failed to read tar: %w", err)
-		}
-
-		name := filepath.Base(header.Name)
-		if strings.HasPrefix(name, "tmole") {
-			outFile, err := os.Create(dest)
-			if err != nil {
-				return err
-			}
-			if _, err := io.Copy(outFile, tarReader); err != nil {
-				_ = outFile.Close()
-				return fmt.Errorf("failed to extract tmole: %w", err)
-			}
-			if err := outFile.Close(); err != nil {
-				return err
-			}
-			return nil
-		}
-	}
-
-	return fmt.Errorf("tmole binary not found in archive")
+// isTar checks for the ustar magic at offset 257 of the first block.
+func isTar(block []byte) bool {
+	return len(block) >= 262 && string(block[257:262]) == "ustar"
 }

@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,88 +18,6 @@ type DownloadProgress struct {
 	Done    bool
 	Error   error
 	Name    string
-}
-
-func downloadWithProgress(url, dest string, progress chan<- DownloadProgress, name string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("HTTP %d", resp.StatusCode)
-	}
-
-	total := resp.ContentLength
-
-	tmpDir := filepath.Dir(dest)
-	if err := os.MkdirAll(tmpDir, 0755); err != nil {
-		return err
-	}
-
-	out, err := os.Create(dest + ".tmp")
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-	defer os.Remove(dest + ".tmp")
-
-	buf := make([]byte, 32*1024)
-	var current int64
-
-	for {
-		n, err := resp.Body.Read(buf)
-		if n > 0 {
-			if _, werr := out.Write(buf[:n]); werr != nil {
-				return fmt.Errorf("failed to write %s: %w", out.Name(), werr)
-			}
-			current += int64(n)
-
-			if progress != nil && total > 0 {
-				progress <- DownloadProgress{
-					Total:   total,
-					Current: current,
-					Percent: float64(current) / float64(total) * 100,
-					Done:    false,
-					Name:    name,
-				}
-			}
-		}
-
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-	}
-
-	out.Close()
-
-	if err := os.Rename(dest+".tmp", dest); err != nil {
-		return err
-	}
-
-	if err := os.Chmod(dest, 0755); err != nil {
-		return err
-	}
-
-	if progress != nil {
-		progress <- DownloadProgress{
-			Total:   total,
-			Current: current,
-			Percent: 100,
-			Done:    true,
-			Name:    name,
-		}
-	}
-
-	return nil
-}
-
-func DownloadWithProgress(url, dest string, progress chan<- DownloadProgress, name string) error {
-	return downloadWithProgress(url, dest, progress, name)
 }
 
 func ExtractTarGz(src, destDir, binaryName string) error {

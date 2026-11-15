@@ -1,28 +1,37 @@
 package cloudflared
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/sthbryan/ftm/internal/providers"
 )
 
-type Installer struct {
-	BaseDir string
+const (
+	githubRepo = "cloudflare/cloudflared"
+	// latestDownload serves the newest asset without the API, for when the
+	// GitHub API is rate limited during a first install.
+	latestDownload = "https://github.com/cloudflare/cloudflared/releases/latest/download/"
+)
+
+type Installer struct{}
+
+func NewInstaller() *Installer {
+	return &Installer{}
 }
 
-func NewInstaller(baseDir string) *Installer {
-	return &Installer{BaseDir: baseDir}
+func binaryFile() string {
+	if runtime.GOOS == "windows" {
+		return "cloudflared.exe"
+	}
+	return "cloudflared"
 }
 
 func (i *Installer) CloudflaredBin() string {
-	if runtime.GOOS == "windows" {
-		return filepath.Join(i.BaseDir, "cloudflared.exe")
-	}
-	return filepath.Join(i.BaseDir, "cloudflared")
+	return providers.BundledPath(binaryFile())
 }
 
 func (i *Installer) IsInstalled() bool {
@@ -30,82 +39,86 @@ func (i *Installer) IsInstalled() bool {
 	return err == nil
 }
 
+// Install downloads cloudflared once; updates go through InstallRelease.
 func (i *Installer) Install(progress chan<- providers.DownloadProgress) error {
-	if err := os.MkdirAll(i.BaseDir, 0755); err != nil {
-		return fmt.Errorf("failed to create base dir: %w", err)
-	}
-
 	if i.IsInstalled() {
 		return nil
 	}
 
-	url, err := i.cloudflaredURL()
+	ctx := context.Background()
+	rel, err := i.LatestRelease(ctx)
 	if err != nil {
-		return err
+		name, nameErr := assetName(runtime.GOOS, runtime.GOARCH)
+		if nameErr != nil {
+			return nameErr
+		}
+		rel = &providers.Release{Asset: providers.Asset{Name: name, URL: latestDownload + name}}
 	}
 
-	binPath := i.CloudflaredBin()
+	return i.InstallRelease(ctx, rel, progress)
+}
 
-	if progress != nil {
-		progress <- providers.DownloadProgress{
-			Percent: 10,
-			Current: 0,
-			Total:   100,
-			Name:    "cloudflared",
-		}
+func (i *Installer) LatestRelease(ctx context.Context) (*providers.Release, error) {
+	name, err := assetName(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		return nil, err
 	}
 
-	if strings.HasSuffix(url, ".tgz") {
-		destArchive := binPath + ".tgz"
-		if err := providers.DownloadWithProgress(url, destArchive, progress, "cloudflared"); err != nil {
-			return fmt.Errorf("download failed: %w", err)
-		}
-		defer os.Remove(destArchive)
+	gh, err := providers.FetchLatestGitHubRelease(ctx, githubRepo)
+	if err != nil {
+		return nil, err
+	}
+	return gh.Release(name)
+}
 
-		if err := providers.ExtractArchive(destArchive, i.BaseDir, "cloudflared"); err != nil {
-			return fmt.Errorf("extract failed: %w", err)
-		}
-	} else {
-		if err := providers.DownloadWithProgress(url, binPath, progress, "cloudflared"); err != nil {
-			return fmt.Errorf("download failed: %w", err)
-		}
+func (i *Installer) InstallRelease(ctx context.Context, rel *providers.Release, progress chan<- providers.DownloadProgress) error {
+	sendProgress(progress, 10, false)
+
+	dest := filepath.Join(providers.BinDir(), binaryFile())
+	etag, err := providers.InstallAsset(ctx, rel.Asset, dest, "cloudflared", progress, "cloudflared")
+	if err != nil {
+		return fmt.Errorf("install cloudflared: %w", err)
 	}
 
-	if _, err := os.Stat(binPath); err != nil {
-		return fmt.Errorf("binary not found after install: %w", err)
+	if err := providers.RecordRelease("cloudflared", dest, rel, etag); err != nil {
+		return fmt.Errorf("record cloudflared install: %w", err)
 	}
 
-	if progress != nil {
-		progress <- providers.DownloadProgress{
-			Percent: 100,
-			Done:    true,
-			Name:    "cloudflared",
-		}
-	}
-
+	sendProgress(progress, 100, true)
 	return nil
 }
 
-func (i *Installer) cloudflaredURL() (string, error) {
-	os := runtime.GOOS
-	arch := runtime.GOARCH
+func sendProgress(progress chan<- providers.DownloadProgress, percent float64, done bool) {
+	if progress != nil {
+		progress <- providers.DownloadProgress{Percent: percent, Total: 100, Done: done, Name: "cloudflared"}
+	}
+}
 
-	base := "https://github.com/cloudflare/cloudflared/releases/latest/download"
-
-	switch os {
+// assetName is the release file for a platform. macOS ships a tarball; Linux
+// and Windows ship the bare executable.
+func assetName(goos, goarch string) (string, error) {
+	switch goos {
 	case "darwin":
-		if arch == "arm64" {
-			return base + "/cloudflared-darwin-arm64.tgz", nil
+		if goarch == "arm64" {
+			return "cloudflared-darwin-arm64.tgz", nil
 		}
-		return base + "/cloudflared-darwin-amd64.tgz", nil
+		return "cloudflared-darwin-amd64.tgz", nil
 	case "linux":
-		if arch == "arm64" {
-			return base + "/cloudflared-linux-arm64", nil
+		switch goarch {
+		case "arm64":
+			return "cloudflared-linux-arm64", nil
+		case "arm":
+			return "cloudflared-linux-arm", nil
+		case "386":
+			return "cloudflared-linux-386", nil
 		}
-		return base + "/cloudflared-linux-amd64", nil
+		return "cloudflared-linux-amd64", nil
 	case "windows":
-		return base + "/cloudflared-windows-amd64.exe", nil
+		if goarch == "386" {
+			return "cloudflared-windows-386.exe", nil
+		}
+		return "cloudflared-windows-amd64.exe", nil
 	default:
-		return "", fmt.Errorf("unsupported OS: %s", os)
+		return "", fmt.Errorf("cloudflared: unsupported OS %s", goos)
 	}
 }
