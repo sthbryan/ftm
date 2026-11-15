@@ -33,7 +33,7 @@ func (h *Handlers) getUpdate(w http.ResponseWriter) {
 		"hasUpdate":  false,
 		"method":     string(updater.DetectMethod()),
 	}
-	if info := h.server.updateSvc.Info(); info != nil {
+	if info := h.svc.UpdateInfo(); info != nil {
 		resp["latest"] = info.LatestVersion
 		resp["tag"] = info.Tag
 		resp["assetName"] = info.AssetName
@@ -46,12 +46,12 @@ func (h *Handlers) getUpdate(w http.ResponseWriter) {
 }
 
 func (h *Handlers) postUpdate(w http.ResponseWriter) {
-	info := h.server.updateSvc.Info()
+	info := h.svc.UpdateInfo()
 	if info == nil || !info.HasUpdate {
 		http.Error(w, "no update available", http.StatusBadRequest)
 		return
 	}
-	if err := h.server.updateSvc.Apply(); err != nil {
+	if err := h.svc.ApplyUpdate(); err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, updater.ErrNotSelfUpdatable) {
 			status = http.StatusConflict
@@ -63,7 +63,7 @@ func (h *Handlers) postUpdate(w http.ResponseWriter) {
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true})
 	go func() {
 		time.Sleep(500 * time.Millisecond)
-		h.server.manager.StopAll()
+		h.svc.StopAll()
 
 		if err := updater.Relaunch(); err != nil {
 			log.Printf("relaunch after update failed: %v", err)

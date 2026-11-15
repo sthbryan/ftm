@@ -140,12 +140,7 @@ func (m *Model) confirmDelete() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	// Deleting a tunnel that is not running is expected here.
-	_ = m.App.Manager.Stop(id)
-	saveErr := m.App.UpdateConfig(func(c *config.Config) error {
-		c.RemoveTunnel(id)
-		return nil
-	})
+	saveErr := m.App.Service.DeleteTunnel(id)
 	m.refreshItems()
 
 	if m.Cursor >= len(m.Items) && m.Cursor > 0 {
@@ -213,7 +208,7 @@ func (m *Model) handleListUpdate() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.showMessage(i18n.T("update_applying"))
-	return m, applyUpdateCmd(m.UpdateAvailable)
+	return m, m.applyUpdateCmd()
 }
 
 func (m *Model) playBeep() {

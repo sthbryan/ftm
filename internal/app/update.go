@@ -30,6 +30,20 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tickMsg:
 		return m.handleTick()
 
+	case busMsg:
+		model, cmd := m.Update(msg.msg)
+		return model, tea.Batch(cmd, m.waitForEvent())
+
+	case tunnelsChangedMsg:
+		m.refreshItems()
+		return m, nil
+
+	case installStartedMsg:
+		m.DownloadingProvider = string(msg.provider)
+		m.DownloadProgress = providers.DownloadProgress{}
+		m.State = viewDownloading
+		return m, nil
+
 	case downloadProgressMsg:
 		return m.handleDownloadProgress(msg)
 
@@ -58,39 +72,44 @@ func (m *Model) handleTick() (tea.Model, tea.Cmd) {
 	return m, tickCmd()
 }
 
+// handleDownloadProgress follows a provider download. The service starts the
+// waiting tunnel itself once it finishes; the model only leaves the progress
+// screen if it is still on it.
 func (m *Model) handleDownloadProgress(msg downloadProgressMsg) (tea.Model, tea.Cmd) {
 	m.DownloadProgress = providers.DownloadProgress(msg)
-	if m.DownloadProgress.Done {
-		m.State = viewList
-		if m.PendingTunnel != nil {
-			for _, item := range m.Items {
-				if ti, ok := item.(TunnelItem); ok && ti.Tunnel.ID == m.PendingTunnel.ID {
-					m.PendingTunnel = nil
-					m.showMessage(i18n.T("install_complete"))
-					return m, m.startTunnel(ti)
-				}
-			}
-			m.PendingTunnel = nil
-		}
-		m.showMessage(i18n.T("download_complete"))
+
+	failed := m.DownloadProgress.Error != nil
+	if !m.DownloadProgress.Done && !failed {
+		return m, nil
 	}
-	return m, m.checkDownloadProgress()
+	if m.State != viewDownloading {
+		return m, nil
+	}
+
+	m.State = viewList
+	if !failed {
+		m.showMessage(i18n.T("install_complete"))
+	}
+	return m, nil
 }
 
 func (m *Model) handleStatusUpdate(msg statusUpdateMsg) (tea.Model, tea.Cmd) {
 	m.refreshItems()
 	if msg.status.ErrorMessage != "" {
+		if m.State == viewDownloading {
+			m.State = viewList
+		}
 		m.playBeep()
 		m.showMessage(i18n.TF("error_state", msg.status.ErrorMessage))
 	}
-	return m, m.waitForStatus()
+	return m, nil
 }
 
 func (m *Model) handleUpdateCheck(msg updateCheckMsg) (tea.Model, tea.Cmd) {
 	if msg.err == nil && msg.info != nil && msg.info.HasUpdate {
 		m.UpdateAvailable = msg.info
 	}
-	return m, scheduleUpdateRecheck()
+	return m, nil
 }
 
 func (m *Model) handleUpdateApply(msg updateApplyMsg) (tea.Model, tea.Cmd) {
@@ -100,10 +119,4 @@ func (m *Model) handleUpdateApply(msg updateApplyMsg) (tea.Model, tea.Cmd) {
 	}
 	m.RelaunchOnExit = true
 	return m, tea.Quit
-}
-
-func scheduleUpdateRecheck() tea.Cmd {
-	return tea.Tick(6*time.Hour, func(time.Time) tea.Msg {
-		return checkUpdateCmd()()
-	})
 }

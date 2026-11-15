@@ -5,10 +5,12 @@ import (
 	"io"
 	"os/exec"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/providers"
 )
 
@@ -46,7 +48,7 @@ func newScriptManager(t *testing.T, script string) (*Manager, chan config.Tunnel
 	m.providers[config.ProviderCloudflared] = scriptProvider{script: script}
 
 	updates := make(chan config.TunnelStatus, 64)
-	m.SetStatusChannel(updates)
+	forwardStatuses(t, m, updates)
 
 	return m, updates
 }
@@ -79,7 +81,7 @@ func waitForState(t *testing.T, updates <-chan config.TunnelStatus, want config.
 func TestManagerReportsCrashedProvider(t *testing.T) {
 	m, updates := newScriptManager(t, "echo https://example.trycloudflare.com; sleep 0.2; exit 7")
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start failed: %v", err)
 	}
 
@@ -110,7 +112,7 @@ func TestManagerReportsCrashedProvider(t *testing.T) {
 func TestManagerReportsCleanExitAsStopped(t *testing.T) {
 	m, updates := newScriptManager(t, "exit 0")
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start failed: %v", err)
 	}
 
@@ -120,7 +122,7 @@ func TestManagerReportsCleanExitAsStopped(t *testing.T) {
 func TestManagerStopIsNotReportedAsError(t *testing.T) {
 	m, updates := newScriptManager(t, "sleep 60")
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start failed: %v", err)
 	}
 	if err := m.Stop("t1"); err != nil {
@@ -145,7 +147,7 @@ func TestManagerStopIsNotReportedAsError(t *testing.T) {
 func TestManagerStopWaitsForExit(t *testing.T) {
 	m, _ := newScriptManager(t, "sleep 60")
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start failed: %v", err)
 	}
 
@@ -170,7 +172,7 @@ func TestManagerStopAllWaitsForEveryProcess(t *testing.T) {
 	for _, id := range []string{"t1", "t2", "t3"} {
 		tunnel := tunnelFixture()
 		tunnel.ID = id
-		if err := m.Start(tunnel, nil); err != nil {
+		if err := m.Start(tunnel); err != nil {
 			t.Fatalf("Start(%s) failed: %v", id, err)
 		}
 	}
@@ -200,13 +202,13 @@ func TestManagerStopAllWaitsForEveryProcess(t *testing.T) {
 func TestManagerRestartIsNotTimedOutByTheOldMonitor(t *testing.T) {
 	m, updates := newScriptManager(t, "sleep 60")
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("first Start failed: %v", err)
 	}
 	if err := m.Stop("t1"); err != nil {
 		t.Fatalf("Stop failed: %v", err)
 	}
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("second Start failed: %v", err)
 	}
 
@@ -232,7 +234,7 @@ func TestManagerPublishesExpiryForExpiringProviders(t *testing.T) {
 	m.SetProviderExpiration(map[string]int{string(config.ProviderCloudflared): 60})
 
 	before := time.Now()
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start failed: %v", err)
 	}
 	defer m.StopAll()
@@ -254,12 +256,40 @@ func TestManagerLeavesExpiryUnsetForProvidersThatDoNotExpire(t *testing.T) {
 	m, updates := newScriptManager(t, "sleep 5")
 	m.SetProviderExpiration(map[string]int{string(config.ProviderCloudflared): 0})
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start failed: %v", err)
 	}
 	defer m.StopAll()
 
 	if status := <-updates; status.ExpiresAt != 0 {
 		t.Fatalf("ExpiresAt = %d for a provider that does not expire, want 0", status.ExpiresAt)
+	}
+}
+
+func TestLogLinesArePublished(t *testing.T) {
+	m, _ := newScriptManager(t, "echo hello from the provider; sleep 5")
+	t.Cleanup(m.StopAll)
+
+	bus := events.New()
+	defer bus.Close()
+	m.SetEvents(bus)
+	ch, cancel := bus.Subscribe(events.Only(events.KindLogLine))
+	defer cancel()
+
+	if err := m.Start(tunnelFixture()); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+
+	deadline := time.After(5 * time.Second)
+	for {
+		select {
+		case e := <-ch:
+			line := e.(events.LogLine)
+			if line.TunnelID == "t1" && strings.Contains(line.Line, "hello from the provider") {
+				return
+			}
+		case <-deadline:
+			t.Fatal("the provider's output was never published")
+		}
 	}
 }

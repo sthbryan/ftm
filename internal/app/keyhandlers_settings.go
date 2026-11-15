@@ -7,6 +7,7 @@ import (
 	"github.com/sthbryan/ftm/internal/app/ui/views"
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/i18n"
+	"github.com/sthbryan/ftm/internal/service"
 )
 
 func (m *Model) handleSettingsKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
@@ -69,7 +70,7 @@ func (m *Model) handleSettingsSelect() {
 		sv.Language = cycleLanguage(sv.Language, 1)
 		i18n.SetLanguage(sv.Language)
 	case 3:
-		if len(m.App.Store.Tunnels()) == 0 {
+		if len(m.App.Service.Tunnels()) == 0 {
 			return
 		}
 		m.pendingConfirm = confirmClearTunnels
@@ -82,27 +83,8 @@ func (m *Model) confirmClearTunnels() (tea.Model, tea.Cmd) {
 	m.saveSettings()
 	m.SettingsView = nil
 
-	tunnels := m.App.Store.Tunnels()
-	ids := make([]string, 0, len(tunnels))
-	for _, t := range tunnels {
-		ids = append(ids, t.ID)
-	}
-
-	for _, id := range ids {
-		_ = m.App.Manager.Stop(id)
-	}
-
-	saveErr := m.App.UpdateConfig(func(c *config.Config) error {
-		c.ClearTunnels()
-		return nil
-	})
+	_, saveErr := m.App.Service.ClearTunnels()
 	m.refreshItems()
-
-	if m.App.WebServer != nil {
-		for _, id := range ids {
-			m.App.WebServer.BroadcastTunnelDeleted(id)
-		}
-	}
 
 	m.Cursor = 0
 	m.SelectedTunnel = ""
@@ -150,18 +132,17 @@ func (m *Model) saveSettings() {
 
 	sv := m.SettingsView
 
-	err := m.App.UpdateConfig(func(c *config.Config) error {
-		if sv.NotificationsEnabled {
-			c.NotificationsStatus = config.NotificationGranted
-		} else {
-			c.NotificationsStatus = config.NotificationRejected
-		}
-		c.NotificationSound = sv.NotificationSound
-		c.Language = sv.Language
-		return nil
-	})
+	status := config.NotificationRejected
+	if sv.NotificationsEnabled {
+		status = config.NotificationGranted
+	}
+	sound, lang := sv.NotificationSound, sv.Language
 
-	i18n.SetLanguage(sv.Language)
+	_, err := m.App.Service.UpdateSettings(service.SettingsPatch{
+		NotificationsStatus: &status,
+		NotificationSound:   &sound,
+		Language:            &lang,
+	})
 
 	if err != nil {
 		m.showMessage(i18n.T("error_saving_config") + ": " + err.Error())

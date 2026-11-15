@@ -261,8 +261,7 @@ type UpdateResult struct {
 }
 
 type runningTunnel struct {
-	config   config.TunnelConfig
-	onUpdate func(config.TunnelStatus)
+	config config.TunnelConfig
 }
 
 // UpdateProvider downloads the latest release of a provider and swaps it in
@@ -290,11 +289,15 @@ func (m *Manager) UpdateProvider(ctx context.Context, id config.Provider, progre
 	m.binaries.updating[id] = true
 	m.binaries.mu.Unlock()
 
+	var finish func(error)
 	if progress == nil {
-		progress = m.ProgressEvents()
+		progress, finish = m.progressSink(string(id))
 	}
 
 	rel, stopped, installErr := m.replaceBinary(ctx, id, u, progress)
+	if finish != nil {
+		finish(installErr)
+	}
 
 	// Start refuses while the flag is set, so clear it before restarting.
 	m.binaries.mu.Lock()
@@ -303,7 +306,7 @@ func (m *Manager) UpdateProvider(ctx context.Context, id config.Provider, progre
 
 	result := &UpdateResult{Provider: id}
 	for _, t := range stopped {
-		if err := m.Start(t.config, t.onUpdate); err != nil {
+		if err := m.Start(t.config); err != nil {
 			log.Printf("providers: could not restart %s after updating %s: %v", t.config.Name, id, err)
 			continue
 		}
@@ -351,7 +354,7 @@ func (m *Manager) stopProviderTunnels(id config.Provider) []runningTunnel {
 	var running []runningTunnel
 	for _, mp := range m.processes {
 		if mp.Config.Provider == id && mp.Process != nil {
-			running = append(running, runningTunnel{config: mp.Config, onUpdate: mp.OnUpdate})
+			running = append(running, runningTunnel{config: mp.Config})
 		}
 	}
 	m.mu.RUnlock()

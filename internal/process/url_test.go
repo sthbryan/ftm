@@ -24,7 +24,7 @@ sleep 1`
 		}
 	})
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
 
@@ -52,7 +52,7 @@ sleep 1`
 		}
 	})
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
 

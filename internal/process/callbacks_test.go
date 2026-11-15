@@ -20,7 +20,7 @@ func TestNotificationHandlerDoesNotHoldTheManagerLock(t *testing.T) {
 		reading <- m.GetLogs("t1")
 	})
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
 
@@ -48,7 +48,7 @@ func TestStatusReadsStayResponsiveWhileNotifying(t *testing.T) {
 		<-release
 	})
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
 

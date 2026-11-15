@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/providers"
 	"github.com/sthbryan/ftm/internal/providers/bore"
 	"github.com/sthbryan/ftm/internal/providers/cloudflared"
@@ -31,33 +32,29 @@ type Manager struct {
 	// running and read from the process watchers, so they cannot share mu: a
 	// blocking callback would stall the tunnel map.
 	handlersMu          sync.RWMutex
-	downloadProgress    chan providers.DownloadProgress
-	statusChannel       chan config.TunnelStatus
+	events              events.Publisher
 	notificationHandler func(status config.TunnelStatus)
 	visitorHandler      func(status config.TunnelStatus)
 	expirationStart     func(tunnelID, name, provider string, startedAt time.Time)
 	expirationStop      func(tunnelID string)
 }
 
-func (m *Manager) SetProgressChannel(ch chan providers.DownloadProgress) {
+// SetEvents sets where the manager publishes tunnel states, stats, log lines
+// and install progress. Publishing never waits for a reader.
+func (m *Manager) SetEvents(p events.Publisher) {
 	m.handlersMu.Lock()
-	m.downloadProgress = ch
+	m.events = p
 	m.handlersMu.Unlock()
-
-	for _, p := range m.providers {
-		if installer, ok := p.(interface {
-			SetProgressChannel(chan providers.DownloadProgress)
-		}); ok {
-			installer.SetProgressChannel(ch)
-		}
-	}
 }
 
-// ProgressEvents returns the stream of install progress updates.
-func (m *Manager) ProgressEvents() chan providers.DownloadProgress {
+func (m *Manager) publish(e events.Event) {
 	m.handlersMu.RLock()
-	defer m.handlersMu.RUnlock()
-	return m.downloadProgress
+	p := m.events
+	m.handlersMu.RUnlock()
+
+	if p != nil {
+		p.Publish(e)
+	}
 }
 
 func (m *Manager) SetNotificationHandler(handler func(config.TunnelStatus)) {
@@ -96,12 +93,6 @@ func (m *Manager) reportNewVisitor(tunnelID string) {
 	}
 }
 
-func (m *Manager) SetStatusChannel(ch chan config.TunnelStatus) {
-	m.handlersMu.Lock()
-	m.statusChannel = ch
-	m.handlersMu.Unlock()
-}
-
 const visitorWindow = 5 * time.Minute
 
 func (m *Manager) SetVisitorTracking(enabled bool) {
@@ -129,19 +120,7 @@ func (m *Manager) expiresAtLocked(provider config.Provider, startedAt time.Time)
 }
 
 func (m *Manager) callStatusUpdate(status config.TunnelStatus) {
-	m.handlersMu.RLock()
-	ch := m.statusChannel
-	m.handlersMu.RUnlock()
-
-	if ch == nil {
-		return
-	}
-
-	select {
-	case ch <- status:
-	default:
-		log.Printf("process: status channel full, dropped %q update for tunnel %s", status.State, status.ID)
-	}
+	m.publish(events.TunnelStatus{Status: status})
 }
 
 func (m *Manager) SetExpirationCallbacks(start func(string, string, string, time.Time), stop func(string)) {
@@ -207,6 +186,8 @@ func (m *Manager) CheckInstallation(providerType config.Provider) (needsInstall 
 	return true, true
 }
 
+// InstallProvider downloads a provider's binary and publishes its progress.
+// The last event of the install has Done set, or Err when it failed.
 func (m *Manager) InstallProvider(providerType config.Provider) error {
 	provider, ok := m.providers[providerType]
 	if !ok {
@@ -218,10 +199,57 @@ func (m *Manager) InstallProvider(providerType config.Provider) error {
 		return fmt.Errorf("provider %s does not support auto-install", providerType)
 	}
 
-	return installer.Install(m.ProgressEvents())
+	progress, finish := m.progressSink(string(providerType))
+	err := installer.Install(progress)
+	finish(err)
+	return err
 }
 
-func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelStatus)) error {
+// progressSink returns a channel a provider can report download progress on
+// and a finish to call once the provider returned. Progress is drained by its
+// own goroutine, so a provider never waits on a reader; finish publishes the
+// failure, if any, after every progress event.
+func (m *Manager) progressSink(provider string) (chan<- providers.DownloadProgress, func(error)) {
+	ch := make(chan providers.DownloadProgress, 16)
+	drained := make(chan struct{})
+
+	go func() {
+		defer close(drained)
+		for p := range ch {
+			m.publish(installProgress(provider, p))
+		}
+	}()
+
+	finish := func(err error) {
+		close(ch)
+		<-drained
+		if err != nil {
+			m.publish(events.InstallProgress{Provider: provider, Err: err.Error()})
+		}
+	}
+	return ch, finish
+}
+
+func installProgress(provider string, p providers.DownloadProgress) events.InstallProgress {
+	name := p.Name
+	if name == "" {
+		name = provider
+	}
+	e := events.InstallProgress{
+		Provider: name,
+		Percent:  p.Percent,
+		Current:  p.Current,
+		Total:    p.Total,
+		Done:     p.Done,
+	}
+	if p.Error != nil {
+		e.Err = p.Error.Error()
+	}
+	return e
+}
+
+// Start runs a tunnel. Its states are published as events.TunnelStatus.
+func (m *Manager) Start(tunnel config.TunnelConfig) error {
 	m.mu.Lock()
 	if existing, ok := m.processes[tunnel.ID]; ok && existing.Process != nil {
 		m.mu.Unlock()
@@ -255,7 +283,6 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 		Config:         tunnel,
 		Provider:       provider,
 		LogBuffer:      logBuffer,
-		OnUpdate:       onUpdate,
 		Status:         tunnel.Status(),
 		logSubscribers: make(map[chan string]struct{}),
 	}
@@ -276,6 +303,7 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	}
 	logBuffer.OnNewLine = func(line string) {
 		mp.publishLog(line)
+		m.publish(events.LogLine{TunnelID: tunnel.ID, Line: line})
 	}
 
 	// A provider can print its public URL before Start returns, while the
@@ -321,7 +349,7 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	status := mp.Status
 	m.mu.Unlock()
 
-	m.publishStatus(mp, status)
+	m.publishStatus(status)
 
 	go m.startupTimeoutMonitor(tunnel.ID, proc)
 	go m.watchExit(tunnel.ID, proc)
@@ -330,12 +358,8 @@ func (m *Manager) Start(tunnel config.TunnelConfig, onUpdate func(config.TunnelS
 	return nil
 }
 
-// publishStatus notifies the owner and the status channel outside the manager
-// lock, so a slow callback can never freeze the tunnel map.
-func (m *Manager) publishStatus(mp *ManagedProcess, status config.TunnelStatus) {
-	if mp.OnUpdate != nil {
-		mp.OnUpdate(status)
-	}
+// publishStatus publishes a state change. Callers hold no manager lock.
+func (m *Manager) publishStatus(status config.TunnelStatus) {
 	m.callStatusUpdate(status)
 }
 
@@ -365,7 +389,7 @@ func (m *Manager) watchExit(tunnelID string, proc *providers.Process) {
 	status := mp.Status
 	m.mu.Unlock()
 
-	m.publishStatus(mp, status)
+	m.publishStatus(status)
 	m.callNotificationHandler(status)
 	m.callExpirationStop(tunnelID)
 }
@@ -397,7 +421,7 @@ func (m *Manager) startupTimeoutMonitor(tunnelID string, proc *providers.Process
 	m.mu.Unlock()
 
 	if changed {
-		m.publishStatus(mp, status)
+		m.publishStatus(status)
 	}
 
 	select {
@@ -429,7 +453,7 @@ func (m *Manager) startupTimeoutMonitor(tunnelID string, proc *providers.Process
 	status = mp.Status
 	m.mu.Unlock()
 
-	m.publishStatus(mp, status)
+	m.publishStatus(status)
 	m.callNotificationHandler(status)
 	m.callExpirationStop(tunnelID)
 
@@ -455,7 +479,7 @@ func (m *Manager) Stop(tunnelID string) error {
 	stopping := mp.Status
 	m.mu.Unlock()
 
-	m.publishStatus(mp, stopping)
+	m.publishStatus(stopping)
 	m.callNotificationHandler(stopping)
 
 	if proc != nil {
@@ -468,7 +492,7 @@ func (m *Manager) Stop(tunnelID string) error {
 	stopped := mp.Status
 	m.mu.Unlock()
 
-	m.publishStatus(mp, stopped)
+	m.publishStatus(stopped)
 
 	m.callExpirationStop(tunnelID)
 
@@ -515,7 +539,7 @@ func (m *Manager) updateURL(tunnelID, url string) {
 	status := mp.Status
 	m.mu.Unlock()
 
-	m.publishStatus(mp, status)
+	m.publishStatus(status)
 	m.callNotificationHandler(status)
 }
 
@@ -572,4 +596,46 @@ func (m *Manager) StopAll() {
 		}(proc)
 	}
 	wg.Wait()
+}
+
+// PublishStats publishes the visitor numbers of every online tunnel whose
+// numbers changed since the last call.
+func (m *Manager) PublishStats() {
+	m.mu.Lock()
+	var changed []events.TunnelStats
+	for id, mp := range m.processes {
+		if mp.Proxy == nil || mp.Status.State != config.TunnelStateOnline {
+			continue
+		}
+		stats := mp.Proxy.Stats()
+		if stats.Visitors == mp.lastStats.Visitors && stats.ActiveSessions == mp.lastStats.ActiveSessions {
+			continue
+		}
+		mp.lastStats = stats
+		changed = append(changed, events.TunnelStats{
+			ID:             id,
+			Visitors:       stats.Visitors,
+			ActiveSessions: stats.ActiveSessions,
+		})
+	}
+	m.mu.Unlock()
+
+	for _, e := range changed {
+		m.publish(e)
+	}
+}
+
+// RunStats calls PublishStats every interval until ctx is done.
+func (m *Manager) RunStats(ctx context.Context, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			m.PublishStats()
+		}
+	}
 }

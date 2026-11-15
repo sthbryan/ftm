@@ -1,12 +1,13 @@
 package app
 
 import (
+	"errors"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/sthbryan/ftm/internal/config"
-	"github.com/sthbryan/ftm/internal/i18n"
+	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/providers"
 )
 
@@ -16,6 +17,20 @@ type (
 		status   config.TunnelStatus
 	}
 	tickMsg struct{}
+
+	// installStartedMsg says a start is waiting for its provider download.
+	installStartedMsg struct {
+		provider config.Provider
+	}
+
+	// busMsg wraps one event from the bus; handling it re-arms the wait for
+	// the next one.
+	busMsg struct {
+		msg tea.Msg
+	}
+
+	// tunnelsChangedMsg is any change to the saved connections.
+	tunnelsChangedMsg struct{}
 )
 
 const (
@@ -27,9 +42,8 @@ func (m *Model) Init() tea.Cmd {
 	return tea.Batch(
 		tea.RequestBackgroundColor,
 		tickCmd(),
-		m.waitForStatus(),
-		m.checkDownloadProgress(),
-		checkUpdateCmd(),
+		m.waitForEvent(),
+		m.checkUpdateCmd(),
 	)
 }
 
@@ -39,21 +53,44 @@ func tickCmd() tea.Cmd {
 	})
 }
 
-func (m *Model) waitForStatus() tea.Cmd {
+// waitForEvent turns the next bus event into a model message.
+func (m *Model) waitForEvent() tea.Cmd {
+	if m.events == nil {
+		return nil
+	}
+	ch := m.events
 	return func() tea.Msg {
-		status, ok := <-m.statusUpdates
-		if !ok {
-			return nil
+		for e := range ch {
+			if msg := m.eventMsg(e); msg != nil {
+				return busMsg{msg: msg}
+			}
 		}
-		return statusUpdateMsg{tunnelID: status.ID, status: status}
+		return nil
 	}
 }
 
-func (m *Model) publishStatus(status config.TunnelStatus) {
-	select {
-	case m.statusUpdates <- status:
-	default:
+func (m *Model) eventMsg(e events.Event) tea.Msg {
+	switch e := e.(type) {
+	case events.TunnelStatus:
+		return statusUpdateMsg{tunnelID: e.Status.ID, status: e.Status}
+	case events.InstallProgress:
+		p := providers.DownloadProgress{
+			Name:    e.Provider,
+			Percent: e.Percent,
+			Current: e.Current,
+			Total:   e.Total,
+			Done:    e.Done,
+		}
+		if e.Err != "" {
+			p.Error = errors.New(e.Err)
+		}
+		return downloadProgressMsg(p)
+	case events.TunnelSaved, events.TunnelDeleted:
+		return tunnelsChangedMsg{}
+	case events.UpdateAvailable:
+		return updateCheckMsg{info: m.App.Service.UpdateInfo()}
 	}
+	return nil
 }
 
 type downloadProgressMsg providers.DownloadProgress
@@ -65,52 +102,23 @@ func (m *Model) showMessage(msg string) {
 
 func (m *Model) startTunnel(item TunnelItem) tea.Cmd {
 	return func() tea.Msg {
-
-		if needsInstall, canInstall := m.App.Manager.CheckInstallation(item.Tunnel.Provider); needsInstall && canInstall {
-			m.DownloadingProvider = string(item.Tunnel.Provider)
-			m.State = viewDownloading
-			m.PendingTunnel = &item.Tunnel
-			return m.installProvider(item.Tunnel.Provider)()
-		}
-
-		err := m.App.Manager.Start(item.Tunnel, m.publishStatus)
-
+		installing, err := m.App.Service.StartTunnel(item.Tunnel.ID)
 		if err != nil {
 			return statusUpdateMsg{
 				tunnelID: item.Tunnel.ID,
 				status:   config.TunnelStatus{ErrorMessage: err.Error(), State: config.TunnelStateError},
 			}
 		}
-
-		return nil
-	}
-}
-
-func (m *Model) installProvider(providerType config.Provider) tea.Cmd {
-	return func() tea.Msg {
-		err := m.App.Manager.InstallProvider(providerType)
-		if err != nil {
-			return statusUpdateMsg{
-				tunnelID: "",
-				status:   config.TunnelStatus{ErrorMessage: i18n.TF("error_install_failed", err.Error()), State: config.TunnelStateError},
-			}
+		if installing {
+			return installStartedMsg{provider: item.Tunnel.Provider}
 		}
-		return downloadProgressMsg{Done: true, Percent: 100}
+		return nil
 	}
 }
 
 func (m *Model) stopTunnel(item TunnelItem) tea.Cmd {
 	return func() tea.Msg {
-		_ = m.App.Manager.Stop(item.Tunnel.ID)
-		return nil
-	}
-}
-
-func (m *Model) checkDownloadProgress() tea.Cmd {
-	return func() tea.Msg {
-		for p := range m.App.DownloadProgress {
-			return downloadProgressMsg(p)
-		}
+		_ = m.App.Service.StopTunnel(item.Tunnel.ID)
 		return nil
 	}
 }

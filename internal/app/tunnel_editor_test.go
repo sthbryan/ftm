@@ -112,7 +112,7 @@ func TestEveryOfferedProviderCanActuallyStart(t *testing.T) {
 	manager := process.NewManager()
 
 	for _, provider := range config.AllProviders() {
-		if err := manager.Start(config.TunnelConfig{ID: "x", Provider: provider}, nil); err != nil {
+		if err := manager.Start(config.TunnelConfig{ID: "x", Provider: provider}); err != nil {
 			if strings.Contains(err.Error(), "unknown provider") {
 				t.Errorf("the editor offers %q but the manager cannot start it", provider)
 			}

@@ -17,7 +17,7 @@ func modelWithTunnel(t *testing.T, id, name string) *Model {
 	}
 
 	m := &Model{
-		App:   &App{Store: testStore(t, cfg)},
+		App:   testApp(t, testStore(t, cfg)),
 		Keys:  DefaultKeys,
 		State: viewList,
 		Items: []list.Item{TunnelItem{Tunnel: cfg.Tunnels[0]}},

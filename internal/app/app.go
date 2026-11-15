@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,24 +11,28 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/notifications"
 	"github.com/sthbryan/ftm/internal/platform/instance"
 	"github.com/sthbryan/ftm/internal/process"
-	"github.com/sthbryan/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/service"
 	"github.com/sthbryan/ftm/internal/store"
 	"github.com/sthbryan/ftm/internal/updater"
 	"github.com/sthbryan/ftm/internal/web"
 )
 
+// App wires the core for one process. Every surface changes things through
+// Service and learns about changes from Bus; Manager is only read here.
 type App struct {
-	Store             *store.Store
+	Service           *service.Service
+	Bus               *events.Bus
 	Manager           *process.Manager
 	WebServer         *web.Server
-	DownloadProgress  chan providers.DownloadProgress
 	ExpirationMonitor *notifications.ExpirationMonitor
 
 	instance     *instance.Lock
+	stop         context.CancelFunc
 	shutdownOnce sync.Once
 }
 
@@ -59,15 +64,18 @@ func New() (*App, error) {
 	i18n.InitFromConfig(cfg)
 
 	manager := process.NewManager()
+	bus := events.New()
+	manager.SetEvents(bus)
 
+	ctx, stop := context.WithCancel(context.Background())
 	app := &App{
-		Store:            st,
-		instance:         lock,
-		Manager:          manager,
-		DownloadProgress: make(chan providers.DownloadProgress, 10),
+		Service:  service.New(st, manager, bus),
+		Bus:      bus,
+		instance: lock,
+		Manager:  manager,
+		stop:     stop,
 	}
 
-	app.Manager.SetProgressChannel(app.DownloadProgress)
 	app.Manager.SetProviderExpiration(cfg.ProviderExpirationMinutes)
 	app.Manager.SetVisitorTracking(cfg.CountVisitors)
 	notifications.Init()
@@ -120,6 +128,8 @@ func New() (*App, error) {
 		func(id string) { app.ExpirationMonitor.Stop(id) },
 	)
 
+	app.Service.Run(ctx)
+
 	return app, nil
 }
 
@@ -153,8 +163,7 @@ func (a *App) StartWebServer() error {
 		return nil
 	}
 
-	a.WebServer = web.NewServer(a.Manager, a.Store)
-	a.Manager.SetStatusChannel(a.WebServer.StatusChannel)
+	a.WebServer = web.NewServer(a.Manager, a.Service, a.Bus)
 
 	if err := a.WebServer.Start(); err != nil {
 		a.WebServer = nil
@@ -172,10 +181,7 @@ func (a *App) StartWebServer() error {
 
 // SetWebPort makes the web server prefer port the next time it starts.
 func (a *App) SetWebPort(port int) error {
-	return a.UpdateConfig(func(c *config.Config) error {
-		c.WebPort = port
-		return nil
-	})
+	return a.Service.SetWebPort(port)
 }
 
 func (a *App) OpenDashboard() error {
@@ -199,7 +205,7 @@ func OpenURL(url string) error {
 }
 
 func (a *App) OpenConfigDir() error {
-	path := a.Store.Dirs().Config
+	path := a.Service.Dirs().Config
 
 	switch runtime.GOOS {
 	case "darwin":
@@ -228,17 +234,7 @@ func startAndReap(cmd *exec.Cmd) error {
 
 // Config returns a copy of the current config.
 func (a *App) Config() config.Config {
-	return a.Store.Snapshot()
-}
-
-// UpdateConfig changes and saves the config through the store, then applies
-// the notification preferences it holds.
-func (a *App) UpdateConfig(fn func(*config.Config) error) error {
-	err := a.Store.Update(fn)
-	cfg := a.Store.Snapshot()
-	notifications.SetSoundEnabled(cfg.NotificationSound)
-	notifications.SetNotificationsEnabled(cfg.NotificationsStatus == config.NotificationGranted)
-	return err
+	return a.Service.Config()
 }
 
 func (a *App) shouldUseNativeNotifications() bool {
@@ -251,13 +247,19 @@ func (a *App) shouldUseNativeNotifications() bool {
 func (a *App) Shutdown() {
 	a.shutdownOnce.Do(func() {
 
-		if a.Manager != nil {
-			a.Manager.StopAll()
+		if a.Service != nil {
+			a.Service.StopAll()
 		}
 		if a.WebServer != nil {
 			if err := a.WebServer.Stop(); err != nil {
 				fmt.Fprintf(os.Stderr, "Error stopping web server: %v\n", err)
 			}
+		}
+		if a.stop != nil {
+			a.stop()
+		}
+		if a.Bus != nil {
+			a.Bus.Close()
 		}
 		if a.ExpirationMonitor != nil {
 			a.ExpirationMonitor.StopAll()

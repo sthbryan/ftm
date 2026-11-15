@@ -5,6 +5,7 @@ import (
 
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/i18n"
+	"github.com/sthbryan/ftm/internal/service"
 )
 
 const (
@@ -121,22 +122,15 @@ func (m *Model) saveTunnel() {
 }
 
 func (m *Model) updateTunnel() {
-	var updated *config.TunnelConfig
-	saveErr := m.App.UpdateConfig(func(c *config.Config) error {
-		t := c.GetTunnel(m.editingTunnelID)
-		if t == nil {
-			return nil
-		}
-		t.Name = m.Draft.Name
-		t.Provider = config.Provider(m.Draft.Provider)
-		t.LocalPort = parsePort(m.Draft.Port)
-		copied := *t
-		updated = &copied
-		return nil
+	name := m.Draft.Name
+	provider := config.Provider(m.Draft.Provider)
+	port := parsePort(m.Draft.Port)
+
+	_, saveErr := m.App.Service.UpdateTunnel(m.editingTunnelID, service.TunnelPatch{
+		Name:      &name,
+		Provider:  &provider,
+		LocalPort: &port,
 	})
-	if saveErr == nil && updated != nil && m.App.WebServer != nil {
-		m.App.WebServer.BroadcastTunnelUpdate(*updated)
-	}
 	m.editingTunnelID = ""
 	m.refreshItems()
 	m.State = viewList
@@ -149,16 +143,10 @@ func (m *Model) updateTunnel() {
 }
 
 func (m *Model) createTunnel() {
-	var tunnel config.TunnelConfig
-	saveErr := m.App.UpdateConfig(func(c *config.Config) error {
-		tunnel = config.TunnelConfig{
-			ID:        c.NewTunnelID(m.Draft.Name),
-			Name:      m.Draft.Name,
-			Provider:  config.Provider(m.Draft.Provider),
-			LocalPort: parsePort(m.Draft.Port),
-		}
-		c.AddTunnel(tunnel)
-		return nil
+	_, saveErr := m.App.Service.CreateTunnel(service.TunnelInput{
+		Name:      m.Draft.Name,
+		Provider:  config.Provider(m.Draft.Provider),
+		LocalPort: parsePort(m.Draft.Port),
 	})
 	m.refreshItems()
 	m.State = viewList

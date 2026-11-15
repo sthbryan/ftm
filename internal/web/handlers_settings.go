@@ -8,7 +8,7 @@ import (
 	"github.com/sthbryan/ftm/internal/autostart"
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/notifications"
+	"github.com/sthbryan/ftm/internal/service"
 )
 
 func (h *Handlers) handleSettings(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +52,7 @@ func (h *Handlers) settingsPayload() map[string]interface{} {
 		enabled, _ = manager.Enabled()
 	}
 
-	cfg := h.store.Snapshot()
+	cfg := h.svc.Config()
 
 	return map[string]interface{}{
 		"notifications_enabled": cfg.NotificationsStatus,
@@ -102,30 +102,14 @@ func (h *Handlers) handlePatchSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.store.Update(func(c *config.Config) error {
-		if req.NotificationsEnabled != nil {
-			c.NotificationsStatus = *req.NotificationsEnabled
-		}
-		if req.NotificationSound != nil {
-			c.NotificationSound = *req.NotificationSound
-		}
-		if req.Language != nil {
-			c.Language = *req.Language
-		}
-		return nil
-	})
-	if err != nil {
+	if _, err := h.svc.UpdateSettings(service.SettingsPatch{
+		NotificationsStatus: req.NotificationsEnabled,
+		NotificationSound:   req.NotificationSound,
+		Language:            req.Language,
+	}); err != nil {
 		http.Error(w, "Failed to save config", http.StatusInternalServerError)
 		return
 	}
-
-	if req.Language != nil {
-		i18n.ChangeLanguage(i18n.ResolveLanguage(*req.Language))
-	}
-
-	cfg := h.store.Snapshot()
-	notifications.SetNotificationsEnabled(cfg.NotificationsStatus == config.NotificationGranted)
-	notifications.SetSoundEnabled(cfg.NotificationSound)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(h.settingsPayload())
