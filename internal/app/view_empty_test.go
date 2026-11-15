@@ -6,7 +6,6 @@ import (
 
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/web"
 )
 
 func modelWithoutTunnels(t *testing.T, onboarded bool) *Model {
@@ -17,7 +16,7 @@ func modelWithoutTunnels(t *testing.T, onboarded bool) *Model {
 	st := testStore(t, cfg)
 
 	return &Model{
-		App:    &App{Store: st, WebServer: web.NewServer(nil, st)},
+		App:    testApp(t, st),
 		Keys:   DefaultKeys,
 		State:  viewList,
 		Width:  100,

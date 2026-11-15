@@ -53,7 +53,7 @@ func TestStartDoesNotBlockReadsWhileSpawning(t *testing.T) {
 	t.Cleanup(m.StopAll)
 
 	started := make(chan error, 1)
-	go func() { started <- m.Start(tunnelFixture(), nil) }()
+	go func() { started <- m.Start(tunnelFixture()) }()
 
 	<-provider.entered
 
@@ -114,7 +114,7 @@ func TestConcurrentStartsReportOneWinner(t *testing.T) {
 
 	results := make(chan error, 2)
 	for i := 0; i < 2; i++ {
-		go func() { results <- m.Start(tunnelFixture(), nil) }()
+		go func() { results <- m.Start(tunnelFixture()) }()
 	}
 
 	successes := 0

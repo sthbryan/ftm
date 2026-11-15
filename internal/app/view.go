@@ -141,7 +141,7 @@ func (m *Model) getTunnelName(id string) string {
 		return item.Tunnel.Name
 	}
 
-	for _, t := range m.App.Store.Tunnels() {
+	for _, t := range m.App.Service.Tunnels() {
 		if t.ID == id {
 			return t.Name
 		}
@@ -218,7 +218,7 @@ func (m *Model) confirmBackdrop() string {
 }
 
 func (m *Model) clearTunnelsMessage() string {
-	count := len(m.App.Store.Tunnels())
+	count := len(m.App.Service.Tunnels())
 	if count == 1 {
 		return i18n.T("confirm_reset_body_one")
 	}
@@ -232,6 +232,6 @@ func (m *Model) viewSettings() string {
 		view.NotificationSound = m.SettingsView.NotificationSound
 		view.Focused = m.SettingsView.Focused
 	}
-	view.TunnelCount = len(m.App.Store.Tunnels())
+	view.TunnelCount = len(m.App.Service.Tunnels())
 	return view.Render()
 }

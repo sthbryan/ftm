@@ -24,18 +24,21 @@ func NewModel(app *App) *Model {
 	logViewport.SoftWrap = true
 
 	m := &Model{
-		App:           app,
-		statusUpdates: make(chan config.TunnelStatus, 64),
-		Keys:          DefaultKeys,
-		Help:          h,
-		State:         viewList,
-		Cursor:        0,
-		LogViewport:   logViewport,
-		ProgressBar:   p,
+		App:         app,
+		Keys:        DefaultKeys,
+		Help:        h,
+		State:       viewList,
+		Cursor:      0,
+		LogViewport: logViewport,
+		ProgressBar: p,
 		Draft: TunnelDraft{
 			Provider: string(config.ProviderCloudflared),
 			Port:     "30000",
 		},
+	}
+
+	if app.Bus != nil {
+		m.events, m.stopEvents = app.Bus.Subscribe()
 	}
 
 	m.refreshItems()
@@ -43,7 +46,7 @@ func NewModel(app *App) *Model {
 }
 
 func (m *Model) refreshItems() {
-	tunnels := m.App.Store.Tunnels()
+	tunnels := m.App.Service.Tunnels()
 	items := make([]list.Item, 0, len(tunnels))
 	for _, t := range tunnels {
 		status := t.Status()

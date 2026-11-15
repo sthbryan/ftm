@@ -9,20 +9,16 @@ import (
 	"testing"
 
 	"github.com/sthbryan/ftm/internal/config"
-	"github.com/sthbryan/ftm/internal/store"
 )
 
-func newPiPTestServer() *Server {
+func newPiPTestServer(t *testing.T) *Server {
 	cfg := &config.Config{
 		Tunnels: []config.TunnelConfig{
 			{ID: "test", Name: "cloudflared", Provider: config.ProviderCloudflared, LocalPort: 3000},
 		},
 	}
 
-	st := store.New(store.Dirs{}, cfg)
-	s := &Server{store: st}
-	s.handlers = NewHandlers(nil, st, s)
-	return s
+	return newTestServer(t, nil, cfg)
 }
 
 func postPiP(s *Server, body string) *httptest.ResponseRecorder {
@@ -33,7 +29,7 @@ func postPiP(s *Server, body string) *httptest.ResponseRecorder {
 }
 
 func TestHandlePiPWithoutOpener(t *testing.T) {
-	s := newPiPTestServer()
+	s := newPiPTestServer(t)
 
 	rec := postPiP(s, `{"id":"test"}`)
 
@@ -43,7 +39,7 @@ func TestHandlePiPWithoutOpener(t *testing.T) {
 }
 
 func TestHandlePiPWithOpener(t *testing.T) {
-	s := newPiPTestServer()
+	s := newPiPTestServer(t)
 
 	var got string
 	s.SetPiPOpener(func(tunnelID string) error {
@@ -62,7 +58,7 @@ func TestHandlePiPWithOpener(t *testing.T) {
 }
 
 func TestHandlePiPUnknownTunnel(t *testing.T) {
-	s := newPiPTestServer()
+	s := newPiPTestServer(t)
 	s.SetPiPOpener(func(string) error {
 		t.Error("opener called for an unknown tunnel")
 		return nil
@@ -76,7 +72,7 @@ func TestHandlePiPUnknownTunnel(t *testing.T) {
 }
 
 func TestHandlePiPMissingID(t *testing.T) {
-	s := newPiPTestServer()
+	s := newPiPTestServer(t)
 
 	rec := postPiP(s, `{}`)
 
@@ -86,7 +82,7 @@ func TestHandlePiPMissingID(t *testing.T) {
 }
 
 func TestHandlePiPRejectsGet(t *testing.T) {
-	s := newPiPTestServer()
+	s := newPiPTestServer(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/pip", nil)
 	rec := httptest.NewRecorder()
@@ -98,7 +94,7 @@ func TestHandlePiPRejectsGet(t *testing.T) {
 }
 
 func TestHandlePiPOpenerError(t *testing.T) {
-	s := newPiPTestServer()
+	s := newPiPTestServer(t)
 	s.SetPiPOpener(func(string) error {
 		return errors.New("boom")
 	})
@@ -111,7 +107,7 @@ func TestHandlePiPOpenerError(t *testing.T) {
 }
 
 func TestStatusReportsNativePiP(t *testing.T) {
-	s := newPiPTestServer()
+	s := newPiPTestServer(t)
 
 	if nativePiPFromStatus(t, s) {
 		t.Error("nativePip = true before an opener is registered")

@@ -11,6 +11,7 @@ import (
 
 	"github.com/sthbryan/ftm/internal/app/ui/views"
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/providers"
 	"github.com/sthbryan/ftm/internal/updater"
@@ -60,7 +61,6 @@ type Model struct {
 	Message             string
 	DownloadProgress    providers.DownloadProgress
 	DownloadingProvider string
-	PendingTunnel       *config.TunnelConfig
 	ProgressBar         progress.Model
 	SettingsView        *views.SettingsView
 	UpdateAvailable     *updater.Info
@@ -71,7 +71,8 @@ type Model struct {
 	pendingDeleteName   string
 	pendingConfirm      confirmKind
 	messageUntil        time.Time
-	statusUpdates       chan config.TunnelStatus
+	events              <-chan events.Event
+	stopEvents          func()
 }
 
 type TunnelDraft struct {

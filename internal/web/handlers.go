@@ -8,20 +8,22 @@ import (
 	"github.com/sthbryan/ftm/internal/autostart"
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/process"
-	"github.com/sthbryan/ftm/internal/store"
+	"github.com/sthbryan/ftm/internal/service"
 )
 
+// Handlers adapts HTTP to the service. They read live status from the
+// manager but never start, stop or save anything themselves.
 type Handlers struct {
 	manager   *process.Manager
-	store     *store.Store
+	svc       *service.Service
 	server    *Server
 	autostart autostart.Manager
 }
 
-func NewHandlers(manager *process.Manager, st *store.Store, server *Server) *Handlers {
+func NewHandlers(manager *process.Manager, svc *service.Service, server *Server) *Handlers {
 	return &Handlers{
 		manager:   manager,
-		store:     st,
+		svc:       svc,
 		server:    server,
 		autostart: autostart.New(),
 	}

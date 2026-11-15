@@ -61,13 +61,13 @@ func TestTunnelIsExposedThroughTheVisitorProxy(t *testing.T) {
 	m := NewManager()
 	m.providers[config.ProviderCloudflared] = provider
 	updates := make(chan config.TunnelStatus, 64)
-	m.SetStatusChannel(updates)
+	forwardStatuses(t, m, updates)
 	t.Cleanup(m.StopAll)
 
 	tunnel := tunnelFixture()
 	tunnel.LocalPort = originPort
 
-	if err := m.Start(tunnel, nil); err != nil {
+	if err := m.Start(tunnel); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
 	waitForState(t, updates, config.TunnelStateOnline)
@@ -106,10 +106,10 @@ func TestVisitorTrackingCanBeDisabled(t *testing.T) {
 	m.providers[config.ProviderCloudflared] = provider
 	m.SetVisitorTracking(false)
 	updates := make(chan config.TunnelStatus, 64)
-	m.SetStatusChannel(updates)
+	forwardStatuses(t, m, updates)
 	t.Cleanup(m.StopAll)
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
 	waitForState(t, updates, config.TunnelStateOnline)
@@ -124,9 +124,9 @@ func TestProxyStopsWithTheTunnel(t *testing.T) {
 	m := NewManager()
 	m.providers[config.ProviderCloudflared] = provider
 	updates := make(chan config.TunnelStatus, 64)
-	m.SetStatusChannel(updates)
+	forwardStatuses(t, m, updates)
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
 	waitForState(t, updates, config.TunnelStateOnline)

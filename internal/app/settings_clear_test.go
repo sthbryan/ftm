@@ -8,9 +8,7 @@ import (
 
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/process"
 	"github.com/sthbryan/ftm/internal/store"
-	"github.com/sthbryan/ftm/internal/web"
 )
 
 func modelWithTunnels(t *testing.T, names ...string) *Model {
@@ -23,11 +21,7 @@ func modelWithTunnels(t *testing.T, names ...string) *Model {
 	st := testStore(t, cfg)
 
 	m := &Model{
-		App: &App{
-			Store:     st,
-			Manager:   process.NewManager(),
-			WebServer: web.NewServer(nil, st),
-		},
+		App:    testApp(t, st),
 		Keys:   DefaultKeys,
 		State:  viewList,
 		Width:  100,
@@ -111,7 +105,7 @@ func TestConfirmingClearsEveryConnection(t *testing.T) {
 		t.Error("Onboarded = false, want the empty home and not the welcome screen")
 	}
 
-	saved, err := store.Peek(m.App.Store.Dirs())
+	saved, err := store.Peek(m.App.Service.Dirs())
 	if err != nil {
 		t.Fatalf("Peek() failed: %v", err)
 	}

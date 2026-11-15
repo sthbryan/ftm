@@ -277,7 +277,6 @@ tunnel_logs: "Logs"
 logs_nav_hint: "esc back  •  ↑/↓ scroll"
 complete: "Done"
 esc_cancel: "esc cancel"
-download_complete: "Download finished"
 
 # TUI: feedback
 tunnel_added: "Connection added"

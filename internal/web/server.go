@@ -13,12 +13,12 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/process"
-	"github.com/sthbryan/ftm/internal/store"
+	"github.com/sthbryan/ftm/internal/service"
 )
 
 const (
@@ -30,39 +30,39 @@ const (
 //go:embed static/*
 var staticFiles embed.FS
 
+// Server is a thin transport: actions go to the service, and every change
+// reaches the browser from the event bus, whichever surface made it.
 type Server struct {
-	manager       *process.Manager
-	store         *store.Store
-	httpServer    *http.Server
-	port          int
-	clients       map[*wsClient]struct{}
-	clientsMu     sync.RWMutex
-	handlers      *Handlers
-	StatusChannel chan config.TunnelStatus
-	updateSvc     *updateService
-	providerSvc   *providerUpdateService
-	updateCtx     context.Context
-	updateCancel  context.CancelFunc
-	pipOpener     func(tunnelID string) error
-	pipMu         sync.RWMutex
+	manager      *process.Manager
+	svc          *service.Service
+	bus          *events.Bus
+	httpServer   *http.Server
+	port         int
+	clients      map[*wsClient]struct{}
+	clientsMu    sync.RWMutex
+	handlers     *Handlers
+	providerSvc  *providerUpdateService
+	updateCtx    context.Context
+	updateCancel context.CancelFunc
+	pipOpener    func(tunnelID string) error
+	pipMu        sync.RWMutex
 }
 
-func NewServer(manager *process.Manager, st *store.Store) *Server {
+func NewServer(manager *process.Manager, svc *service.Service, bus *events.Bus) *Server {
 	s := &Server{
-		manager:       manager,
-		store:         st,
-		clients:       make(map[*wsClient]struct{}),
-		StatusChannel: make(chan config.TunnelStatus, 64),
+		manager: manager,
+		svc:     svc,
+		bus:     bus,
+		clients: make(map[*wsClient]struct{}),
 	}
-	s.handlers = NewHandlers(manager, st, s)
+	s.handlers = NewHandlers(manager, svc, s)
 	s.updateCtx, s.updateCancel = context.WithCancel(context.Background())
-	s.updateSvc = newUpdateService(s.broadcast)
 	s.providerSvc = newProviderUpdateService(manager, s.broadcastJSON)
 	return s
 }
 
 func (s *Server) listen() (net.Listener, error) {
-	if preferred := s.store.Snapshot().WebPort; preferred > 0 {
+	if preferred := s.svc.Config().WebPort; preferred > 0 {
 		ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", listenHost, preferred))
 		if err == nil {
 			return ln, nil
@@ -93,20 +93,21 @@ func (s *Server) Start() error {
 	}
 
 	s.port = addr.Port
-	if err := s.store.Update(func(c *config.Config) error {
-		c.WebPort = s.port
-		return nil
-	}); err != nil {
+	if err := s.svc.SetWebPort(s.port); err != nil {
 		log.Printf("web: could not persist the web port: %v", err)
 	}
 
 	s.httpServer = &http.Server{Handler: s.setupRoutes()}
 
-	s.updateSvc.Start(s.updateCtx)
+	if s.bus != nil {
+		sub, cancel := s.bus.Subscribe()
+		go func() {
+			<-s.updateCtx.Done()
+			cancel()
+		}()
+		go s.eventLoop(sub)
+	}
 	s.providerSvc.Start(s.updateCtx)
-	go s.installProgressLoop()
-	go s.statusUpdateLoop()
-	go s.statsLoop()
 	go func() {
 		if err := s.httpServer.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("web: server stopped: %v", err)
@@ -195,69 +196,87 @@ func (s *Server) URL() string {
 	return fmt.Sprintf("http://localhost:%d", s.port)
 }
 
-func (s *Server) installProgressLoop() {
-	for progress := range s.manager.ProgressEvents() {
-		step := "Installing..."
-		if progress.Done {
-			step = "Done"
-		}
+// eventLoop turns bus events into WebSocket messages until the subscription
+// is cancelled.
+func (s *Server) eventLoop(sub <-chan events.Event) {
+	for e := range sub {
+		s.handleEvent(e)
+	}
+}
 
+func (s *Server) handleEvent(e events.Event) {
+	switch e := e.(type) {
+	case events.TunnelStatus:
+		s.broadcastStatus(e.Status)
+	case events.TunnelSaved:
+		s.BroadcastTunnelUpdate(e.Tunnel)
+	case events.TunnelDeleted:
+		s.BroadcastTunnelDeleted(e.ID)
+	case events.TunnelStats:
+		if s.ClientCount() == 0 {
+			return
+		}
 		s.broadcastJSON(map[string]interface{}{
-			"type": "install",
-			"install": map[string]interface{}{
-				"provider": progress.Name,
-				"percent":  progress.Percent,
-				"step":     step,
-			},
-			"percent": progress.Percent,
-			"current": progress.Current,
-			"total":   progress.Total,
-			"done":    progress.Done,
+			"type":           "tunnel_stats",
+			"id":             e.ID,
+			"visitors":       e.Visitors,
+			"activeSessions": e.ActiveSessions,
+		})
+	case events.InstallProgress:
+		s.broadcastInstall(e)
+	case events.UpdateAvailable:
+		s.broadcastJSON(map[string]interface{}{
+			"type":       "update_available",
+			"current":    e.Current,
+			"latest":     e.Latest,
+			"tag":        e.Tag,
+			"assetName":  e.AssetName,
+			"releaseUrl": e.ReleaseURL,
+			"method":     e.Method,
 		})
 	}
 }
 
-func (s *Server) statusUpdateLoop() {
-	for status := range s.StatusChannel {
-		s.broadcastJSON(tunnelStateFromStatus(status))
-		s.broadcastTunnelNotification(status)
-	}
-}
-
-const statsInterval = 5 * time.Second
-
-func (s *Server) statsLoop() {
-	ticker := time.NewTicker(statsInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-s.updateCtx.Done():
-			return
-		case <-ticker.C:
-			s.broadcastStats()
-		}
-	}
-}
-
-func (s *Server) broadcastStats() {
-	if s.ClientCount() == 0 {
+func (s *Server) broadcastStatus(status config.TunnelStatus) {
+	if status.State == config.TunnelStateInstall {
+		s.broadcastJSON(tunnelStatePatch{
+			Type:     "tunnel_state",
+			ID:       status.ID,
+			State:    string(config.TunnelStateInstall),
+			Provider: string(status.Provider),
+		})
+		s.broadcastNotification("tunnel_installing", "Installing", "Installing tunnel for "+string(status.Provider)+"...", "info", "info")
 		return
 	}
 
-	for _, t := range s.store.Tunnels() {
-		status, ok := s.manager.GetStatus(t.ID)
-		if !ok || status.State != config.TunnelStateOnline {
-			continue
-		}
+	s.broadcastJSON(tunnelStateFromStatus(status))
+	s.broadcastTunnelNotification(status)
+}
 
-		s.broadcastJSON(map[string]interface{}{
-			"type":           "tunnel_stats",
-			"id":             t.ID,
-			"visitors":       status.Visitors,
-			"activeSessions": status.ActiveSessions,
-		})
+func (s *Server) broadcastInstall(p events.InstallProgress) {
+	if p.Err != "" {
+		// The failure reaches the tunnel as an error state; the progress bar
+		// only needs to know the download ended.
+		p.Done = true
 	}
+
+	step := "Installing..."
+	if p.Done {
+		step = "Done"
+	}
+
+	s.broadcastJSON(map[string]interface{}{
+		"type": "install",
+		"install": map[string]interface{}{
+			"provider": p.Provider,
+			"percent":  p.Percent,
+			"step":     step,
+		},
+		"percent": p.Percent,
+		"current": p.Current,
+		"total":   p.Total,
+		"done":    p.Done,
+	})
 }
 
 func (s *Server) BroadcastTunnelUpdate(t config.TunnelConfig) {
@@ -272,16 +291,7 @@ func (s *Server) BroadcastTunnelDeleted(id string) {
 }
 
 func (s *Server) getTunnel(id string) (config.TunnelConfig, bool) {
-	return s.store.Tunnel(id)
-}
-
-// updateConfig changes and saves the config through the store.
-func (s *Server) updateConfig(fn func(*config.Config) error) error {
-	err := s.store.Update(fn)
-	if err != nil {
-		log.Printf("web: could not save the config: %v", err)
-	}
-	return err
+	return s.svc.Tunnel(id)
 }
 
 func (s *Server) broadcastTunnelNotification(status config.TunnelStatus) {
@@ -300,12 +310,8 @@ func (s *Server) broadcastTunnelNotification(status config.TunnelStatus) {
 	}
 }
 
-func (s *Server) broadcastInstallingNotification(tunnel config.TunnelConfig) {
-	s.broadcastNotification("tunnel_installing", "Installing", "Installing tunnel for "+string(tunnel.Provider)+"...", "info", "info")
-}
-
 func (s *Server) broadcastNotification(_ string, title, body, toastType, soundType string) {
-	s.broadcastNotificationWithSound(title, body, toastType, soundType, s.store.Snapshot().NotificationSound)
+	s.broadcastNotificationWithSound(title, body, toastType, soundType, s.svc.Config().NotificationSound)
 }
 
 func (s *Server) BroadcastNewVisitor(status config.TunnelStatus) {
@@ -320,7 +326,7 @@ func (s *Server) BroadcastNewVisitor(status config.TunnelStatus) {
 
 func (s *Server) broadcastNotificationWithSound(title, body, toastType, soundType string, sound bool) {
 	channel := "toast"
-	if s.store.Snapshot().NotificationsStatus == config.NotificationGranted {
+	if s.svc.Config().NotificationsStatus == config.NotificationGranted {
 		channel = "os"
 	}
 

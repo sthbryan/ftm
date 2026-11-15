@@ -16,7 +16,7 @@ exit 1`
 	m, updates := newScriptManager(t, script)
 	t.Cleanup(m.StopAll)
 
-	if err := m.Start(tunnelFixture(), nil); err != nil {
+	if err := m.Start(tunnelFixture()); err != nil {
 		t.Fatalf("Start: %v", err)
 	}
 

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/sthbryan/ftm/internal/config"
-	"github.com/sthbryan/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/events"
 )
 
 // The manager is reconfigured from the UI while the process watchers are
@@ -14,9 +14,9 @@ import (
 // -race to make this meaningful.
 func TestHandlersCanBeReplacedWhileNotifying(t *testing.T) {
 	m := NewManager()
-	ch := make(chan config.TunnelStatus, 1)
-	m.SetStatusChannel(ch)
-	m.SetProgressChannel(make(chan providers.DownloadProgress, 1))
+	bus := events.New()
+	defer bus.Close()
+	m.SetEvents(bus)
 
 	var wg sync.WaitGroup
 
@@ -26,7 +26,7 @@ func TestHandlersCanBeReplacedWhileNotifying(t *testing.T) {
 		for i := 0; i < 200; i++ {
 			m.SetNotificationHandler(func(config.TunnelStatus) {})
 			m.SetVisitorHandler(func(config.TunnelStatus) {})
-			m.SetStatusChannel(ch)
+			m.SetEvents(bus)
 			m.SetExpirationCallbacks(
 				func(string, string, string, time.Time) {},
 				func(string) {},
@@ -43,7 +43,6 @@ func TestHandlersCanBeReplacedWhileNotifying(t *testing.T) {
 			m.callStatusUpdate(status)
 			m.callExpirationStart("t1", "Foundry", "cloudflared", time.Now())
 			m.callExpirationStop("t1")
-			<-ch
 		}
 	}()
 

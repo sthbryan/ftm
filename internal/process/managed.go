@@ -18,7 +18,7 @@ type ManagedProcess struct {
 	Status         config.TunnelStatus
 	PublicURL      string
 	Proxy          *proxy.Proxy
-	OnUpdate       func(config.TunnelStatus)
+	lastStats      proxy.Stats
 	logsMu         sync.RWMutex
 	logSubscribers map[chan string]struct{}
 }

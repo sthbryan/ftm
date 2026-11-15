@@ -3,7 +3,6 @@ package web
 import (
 	"encoding/json"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
 
 	"github.com/sthbryan/ftm/internal/config"
@@ -14,10 +13,7 @@ import (
 func clearHandlers(t *testing.T, cfg *config.Config) *Handlers {
 	t.Helper()
 
-	root := t.TempDir()
-	dirs := store.Dirs{Config: filepath.Join(root, "config"), Legacy: filepath.Join(root, "legacy")}
-
-	return NewServer(process.NewManager(), store.New(dirs, cfg)).handlers
+	return newTestServer(t, process.NewManager(), cfg).handlers
 }
 
 func decodeDeleted(t *testing.T, body []byte) int {
@@ -46,7 +42,7 @@ func TestClearTunnelsRemovesEveryConnection(t *testing.T) {
 	if got := decodeDeleted(t, w.Body.Bytes()); got != 2 {
 		t.Errorf("deleted = %d, want 2", got)
 	}
-	got := h.store.Snapshot()
+	got := h.svc.Config()
 	if len(got.Tunnels) != 0 {
 		t.Fatalf("Tunnels = %+v, want empty", got.Tunnels)
 	}
@@ -57,7 +53,7 @@ func TestClearTunnelsRemovesEveryConnection(t *testing.T) {
 		t.Errorf("Language = %q, want it untouched", got.Language)
 	}
 
-	saved, err := store.Peek(h.store.Dirs())
+	saved, err := store.Peek(h.svc.Dirs())
 	if err != nil {
 		t.Fatalf("Peek() failed: %v", err)
 	}

@@ -4,10 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/sthbryan/ftm/internal/updater"
-	"github.com/sthbryan/ftm/internal/version"
 )
-
-const updateRepo = "sthbryan/ftm"
 
 type updateCheckMsg struct {
 	info *updater.Info
@@ -18,16 +15,19 @@ type updateApplyMsg struct {
 	err error
 }
 
-func checkUpdateCmd() tea.Cmd {
+// checkUpdateCmd shows what the service already knows. The service checks on
+// its own schedule and publishes UpdateAvailable when it finds one.
+func (m *Model) checkUpdateCmd() tea.Cmd {
 	return func() tea.Msg {
-		info, err := updater.New(updateRepo).Check(version.Version)
-		return updateCheckMsg{info: info, err: err}
+		if info := m.App.Service.UpdateInfo(); info != nil {
+			return updateCheckMsg{info: info}
+		}
+		return nil
 	}
 }
 
-func applyUpdateCmd(info *updater.Info) tea.Cmd {
+func (m *Model) applyUpdateCmd() tea.Cmd {
 	return func() tea.Msg {
-		err := updater.New(updateRepo).Apply(info)
-		return updateApplyMsg{err: err}
+		return updateApplyMsg{err: m.App.Service.ApplyUpdate()}
 	}
 }
