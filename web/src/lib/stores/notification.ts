@@ -2,6 +2,7 @@ import { signal } from '@preact/signals';
 import { settingsApi, type Settings } from '@/lib/api';
 import { toast, type ToastType } from './toast';
 import { t } from './i18n';
+import { cue, soundOn } from '@/lib/sound';
 
 type NotificationStatus = 'pending' | 'granted' | 'rejected';
 type NotificationChannel = 'toast' | 'os';
@@ -16,11 +17,10 @@ export interface NotificationEvent {
 }
 
 export const notificationStatus = signal<NotificationStatus>('pending');
-export const soundEnabled = signal(true);
+/** The sound setting; `cue` reads the same signal. */
+export const soundEnabled = soundOn;
 
 export const notificationsEnabled = signal(false);
-
-let audioContext: AudioContext | null = null;
 
 const TOAST_TYPES: ToastType[] = ['success', 'error', 'info', 'warning', 'alert'];
 
@@ -39,78 +39,6 @@ function deriveStatusFromSettings(settings: Settings): NotificationStatus {
   }
 
   return Notification.permission === 'default' ? 'pending' : 'rejected';
-}
-
-async function initAudio() {
-  if (typeof window === 'undefined' || audioContext) return;
-
-  const AudioContextClass =
-    window.AudioContext ??
-    (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AudioContextClass) return;
-
-  try {
-    audioContext = new AudioContextClass();
-    if (audioContext.state === 'suspended') await audioContext.resume();
-  } catch {
-    audioContext = null;
-  }
-}
-
-async function playSound(type: string) {
-  if (!soundEnabled.value || typeof window === 'undefined') return;
-
-  await initAudio();
-  if (!audioContext) return;
-
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
-
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-
-  const at = audioContext.currentTime;
-
-  switch (type) {
-    case 'success':
-      oscillator.frequency.setValueAtTime(523.25, at);
-      oscillator.frequency.setValueAtTime(659.25, at + 0.1);
-      gainNode.gain.setValueAtTime(0.3, at);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, at + 0.3);
-      oscillator.start(at);
-      oscillator.stop(at + 0.3);
-      break;
-    case 'error':
-      oscillator.frequency.setValueAtTime(200, at);
-      gainNode.gain.setValueAtTime(0.3, at);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, at + 0.2);
-      oscillator.start(at);
-      oscillator.stop(at + 0.2);
-      break;
-    case 'warning':
-      oscillator.frequency.setValueAtTime(440, at);
-      oscillator.frequency.setValueAtTime(880, at + 0.15);
-      gainNode.gain.setValueAtTime(0.25, at);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, at + 0.3);
-      oscillator.start(at);
-      oscillator.stop(at + 0.3);
-      break;
-    case 'alert':
-      oscillator.frequency.setValueAtTime(880, at);
-      oscillator.frequency.setValueAtTime(440, at + 0.1);
-      oscillator.frequency.setValueAtTime(880, at + 0.2);
-      gainNode.gain.setValueAtTime(0.35, at);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, at + 0.3);
-      oscillator.start(at);
-      oscillator.stop(at + 0.3);
-      break;
-    default:
-      oscillator.frequency.setValueAtTime(440, at);
-      gainNode.gain.setValueAtTime(0.2, at);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, at + 0.15);
-      oscillator.start(at);
-      oscillator.stop(at + 0.15);
-  }
 }
 
 export function applyNotificationSettings(settings: Settings): void {
@@ -163,7 +91,7 @@ export function rejectNotifications(): void {
 }
 
 function notify(title: string, body: string, type: ToastType = 'info'): void {
-  if (soundEnabled.value) void playSound(type);
+  cue(type);
 
   if (
     notificationStatus.value === 'granted' &&
@@ -186,7 +114,7 @@ export function renderNotificationEvent(event: NotificationEvent): void {
   const channel = event.channel ?? 'toast';
   const shouldPlay = event.soundEnabled ?? soundEnabled.value;
 
-  if (shouldPlay) void playSound(soundType);
+  if (shouldPlay) cue(soundType);
 
   if (
     channel === 'os' &&
