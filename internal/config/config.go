@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"gopkg.in/yaml.v3"
 )
@@ -89,9 +90,47 @@ func (c *Config) NormalizeNotificationsStatus() {
 	}
 }
 
+// ConfigDir returns the directory that holds config.yaml. Windows keeps user
+// data under %AppData%; the other platforms stay on ~/.config.
 func ConfigDir() string {
+	return configDir(runtime.GOOS, userHomeDir(), userConfigDir())
+}
+
+// configDir is the pure part of ConfigDir, so the Windows and POSIX layouts can
+// be tested from either host.
+func configDir(goos, userHome, userConfig string) string {
+	if goos == "windows" && userConfig != "" {
+		return filepath.Join(userConfig, AppName)
+	}
+
+	if userHome == "" {
+		userHome = "."
+	}
+
+	return filepath.Join(userHome, ".config", AppName)
+}
+
+func userHomeDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
+		return ""
+	}
+	return home
+}
+
+func userConfigDir() string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return ""
+	}
+	return dir
+}
+
+// legacyConfigDir is where every platform used to keep the config. The Windows
+// build still has to read it once to move it to %AppData%.
+func legacyConfigDir() string {
+	home := userHomeDir()
+	if home == "" {
 		home = "."
 	}
 	return filepath.Join(home, ".config", AppName)
@@ -123,6 +162,8 @@ func (c *Config) Save() error {
 func Load() (*Config, error) {
 	path := ConfigPath()
 
+	migrateLegacyConfig(path)
+
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		cfg := DefaultConfig()
 		if err := cfg.Save(); err != nil {
@@ -153,6 +194,31 @@ func Load() (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// migrateLegacyConfig copies a config written by an older build, which always
+// used ~/.config, to the location this build reads. It only runs when the
+// destination is missing, so it can never overwrite newer state.
+func migrateLegacyConfig(path string) {
+	if _, err := os.Stat(path); err == nil {
+		return
+	}
+
+	legacy := filepath.Join(legacyConfigDir(), ConfigFile)
+	if legacy == path {
+		return
+	}
+
+	data, err := os.ReadFile(legacy)
+	if err != nil {
+		return
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return
+	}
+
+	_ = os.WriteFile(path, data, 0o644)
 }
 
 func (c *Config) GetTunnel(id string) *TunnelConfig {
