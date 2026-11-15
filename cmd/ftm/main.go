@@ -18,6 +18,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+
+	if len(os.Args) > 1 && os.Args[1] == "providers" {
+		if err := cli.Providers(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
 	var (
 		webOnly     = flag.Bool("web", false, "Start web dashboard and open browser")
 		server      = flag.Bool("server", false, "Start web dashboard only (no browser)")
