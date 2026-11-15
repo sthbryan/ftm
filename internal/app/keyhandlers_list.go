@@ -142,8 +142,10 @@ func (m *Model) confirmDelete() (tea.Model, tea.Cmd) {
 
 	// Deleting a tunnel that is not running is expected here.
 	_ = m.App.Manager.Stop(id)
-	m.App.Config.RemoveTunnel(id)
-	saveErr := m.App.SaveConfig()
+	saveErr := m.App.UpdateConfig(func(c *config.Config) error {
+		c.RemoveTunnel(id)
+		return nil
+	})
 	m.refreshItems()
 
 	if m.Cursor >= len(m.Items) && m.Cursor > 0 {
@@ -215,7 +217,7 @@ func (m *Model) handleListUpdate() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) playBeep() {
-	if m.App.Config.NotificationSound {
+	if m.App.Config().NotificationSound {
 		_ = notifications.PlaySound(notifications.SoundInfo)
 	}
 }

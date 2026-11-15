@@ -121,20 +121,23 @@ func (m *Model) saveTunnel() {
 }
 
 func (m *Model) updateTunnel() {
-	for i := range m.App.Config.Tunnels {
-		if m.App.Config.Tunnels[i].ID == m.editingTunnelID {
-			m.App.Config.Tunnels[i].Name = m.Draft.Name
-			m.App.Config.Tunnels[i].Provider = config.Provider(m.Draft.Provider)
-			m.App.Config.Tunnels[i].LocalPort = parsePort(m.Draft.Port)
-
-			if m.App.WebServer != nil {
-				m.App.WebServer.BroadcastTunnelUpdate(m.App.Config.Tunnels[i])
-			}
-			break
+	var updated *config.TunnelConfig
+	saveErr := m.App.UpdateConfig(func(c *config.Config) error {
+		t := c.GetTunnel(m.editingTunnelID)
+		if t == nil {
+			return nil
 		}
+		t.Name = m.Draft.Name
+		t.Provider = config.Provider(m.Draft.Provider)
+		t.LocalPort = parsePort(m.Draft.Port)
+		copied := *t
+		updated = &copied
+		return nil
+	})
+	if saveErr == nil && updated != nil && m.App.WebServer != nil {
+		m.App.WebServer.BroadcastTunnelUpdate(*updated)
 	}
 	m.editingTunnelID = ""
-	saveErr := m.App.SaveConfig()
 	m.refreshItems()
 	m.State = viewList
 
@@ -146,15 +149,17 @@ func (m *Model) updateTunnel() {
 }
 
 func (m *Model) createTunnel() {
-	tunnel := config.TunnelConfig{
-		ID:        m.App.Config.NewTunnelID(m.Draft.Name),
-		Name:      m.Draft.Name,
-		Provider:  config.Provider(m.Draft.Provider),
-		LocalPort: parsePort(m.Draft.Port),
-	}
-
-	m.App.Config.AddTunnel(tunnel)
-	saveErr := m.App.SaveConfig()
+	var tunnel config.TunnelConfig
+	saveErr := m.App.UpdateConfig(func(c *config.Config) error {
+		tunnel = config.TunnelConfig{
+			ID:        c.NewTunnelID(m.Draft.Name),
+			Name:      m.Draft.Name,
+			Provider:  config.Provider(m.Draft.Provider),
+			LocalPort: parsePort(m.Draft.Port),
+		}
+		c.AddTunnel(tunnel)
+		return nil
+	})
 	m.refreshItems()
 	m.State = viewList
 

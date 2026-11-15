@@ -18,6 +18,7 @@ import (
 	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/process"
+	"github.com/sthbryan/ftm/internal/store"
 )
 
 const (
@@ -31,7 +32,7 @@ var staticFiles embed.FS
 
 type Server struct {
 	manager       *process.Manager
-	config        *config.Config
+	store         *store.Store
 	httpServer    *http.Server
 	port          int
 	clients       map[*wsClient]struct{}
@@ -45,26 +46,26 @@ type Server struct {
 	pipMu         sync.RWMutex
 }
 
-func NewServer(manager *process.Manager, cfg *config.Config) *Server {
+func NewServer(manager *process.Manager, st *store.Store) *Server {
 	s := &Server{
 		manager:       manager,
-		config:        cfg,
+		store:         st,
 		clients:       make(map[*wsClient]struct{}),
 		StatusChannel: make(chan config.TunnelStatus, 64),
 	}
-	s.handlers = NewHandlers(manager, cfg, s)
+	s.handlers = NewHandlers(manager, st, s)
 	s.updateCtx, s.updateCancel = context.WithCancel(context.Background())
 	s.updateSvc = newUpdateService(s.broadcast)
 	return s
 }
 
 func (s *Server) listen() (net.Listener, error) {
-	if s.config.WebPort > 0 {
-		ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", listenHost, s.config.WebPort))
+	if preferred := s.store.Snapshot().WebPort; preferred > 0 {
+		ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", listenHost, preferred))
 		if err == nil {
 			return ln, nil
 		}
-		log.Printf("web: port %d unavailable (%v), scanning %d-%d", s.config.WebPort, err, portMin, portMax)
+		log.Printf("web: port %d unavailable (%v), scanning %d-%d", preferred, err, portMin, portMax)
 	}
 
 	for port := portMin; port <= portMax; port++ {
@@ -90,8 +91,10 @@ func (s *Server) Start() error {
 	}
 
 	s.port = addr.Port
-	s.config.WebPort = s.port
-	if err := s.config.Save(); err != nil {
+	if err := s.store.Update(func(c *config.Config) error {
+		c.WebPort = s.port
+		return nil
+	}); err != nil {
 		log.Printf("web: could not persist the web port: %v", err)
 	}
 
@@ -239,7 +242,7 @@ func (s *Server) broadcastStats() {
 		return
 	}
 
-	for _, t := range s.config.Tunnels {
+	for _, t := range s.store.Tunnels() {
 		status, ok := s.manager.GetStatus(t.ID)
 		if !ok || status.State != config.TunnelStateOnline {
 			continue
@@ -265,19 +268,17 @@ func (s *Server) BroadcastTunnelDeleted(id string) {
 	})
 }
 
-func (s *Server) getTunnel(id string) *config.TunnelConfig {
-	for i := range s.config.Tunnels {
-		if s.config.Tunnels[i].ID == id {
-			return &s.config.Tunnels[i]
-		}
-	}
-	return nil
+func (s *Server) getTunnel(id string) (config.TunnelConfig, bool) {
+	return s.store.Tunnel(id)
 }
 
-func (s *Server) updateConfig() {
-	if err := s.config.Save(); err != nil {
+// updateConfig changes and saves the config through the store.
+func (s *Server) updateConfig(fn func(*config.Config) error) error {
+	err := s.store.Update(fn)
+	if err != nil {
 		log.Printf("web: could not save the config: %v", err)
 	}
+	return err
 }
 
 func (s *Server) broadcastTunnelNotification(status config.TunnelStatus) {
@@ -301,7 +302,7 @@ func (s *Server) broadcastInstallingNotification(tunnel config.TunnelConfig) {
 }
 
 func (s *Server) broadcastNotification(_ string, title, body, toastType, soundType string) {
-	s.broadcastNotificationWithSound(title, body, toastType, soundType, s.config.NotificationSound)
+	s.broadcastNotificationWithSound(title, body, toastType, soundType, s.store.Snapshot().NotificationSound)
 }
 
 func (s *Server) BroadcastNewVisitor(status config.TunnelStatus) {
@@ -316,7 +317,7 @@ func (s *Server) BroadcastNewVisitor(status config.TunnelStatus) {
 
 func (s *Server) broadcastNotificationWithSound(title, body, toastType, soundType string, sound bool) {
 	channel := "toast"
-	if s.config.NotificationsStatus == config.NotificationGranted {
+	if s.store.Snapshot().NotificationsStatus == config.NotificationGranted {
 		channel = "os"
 	}
 

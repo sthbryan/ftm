@@ -306,6 +306,9 @@ version_output: "Foundry Tunnel Manager v{0}"
 dashboard_url: "Dashboard running at: {0}"
 press_ctrl_c: "\nPress Ctrl+C to stop"
 tui_hint: "Press 'w' in the TUI to open the dashboard"
+already_running: "Foundry Tunnel Manager is already running. Its dashboard is at {0}"
+already_starting: "Foundry Tunnel Manager is starting in another window. Try again in a moment."
+already_running_tui: "Close the other window first to manage tunnels from here."
 
 # Update
 update_check_failed: "Failed to check for updates: {0}"
