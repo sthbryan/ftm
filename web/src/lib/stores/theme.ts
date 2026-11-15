@@ -1,30 +1,31 @@
 import { computed, signal } from '@preact/signals';
 
 /**
- * Themes are Sephiro's, plus `ftm` from ./styles/ftm.css. Each one is a
- * `data-sephiro-theme` value on <html>; the palette itself lives only in CSS.
+ * ftm ships one theme, Tinta, in a dark and a light mode (./styles/ftm.css).
+ * Each mode is a `data-sephiro-theme` value on <html>; the palette lives only
+ * in CSS. The user picks a mode, or lets the OS pick it.
  */
-export const THEMES = ['ftm', 'dark', 'light', 'asterism', 'curie', 'fizza', 'pulso'] as const;
+export const THEMES = ['tinta', 'tinta-light'] as const;
 
 export type Theme = (typeof THEMES)[number];
 
+export const THEME_MODES = ['system', 'dark', 'light'] as const;
+
+export type ThemeMode = (typeof THEME_MODES)[number];
+
 const STORAGE_KEY = 'ftm-theme';
-const DEFAULT_THEME: Theme = 'ftm';
+const DEFAULT_MODE: ThemeMode = 'system';
 
 type SystemScheme = 'dark' | 'light';
 
-type Preference = { kind: 'system' } | { kind: 'manual'; theme: Theme };
-
-export const preference = signal<Preference>({ kind: 'manual', theme: DEFAULT_THEME });
+export const themeMode = signal<ThemeMode>(DEFAULT_MODE);
 export const systemScheme = signal<SystemScheme>('dark');
-export const currentTheme = signal<Theme>(DEFAULT_THEME);
+export const currentTheme = computed<Theme>(() => resolveTheme(themeMode.value, systemScheme.value));
 
-export const isAutoTheme = computed(() => preference.value.kind === 'system');
+export const isAutoTheme = computed(() => themeMode.value === 'system');
 
-const themeSet = new Set<string>(THEMES);
-
-function isTheme(value: string): value is Theme {
-  return themeSet.has(value);
+function isMode(value: unknown): value is ThemeMode {
+  return typeof value === 'string' && (THEME_MODES as readonly string[]).includes(value);
 }
 
 function getSystemScheme(): SystemScheme {
@@ -32,38 +33,36 @@ function getSystemScheme(): SystemScheme {
   return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 }
 
-function resolveTheme(pref: Preference, scheme: SystemScheme): Theme {
-  if (pref.kind === 'manual') return pref.theme;
-  return scheme === 'light' ? 'light' : 'dark';
+function resolveTheme(mode: ThemeMode, scheme: SystemScheme): Theme {
+  const effective = mode === 'system' ? scheme : mode;
+  return effective === 'light' ? 'tinta-light' : 'tinta';
 }
 
-function loadPreference(): Preference {
-  if (typeof window === 'undefined') return { kind: 'manual', theme: DEFAULT_THEME };
+function loadMode(): ThemeMode {
+  if (typeof window === 'undefined') return DEFAULT_MODE;
 
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return { kind: 'manual', theme: DEFAULT_THEME };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return DEFAULT_MODE;
+    if (isMode(raw)) return raw;
 
-  if (raw.startsWith('{')) {
-    try {
-      const parsed = JSON.parse(raw) as { mode?: string; theme?: string };
-      if (parsed.mode === 'system') return { kind: 'system' };
-      if (parsed.mode === 'manual' && parsed.theme && isTheme(parsed.theme)) {
-        return { kind: 'manual', theme: parsed.theme };
-      }
-    } catch {
-      /* fall through to the default */
-    }
+    // Earlier builds stored {mode, theme} with a palette name (ftm, nord, pulso…).
+    // Those palettes are gone, so the choice falls back to following the OS.
+    const parsed = JSON.parse(raw) as { mode?: unknown };
+    if (isMode(parsed.mode)) return parsed.mode;
+  } catch {
+    /* unreadable or blocked storage: use the default */
   }
 
-  // Values written by the old palette (nord, gruvbox, …) no longer exist.
-  if (isTheme(raw)) return { kind: 'manual', theme: raw };
-
-  return { kind: 'manual', theme: DEFAULT_THEME };
+  return DEFAULT_MODE;
 }
 
-function savePreference(pref: Preference): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pref));
+function saveMode(mode: ThemeMode): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, mode);
+  } catch {
+    /* storage blocked; the choice lasts for this session */
+  }
 }
 
 function applyTheme(theme: Theme): void {
@@ -78,38 +77,30 @@ export function initTheme(): void {
   initialized = true;
 
   systemScheme.value = getSystemScheme();
-  preference.value = loadPreference();
-  currentTheme.value = resolveTheme(preference.value, systemScheme.value);
+  themeMode.value = loadMode();
 
   window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (event) => {
     systemScheme.value = event.matches ? 'light' : 'dark';
-    if (preference.value.kind === 'system') {
-      currentTheme.value = resolveTheme(preference.value, systemScheme.value);
-      applyTheme(currentTheme.value);
-    }
+    applyTheme(currentTheme.value);
   });
 
   applyTheme(currentTheme.value);
 }
 
-export function setTheme(theme: string): void {
-  if (!isTheme(theme)) return;
-  preference.value = { kind: 'manual', theme };
-  currentTheme.value = theme;
-  savePreference(preference.value);
-  applyTheme(theme);
-}
-
-/** Follow the OS: Sephiro's own light/dark pair. */
-export function followSystem(): void {
-  preference.value = { kind: 'system' };
-  currentTheme.value = resolveTheme(preference.value, systemScheme.value);
-  savePreference(preference.value);
+export function setThemeMode(mode: string): void {
+  if (!isMode(mode)) return;
+  themeMode.value = mode;
+  saveMode(mode);
   applyTheme(currentTheme.value);
 }
 
-/** Step to the next theme; used by the command palette and Shift+T. */
+/** Follow the OS between Tinta dark and light. */
+export function followSystem(): void {
+  setThemeMode('system');
+}
+
+/** Step system → dark → light; used by the command palette and ⌘⇧T. */
 export function cycleTheme(): void {
-  const index = THEMES.indexOf(currentTheme.value);
-  setTheme(THEMES[(index + 1) % THEMES.length]);
+  const index = THEME_MODES.indexOf(themeMode.value);
+  setThemeMode(THEME_MODES[(index + 1) % THEME_MODES.length]);
 }

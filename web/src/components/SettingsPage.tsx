@@ -5,6 +5,7 @@ import { Dialog } from '@zovaris/sephiro/dialog';
 import {
   Bell,
   BellSlash,
+  CircleHalf,
   GlobeHemisphereWest,
   Power,
   SpeakerHigh,
@@ -243,8 +244,15 @@ export function SettingsPage() {
               <header class="px-5 pt-4 pb-2">
                 <h2 class="m-0 text-sm font-semibold text-text">{t('appearance_section')}</h2>
               </header>
-              <div class="border-t border-border-light pt-2">
-                <ThemeGrid />
+              <div class="border-t border-border-light">
+                <Row
+                  icon={<CircleHalf size={17} />}
+                  title={t('theme')}
+                  description={t('match_system')}
+                  last
+                >
+                  <ThemeGrid />
+                </Row>
               </div>
             </section>
 

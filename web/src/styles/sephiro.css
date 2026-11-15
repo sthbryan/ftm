@@ -1,7 +1,7 @@
 /* Sephiro owns the palette.
  *
- * Each theme is one `data-sephiro-theme` value on <html>: the package sheets
- * below, plus ./ftm.css, which is written against the same contract. The app
+ * The theme is Tinta (./ftm.css), written against the Sephiro token contract:
+ * one `data-sephiro-theme` value on <html> per mode. The app
  * maps those `--sph-*` tokens onto the Tailwind colour names once (themes.css),
  * so a theme swap repaints the utilities and the components together.
  *
@@ -9,12 +9,9 @@
  * Sephiro sheets as well.
  */
 
-@import "@zovaris/sephiro/css/theme-dark.css";
-@import "@zovaris/sephiro/css/theme-light.css";
-@import "@zovaris/sephiro/css/theme-asterism.css";
-@import "@zovaris/sephiro/css/theme-curie.css";
-@import "@zovaris/sephiro/css/theme-fizza.css";
-@import "@zovaris/sephiro/css/theme-pulso.css";
+/* The default sheet carries the structural tokens (radii, motion, control
+ * heights) under :where(:root); Tinta overrides only the colours. */
+@import "@zovaris/sephiro/css/theme-default.css";
 @import "./ftm.css";
 
 @import "@zovaris/sephiro/css/spinner.css";
@@ -29,14 +26,9 @@
 @import "@zovaris/sephiro/css/empty-state.css";
 @import "@zovaris/sephiro/css/kbd.css";
 @import "@zovaris/sephiro/css/toolbar.css";
-@import "@zovaris/sephiro/css/sidebar.css";
-@import "@zovaris/sephiro/css/metric-card.css";
-@import "@zovaris/sephiro/css/stat.css";
 @import "@zovaris/sephiro/css/status-mark.css";
-@import "@zovaris/sephiro/css/sparkline.css";
-@import "@zovaris/sephiro/css/chart.css";
-@import "@zovaris/sephiro/css/run-matrix.css";
 @import "@zovaris/sephiro/css/terminal.css";
+@import "@zovaris/sephiro/css/progress.css";
 @import "@zovaris/sephiro/css/segmented-control.css";
 @import "@zovaris/sephiro/css/command-palette.css";
 @import "@zovaris/sephiro/css/toast.css";

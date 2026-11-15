@@ -3,27 +3,24 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 /**
- * The Sephiro themes are tested where they are made; `ftm` is ours, so it is the
- * one palette this repo has to keep readable. Colours are read from the sheet
- * itself, so the test cannot drift from what ships.
+ * Tinta is the one palette this repo ships, in a dark and a light mode, so both
+ * have to stay readable. Colours are read from the sheet itself, so the test
+ * cannot drift from what ships.
  */
 
 const AA_NORMAL_TEXT = 4.5;
 
 const css = readFileSync(fileURLToPath(new URL('./ftm.css', import.meta.url)), 'utf8');
-const block = css.match(/\[data-sephiro-theme="ftm"\]\s*\{([\s\S]*?)\}/)?.[1] ?? '';
+function readTokens(theme: string): Record<string, string> {
+  const pattern = new RegExp(`\\[data-sephiro-theme="${theme}"\\]\\s*\\{([\\s\\S]*?)\\}`);
+  const block = css.match(pattern)?.[1] ?? '';
 
-const tokens: Record<string, string> = Object.fromEntries(
-  [...block.matchAll(/(--sph-[\w-]+)\s*:\s*(#[0-9a-fA-F]{3,8})\s*;/g)].map((match) => [
-    match[1],
-    match[2],
-  ]),
-);
-
-function token(name: string): string {
-  const value = tokens[name];
-  if (!value) throw new Error(`missing ${name} in ftm.css`);
-  return value;
+  return Object.fromEntries(
+    [...block.matchAll(/(--sph-[\w-]+)\s*:\s*(#[0-9a-fA-F]{3,8})\s*;/g)].map((match) => [
+      match[1],
+      match[2],
+    ]),
+  );
 }
 
 function toRgb(hex: string): [number, number, number] {
@@ -80,7 +77,15 @@ const PAIRS: Array<[string, string, string]> = [
   ['--sph-danger', '--sph-surface', 'error state as text'],
 ];
 
-describe('ftm theme', () => {
+describe.each(['tinta', 'tinta-light'])('%s theme', (theme) => {
+  const tokens = readTokens(theme);
+
+  function token(name: string): string {
+    const value = tokens[name];
+    if (!value) throw new Error(`missing ${name} in the ${theme} block of ftm.css`);
+    return value;
+  }
+
   it('defines every colour it is checked against', () => {
     expect(Object.keys(tokens)).toContain('--sph-accent-strong');
   });
