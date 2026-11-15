@@ -151,9 +151,40 @@ func (c *Config) Save() error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	path := ConfigPath()
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	// Write a sibling temp file and rename it into place. A crash, a full disk
+	// or a scanner holding the file then leaves the previous config intact
+	// instead of a half-written one that cannot be parsed on the next start.
+	tmp, err := os.CreateTemp(dir, ConfigFile+".tmp*")
+	if err != nil {
+		return fmt.Errorf("failed to create a temporary config: %w", err)
+	}
+	tmpPath := tmp.Name()
+
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("failed to write config: %w", err)
+	}
+
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpPath)
+		return fmt.Errorf("failed to flush config: %w", err)
+	}
+
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmpPath)
+		return fmt.Errorf("failed to close config: %w", err)
+	}
+
+	if err := os.Chmod(tmpPath, 0o644); err != nil {
+		_ = os.Remove(tmpPath)
+		return fmt.Errorf("failed to set config permissions: %w", err)
+	}
+
+	if err := os.Rename(tmpPath, ConfigPath()); err != nil {
+		_ = os.Remove(tmpPath)
+		return fmt.Errorf("failed to replace config: %w", err)
 	}
 
 	return nil
