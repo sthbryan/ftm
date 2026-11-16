@@ -102,6 +102,20 @@ jobs:
           path: ftm-${{ matrix.suffix }}${{ matrix.ext }}
           retention-days: 7
 
+      - name: Generate completions and man page
+        if: matrix.suffix == 'linux-x64'
+        run: |
+          scripts/gen-completions.sh ./ftm-linux-x64 ftm-completions
+          tar -czf ftm-completions.tar.gz -C ftm-completions .
+
+      - name: Upload completions and man page
+        if: matrix.suffix == 'linux-x64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ftm-completions
+          path: ftm-completions.tar.gz
+          retention-days: 7
+
   build-desktop:
     name: Build Desktop (${{ matrix.suffix }})
     needs: build-web
