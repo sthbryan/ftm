@@ -1,17 +1,26 @@
 /* Sephiro owns the palette.
  *
- * The theme is Tinta (./ftm.css), written against the Sephiro token contract:
- * one `data-sephiro-theme` value on <html> per mode. The app
- * maps those `--sph-*` tokens onto the Tailwind colour names once (themes.css),
- * so a theme swap repaints the utilities and the components together.
+ * A theme is a family with a dark and a light variant, written against the
+ * Sephiro token contract: `data-sephiro-theme="<family>"` plus
+ * `data-theme="dark|light"` on <html>. Sephiro's presets come from the package
+ * below, ftm's own families from ./ftm.css. The app maps those `--sph-*`
+ * tokens onto the Tailwind colour names once (themes.css), so a theme swap
+ * repaints the utilities and the components together.
  *
  * Structural values (motion, easings, radii, control heights) come from the
  * Sephiro sheets as well.
  */
 
 /* The default sheet carries the structural tokens (radii, motion, control
- * heights) under :where(:root); Tinta overrides only the colours. */
+ * heights) under :where(:root) and Sephiro's dark pair; the light sheet adds
+ * its light variant. The preset sheets each carry both variants. Families set
+ * colours only: the :root block below keeps ftm's fonts and radii. */
 @import "@zovaris/sephiro/css/theme-default.css";
+@import "@zovaris/sephiro/css/theme-light.css";
+@import "@zovaris/sephiro/css/theme-asterism.css";
+@import "@zovaris/sephiro/css/theme-curie.css";
+@import "@zovaris/sephiro/css/theme-fizza.css";
+@import "@zovaris/sephiro/css/theme-pulso.css";
 @import "./ftm.css";
 
 @import "@zovaris/sephiro/css/spinner.css";
