@@ -60,6 +60,11 @@ func usedKeys(t *testing.T) map[string][]string {
 			case ".git", "node_modules", "dist", "build", "vendor":
 				return filepath.SkipDir
 			}
+			// Developer tools (tools/openapi, tools/fakefoundry) are not
+			// translated; their strings are not locale keys.
+			if rel == "tools" {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 
