@@ -45,7 +45,7 @@ func (l *LogsView) Render() string {
 		Foreground(t.Text).
 		Render(l.Content)
 
-	panel := ui.Panel(title, body, l.Width, l.Height-lipgloss.Height(footer), t.Gold)
+	panel := ui.Panel(title, body, l.Width, l.Height-lipgloss.Height(footer), t.Accent)
 
 	return panel + "\n" + footer
 }

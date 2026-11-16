@@ -28,7 +28,7 @@ func (h *HelpBar) Render() string {
 		return ""
 	}
 
-	keyStyle := lipgloss.NewStyle().Foreground(ui.ThemeDefault.Gold)
+	keyStyle := lipgloss.NewStyle().Foreground(ui.ThemeDefault.Accent)
 	labelStyle := lipgloss.NewStyle().Foreground(ui.ThemeDefault.TextDim)
 	separator := labelStyle.Render(helpSeparator)
 

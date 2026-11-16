@@ -113,7 +113,7 @@ func StatusColor(state int) color.Color {
 	case TunnelStateError, TunnelStateTimeout:
 		return ui.ThemeDefault.Danger
 	case TunnelStateStarting, TunnelStateConnecting:
-		return ui.ThemeDefault.Gold
+		return ui.ThemeDefault.Accent
 	default:
 		return ui.ThemeDefault.TextDim
 	}
@@ -206,7 +206,7 @@ func (t *TunnelItem) Render() string {
 		itemStyle = itemStyle.
 			BorderStyle(lipgloss.Border{Left: "▌"}).
 			BorderLeft(true).
-			BorderForeground(ui.ThemeDefault.Gold).
+			BorderForeground(ui.ThemeDefault.Accent).
 			BorderBackground(background)
 	} else {
 		itemStyle = itemStyle.PaddingLeft(horizontalPadding + 1)

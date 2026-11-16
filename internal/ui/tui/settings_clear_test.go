@@ -28,6 +28,7 @@ func modelWithTunnels(t *testing.T, names ...string) *Model {
 		Height: 30,
 	}
 	m.refreshItems()
+	m.refreshPrefs()
 
 	return m
 }
@@ -63,7 +64,7 @@ func TestClearingAsksBeforeDeleting(t *testing.T) {
 	if strings.Contains(out, i18n.T("confirm_delete_title")) {
 		t.Error("clearing every connection reused the single-delete copy")
 	}
-	if len(m.App.Config().Tunnels) != 2 {
+	if len(m.App.(*Local).Service.Config().Tunnels) != 2 {
 		t.Error("connections were removed before the user confirmed")
 	}
 }
@@ -86,8 +87,8 @@ func TestConfirmingClearsEveryConnection(t *testing.T) {
 
 	m.handleConfirmKey(tea.KeyPressMsg{Code: 'y', Text: "y"})
 
-	if len(m.App.Config().Tunnels) != 0 {
-		t.Fatalf("Tunnels = %+v, want empty", m.App.Config().Tunnels)
+	if len(m.App.(*Local).Service.Config().Tunnels) != 0 {
+		t.Fatalf("Tunnels = %+v, want empty", m.App.(*Local).Service.Config().Tunnels)
 	}
 	if len(m.Items) != 0 {
 		t.Errorf("Items = %d, want the list rebuilt as empty", len(m.Items))
@@ -101,11 +102,11 @@ func TestConfirmingClearsEveryConnection(t *testing.T) {
 	if m.Message != i18n.T("connections_cleared") {
 		t.Errorf("Message = %q, want the cleared confirmation", m.Message)
 	}
-	if !m.App.Config().Onboarded {
+	if !m.App.(*Local).Service.Config().Onboarded {
 		t.Error("Onboarded = false, want the empty home and not the welcome screen")
 	}
 
-	saved, err := store.Peek(m.App.Service.Dirs())
+	saved, err := store.Peek(m.App.(*Local).Service.Dirs())
 	if err != nil {
 		t.Fatalf("Peek() failed: %v", err)
 	}
@@ -125,8 +126,8 @@ func TestCancellingGoesBackToSettings(t *testing.T) {
 	if m.State != viewSettings {
 		t.Errorf("State = %v, want to land back on the settings panel", m.State)
 	}
-	if len(m.App.Config().Tunnels) != 1 {
-		t.Errorf("Tunnels = %+v, want them untouched", m.App.Config().Tunnels)
+	if len(m.App.(*Local).Service.Config().Tunnels) != 1 {
+		t.Errorf("Tunnels = %+v, want them untouched", m.App.(*Local).Service.Config().Tunnels)
 	}
 }
 

@@ -4,9 +4,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/service"
 	"github.com/sthbryan/ftm/internal/ui/tui/views"
 )
 
@@ -70,7 +68,7 @@ func (m *Model) handleSettingsSelect() {
 		sv.Language = cycleLanguage(sv.Language, 1)
 		i18n.SetLanguage(sv.Language)
 	case 3:
-		if len(m.App.Service.Tunnels()) == 0 {
+		if len(m.Items) == 0 {
 			return
 		}
 		m.pendingConfirm = confirmClearTunnels
@@ -83,7 +81,9 @@ func (m *Model) confirmClearTunnels() (tea.Model, tea.Cmd) {
 	m.saveSettings()
 	m.SettingsView = nil
 
-	_, saveErr := m.App.Service.ClearTunnels()
+	ctx, cancel := m.call()
+	saveErr := m.App.ClearTunnels(ctx)
+	cancel()
 	m.refreshItems()
 
 	m.Cursor = 0
@@ -117,11 +117,11 @@ func cycleLanguage(current string, dir int) string {
 
 func (m *Model) openSettings() {
 	m.SettingsView = views.NewSettingsView()
-	cfg := m.App.Config()
-	m.SettingsView.NotificationsEnabled = cfg.NotificationsStatus == core.NotificationGranted
-	m.SettingsView.NotificationSound = cfg.NotificationSound
+	m.refreshPrefs()
+	m.SettingsView.NotificationsEnabled = m.prefs.Notifications
+	m.SettingsView.NotificationSound = m.prefs.Sound
 	m.SettingsView.Language = i18n.GetCurrentLang()
-	m.SettingsView.TunnelCount = len(cfg.Tunnels)
+	m.SettingsView.TunnelCount = len(m.Items)
 	m.State = viewSettings
 }
 
@@ -132,17 +132,17 @@ func (m *Model) saveSettings() {
 
 	sv := m.SettingsView
 
-	status := core.NotificationRejected
-	if sv.NotificationsEnabled {
-		status = core.NotificationGranted
-	}
-	sound, lang := sv.NotificationSound, sv.Language
+	prefs := m.prefs
+	prefs.Notifications = sv.NotificationsEnabled
+	prefs.Sound = sv.NotificationSound
+	prefs.Language = sv.Language
 
-	_, err := m.App.Service.UpdateSettings(service.SettingsPatch{
-		NotificationsStatus: &status,
-		NotificationSound:   &sound,
-		Language:            &lang,
-	})
+	ctx, cancel := m.call()
+	defer cancel()
+	err := m.App.SavePrefs(ctx, prefs)
+	if err == nil {
+		m.prefs = prefs
+	}
 
 	if err != nil {
 		m.showMessage(i18n.T("error_saving_config") + ": " + err.Error())

@@ -2,7 +2,8 @@ package tui
 
 import (
 	"testing"
-	"time"
+
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
@@ -89,18 +90,21 @@ func TestMessageExpiresOnItsOwnSchedule(t *testing.T) {
 	m := &Model{App: testApp(t, testStore(t, core.DefaultConfig()))}
 
 	m.showMessage("URL copied")
-	if m.Message == "" {
-		t.Fatal("showMessage did not set the message")
+	first := m.messageSeq
+	if _, cmd := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24}); cmd == nil {
+		t.Fatal("showing a message scheduled nothing to clear it")
 	}
-
-	m.handleTick()
 	if m.Message == "" {
 		t.Error("the message expired immediately instead of lasting its timeout")
 	}
 
-	m.messageUntil = time.Now().Add(-time.Second)
-	m.handleTick()
+	m.showMessage("Connection added")
+	m.Update(messageExpiredMsg{seq: first})
+	if m.Message != "Connection added" {
+		t.Errorf("Message = %q: the timer of an older message cleared a newer one", m.Message)
+	}
 
+	m.Update(messageExpiredMsg{seq: m.messageSeq})
 	if m.Message != "" {
 		t.Error("the message outlived its timeout")
 	}

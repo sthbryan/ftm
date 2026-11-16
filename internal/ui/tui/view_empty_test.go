@@ -15,13 +15,15 @@ func modelWithoutTunnels(t *testing.T, onboarded bool) *Model {
 	cfg.Onboarded = onboarded
 	st := testStore(t, cfg)
 
-	return &Model{
+	m := &Model{
 		App:    testApp(t, st),
 		Keys:   DefaultKeys,
 		State:  viewList,
 		Width:  100,
 		Height: 30,
 	}
+	m.refreshPrefs()
+	return m
 }
 
 func TestFirstRunGetsTheWelcomeScreen(t *testing.T) {

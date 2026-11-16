@@ -5,7 +5,6 @@ import (
 
 	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/service"
 )
 
 const (
@@ -122,14 +121,12 @@ func (m *Model) saveTunnel() {
 }
 
 func (m *Model) updateTunnel() {
-	name := m.Draft.Name
-	provider := core.Provider(m.Draft.Provider)
-	port := parsePort(m.Draft.Port)
-
-	_, saveErr := m.App.Service.UpdateTunnel(m.editingTunnelID, service.TunnelPatch{
-		Name:      &name,
-		Provider:  &provider,
-		LocalPort: &port,
+	ctx, cancel := m.call()
+	defer cancel()
+	saveErr := m.App.UpdateTunnel(ctx, m.editingTunnelID, TunnelInput{
+		Name:      m.Draft.Name,
+		Provider:  core.Provider(m.Draft.Provider),
+		LocalPort: parsePort(m.Draft.Port),
 	})
 	m.editingTunnelID = ""
 	m.refreshItems()
@@ -143,7 +140,9 @@ func (m *Model) updateTunnel() {
 }
 
 func (m *Model) createTunnel() {
-	_, saveErr := m.App.Service.CreateTunnel(service.TunnelInput{
+	ctx, cancel := m.call()
+	defer cancel()
+	saveErr := m.App.CreateTunnel(ctx, TunnelInput{
 		Name:      m.Draft.Name,
 		Provider:  core.Provider(m.Draft.Provider),
 		LocalPort: parsePort(m.Draft.Port),

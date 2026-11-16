@@ -91,7 +91,7 @@ func TestOverlayWithoutASizeFallsBackToTheForeground(t *testing.T) {
 
 func TestOverlayDimsWhatItCovers(t *testing.T) {
 	list := lipgloss.NewStyle().
-		Foreground(ThemeDefault.Gold).
+		Foreground(ThemeDefault.Accent).
 		Background(ThemeDefault.Online).
 		Render("ONLINE")
 

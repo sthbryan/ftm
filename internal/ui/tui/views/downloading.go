@@ -24,12 +24,12 @@ func NewDownloadingView() *DownloadingView {
 func (d *DownloadingView) Render(progressBarView string) string {
 	var b strings.Builder
 
-	gold := ui.ThemeDefault.Gold
+	accent := ui.ThemeDefault.Accent
 	text := ui.ThemeDefault.Text
 	textDim := ui.ThemeDefault.TextDim
 
 	header := lipgloss.NewStyle().
-		Foreground(gold).
+		Foreground(accent).
 		Bold(true).
 		Render(i18n.T("installing"))
 

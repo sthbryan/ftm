@@ -11,7 +11,7 @@ func TestPanelFillsExactlyTheRequestedBox(t *testing.T) {
 	for _, size := range []struct{ width, height int }{
 		{40, 10}, {20, 5}, {120, 30}, {13, 4},
 	} {
-		out := Panel("Connections", "one\ntwo", size.width, size.height, ThemeDefault.Bronze)
+		out := Panel("Connections", "one\ntwo", size.width, size.height, ThemeDefault.AccentMuted)
 
 		lines := strings.Split(out, "\n")
 		if len(lines) != size.height {
@@ -26,7 +26,7 @@ func TestPanelFillsExactlyTheRequestedBox(t *testing.T) {
 }
 
 func TestPanelShowsItsTitleInTheTopBorder(t *testing.T) {
-	out := Panel("Connections", "body", 40, 6, ThemeDefault.Bronze)
+	out := Panel("Connections", "body", 40, 6, ThemeDefault.AccentMuted)
 
 	top := strings.Split(out, "\n")[0]
 	if !strings.Contains(top, "Connections") {
@@ -38,7 +38,7 @@ func TestPanelShowsItsTitleInTheTopBorder(t *testing.T) {
 }
 
 func TestPanelWithoutRoomFallsBackToItsContent(t *testing.T) {
-	if out := Panel("Connections", "body", 3, 10, ThemeDefault.Bronze); out != "body" {
+	if out := Panel("Connections", "body", 3, 10, ThemeDefault.AccentMuted); out != "body" {
 		t.Errorf("got %q, want the bare content", out)
 	}
 }
@@ -46,7 +46,7 @@ func TestPanelWithoutRoomFallsBackToItsContent(t *testing.T) {
 func TestPanelClipsContentTallerThanTheBox(t *testing.T) {
 	content := strings.TrimSuffix(strings.Repeat("row\n", 40), "\n")
 
-	out := Panel("Logs", content, 30, 8, ThemeDefault.Bronze)
+	out := Panel("Logs", content, 30, 8, ThemeDefault.AccentMuted)
 
 	if lines := strings.Count(out, "\n") + 1; lines != 8 {
 		t.Errorf("rendered %d lines, want 8", lines)

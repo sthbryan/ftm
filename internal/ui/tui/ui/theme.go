@@ -7,19 +7,19 @@ import (
 )
 
 type Theme struct {
-	Gold       color.Color
-	Bronze     color.Color
-	Text       color.Color
-	TextDim    color.Color
-	Surface    color.Color
-	Dimmed     color.Color
-	Online     color.Color
-	Offline    color.Color
-	Connecting color.Color
-	Error      color.Color
-	Danger     color.Color
-	Stopped    color.Color
-	Success    color.Color
+	Accent      color.Color
+	AccentMuted color.Color
+	Text        color.Color
+	TextDim     color.Color
+	Surface     color.Color
+	Dimmed      color.Color
+	Online      color.Color
+	Offline     color.Color
+	Connecting  color.Color
+	Error       color.Color
+	Danger      color.Color
+	Stopped     color.Color
+	Success     color.Color
 
 	Button           color.Color
 	ButtonText       color.Color
@@ -27,28 +27,32 @@ type Theme struct {
 	ButtonActiveText color.Color
 }
 
+// BuildTheme is Tinta, the ftm theme the web view and desktop app use, for a
+// dark or light terminal. Surfaces are a quiet graphite; the only colour is
+// ink blue, kept for what matters and the public link. Row fills are the
+// status colours mixed into the background, the way the web view tints them.
 func BuildTheme(isDark bool) *Theme {
 	c := lipgloss.LightDark(isDark)
 
 	return &Theme{
-		Gold:       c(lipgloss.Color("#8a6d1f"), lipgloss.Color("#c9a227")),
-		Bronze:     c(lipgloss.Color("#6b5940"), lipgloss.Color("#8b7355")),
-		Text:       c(lipgloss.Color("#1c1a17"), lipgloss.Color("#ffffff")),
-		TextDim:    c(lipgloss.Color("#6b6660"), lipgloss.Color("#9a9590")),
-		Surface:    c(lipgloss.Color("#f2eee6"), lipgloss.Color("#232019")),
-		Dimmed:     c(lipgloss.Color("#bdb8ae"), lipgloss.Color("#4a453d")),
-		Online:     c(lipgloss.Color("#cfe8da"), lipgloss.Color("#1e3a2f")),
-		Offline:    c(lipgloss.Color("#e8e6e1"), lipgloss.Color("#2a2824")),
-		Connecting: c(lipgloss.Color("#f3e6c2"), lipgloss.Color("#3a3020")),
-		Error:      c(lipgloss.Color("#f5d6d6"), lipgloss.Color("#3a2020")),
-		Danger:     c(lipgloss.Color("#b02a1c"), lipgloss.Color("#ff6b6b")),
-		Stopped:    c(lipgloss.Color("#dedbd6"), lipgloss.Color("#3a3a3a")),
-		Success:    c(lipgloss.Color("#2f7d5b"), lipgloss.Color("#7cb69d")),
+		Accent:      c(lipgloss.Color("#3a5bc7"), lipgloss.Color("#9eb1ff")),
+		AccentMuted: c(lipgloss.Color("#3358d4"), lipgloss.Color("#5472e4")),
+		Text:        c(lipgloss.Color("#21201c"), lipgloss.Color("#eeeeec")),
+		TextDim:     c(lipgloss.Color("#63635e"), lipgloss.Color("#b5b3ad")),
+		Surface:     c(lipgloss.Color("#f1f0ef"), lipgloss.Color("#222221")),
+		Dimmed:      c(lipgloss.Color("#cfceca"), lipgloss.Color("#494844")),
+		Online:      c(lipgloss.Color("#e4eee5"), lipgloss.Color("#1e2c20")),
+		Offline:     c(lipgloss.Color("#f1f0ef"), lipgloss.Color("#191918")),
+		Connecting:  c(lipgloss.Color("#f1e9de"), lipgloss.Color("#322b11")),
+		Error:       c(lipgloss.Color("#f8e8e8"), lipgloss.Color("#322422")),
+		Danger:      c(lipgloss.Color("#ce2c31"), lipgloss.Color("#ff9592")),
+		Stopped:     c(lipgloss.Color("#e9e8e6"), lipgloss.Color("#2a2a28")),
+		Success:     c(lipgloss.Color("#2a7e3b"), lipgloss.Color("#71d083")),
 
-		Button:           c(lipgloss.Color("#5a4a34"), lipgloss.Color("#8b7355")),
-		ButtonText:       c(lipgloss.Color("#f6f3ec"), lipgloss.Color("#14120f")),
-		ButtonActive:     c(lipgloss.Color("#8a6d1f"), lipgloss.Color("#c9a227")),
-		ButtonActiveText: c(lipgloss.Color("#fff8e1"), lipgloss.Color("#1c1a17")),
+		Button:           c(lipgloss.Color("#e9e8e6"), lipgloss.Color("#2a2a28")),
+		ButtonText:       c(lipgloss.Color("#21201c"), lipgloss.Color("#eeeeec")),
+		ButtonActive:     c(lipgloss.Color("#3e63dd"), lipgloss.Color("#3e63dd")),
+		ButtonActiveText: c(lipgloss.Color("#ffffff"), lipgloss.Color("#ffffff")),
 	}
 }
 

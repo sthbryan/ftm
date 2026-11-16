@@ -19,7 +19,9 @@ type updateApplyMsg struct {
 // its own schedule and publishes UpdateAvailable when it finds one.
 func (m *Model) checkUpdateCmd() tea.Cmd {
 	return func() tea.Msg {
-		if info := m.App.Service.UpdateInfo(); info != nil {
+		ctx, cancel := m.call()
+		defer cancel()
+		if info, err := m.App.UpdateInfo(ctx); err == nil && info != nil {
 			return updateCheckMsg{info: info}
 		}
 		return nil
@@ -28,6 +30,8 @@ func (m *Model) checkUpdateCmd() tea.Cmd {
 
 func (m *Model) applyUpdateCmd() tea.Cmd {
 	return func() tea.Msg {
-		return updateApplyMsg{err: m.App.Service.ApplyUpdate()}
+		ctx, cancel := m.call()
+		defer cancel()
+		return updateApplyMsg{err: m.App.ApplyUpdate(ctx)}
 	}
 }
