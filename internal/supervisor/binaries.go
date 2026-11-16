@@ -2,7 +2,6 @@ package supervisor
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os/exec"
@@ -13,51 +12,12 @@ import (
 	"github.com/sthbryan/ftm/internal/provider"
 )
 
-// BinarySource says where the binary a provider runs comes from.
-type BinarySource string
-
-const (
-	// SourceBundled is a copy ftm downloaded into its own bin directory.
-	SourceBundled BinarySource = "bundled"
-	// SourcePath is a copy the user installed (on PATH or a well-known
-	// location). ftm reports its version but never replaces it.
-	SourcePath BinarySource = "path"
-	// SourceSystem is a tool the OS provides, such as ssh.
-	SourceSystem BinarySource = "system"
-	// SourceNone means the provider is not installed yet.
-	SourceNone BinarySource = "none"
-)
-
 // LatestCheckInterval is how long a latest-release lookup stays fresh.
 const LatestCheckInterval = 6 * time.Hour
 
 // failedCheckRetry is how long a failed lookup waits before it is retried, so a
 // rate-limited GitHub API is not hammered on every request.
 const failedCheckRetry = 15 * time.Minute
-
-var (
-	ErrNotUpdatable     = errors.New("provider binary is not managed by ftm")
-	ErrExternalBinary   = errors.New("provider binary was installed outside ftm; update it with the tool that installed it")
-	ErrUpdateInProgress = errors.New("an update for this provider is already running")
-	ErrUnknownProvider  = errors.New("unknown provider")
-)
-
-// ProviderBinary describes the installed binary of one provider.
-type ProviderBinary struct {
-	ID         core.Provider
-	Name       string
-	Installed  bool
-	Version    string
-	Latest     string
-	Source     BinarySource
-	Path       string
-	HasUpdate  bool
-	Updatable  bool
-	Updating   bool
-	ReleaseURL string
-	CheckedAt  time.Time
-	Error      string
-}
 
 type latestEntry struct {
 	release   *provider.Release
@@ -141,11 +101,11 @@ func (m *Manager) CheckLatest(ctx context.Context, force bool) {
 
 // ProviderBinaries reports every provider's installed binary against the
 // cached latest release. It looks up releases only when the cache is stale.
-func (m *Manager) ProviderBinaries(ctx context.Context) []ProviderBinary {
+func (m *Manager) ProviderBinaries(ctx context.Context) []core.ProviderBinary {
 	m.CheckLatest(ctx, false)
 
 	all := core.AllProviders()
-	out := make([]ProviderBinary, len(all))
+	out := make([]core.ProviderBinary, len(all))
 
 	var wg sync.WaitGroup
 	for i, id := range all {
@@ -161,12 +121,12 @@ func (m *Manager) ProviderBinaries(ctx context.Context) []ProviderBinary {
 }
 
 // ProviderBinary reports one provider using the cached latest release.
-func (m *Manager) ProviderBinary(ctx context.Context, id core.Provider) ProviderBinary {
-	info := ProviderBinary{ID: id, Name: string(id), Source: SourceNone}
+func (m *Manager) ProviderBinary(ctx context.Context, id core.Provider) core.ProviderBinary {
+	info := core.ProviderBinary{ID: id, Name: string(id), Source: core.SourceNone}
 
 	p, ok := m.providers[id]
 	if !ok {
-		info.Error = ErrUnknownProvider.Error()
+		info.Error = core.ErrUnknownProvider.Error()
 		return info
 	}
 	info.Name = p.Name()
@@ -174,7 +134,7 @@ func (m *Manager) ProviderBinary(ctx context.Context, id core.Provider) Provider
 	u, ok := p.(provider.Updatable)
 	if !ok {
 		// The SSH providers run the system ssh client.
-		info.Source = SourceSystem
+		info.Source = core.SourceSystem
 		if path, err := exec.LookPath("ssh"); err == nil {
 			info.Installed = true
 			info.Path = path
@@ -195,13 +155,13 @@ func (m *Manager) ProviderBinary(ctx context.Context, id core.Provider) Provider
 	if path := u.FindBinary(); path != "" {
 		info.Installed = true
 		info.Path = path
-		info.Source = SourcePath
+		info.Source = core.SourcePath
 		if provider.IsBundled(path) {
-			info.Source = SourceBundled
+			info.Source = core.SourceBundled
 		}
 
 		version, err := provider.DetectVersion(ctx, path)
-		if err != nil && info.Source == SourceBundled {
+		if err != nil && info.Source == core.SourceBundled {
 			if rec, ok := provider.LookupInstall(string(id)); ok && rec.Version != "" && rec.Matches(path) {
 				version, err = rec.Version, nil
 			}
@@ -212,7 +172,7 @@ func (m *Manager) ProviderBinary(ctx context.Context, id core.Provider) Provider
 		info.Version = version
 	}
 
-	info.Updatable = info.Source == SourceBundled || info.Source == SourceNone
+	info.Updatable = info.Source == core.SourceBundled || info.Source == core.SourceNone
 
 	if rel := entry.release; rel != nil {
 		info.ReleaseURL = rel.ReleaseURL
@@ -224,14 +184,14 @@ func (m *Manager) ProviderBinary(ctx context.Context, id core.Provider) Provider
 
 // compareRelease decides whether rel is newer than what is installed and what
 // to show as the latest version.
-func compareRelease(name string, info ProviderBinary, rel *provider.Release) (latest string, hasUpdate bool) {
+func compareRelease(name string, info core.ProviderBinary, rel *provider.Release) (latest string, hasUpdate bool) {
 	if !info.Installed {
 		return rel.Version, false
 	}
 
 	// An unversioned download (tunnelmole) is new when its ETag changed since
 	// ftm installed it. Then the copy on disk is the latest one there is.
-	if rel.ETag != "" && info.Source == SourceBundled {
+	if rel.ETag != "" && info.Source == core.SourceBundled {
 		if rec, ok := provider.LookupInstall(name); ok && rec.ETag != "" {
 			if rec.ETag == rel.ETag {
 				if info.Version != "" {
@@ -247,19 +207,13 @@ func compareRelease(name string, info ProviderBinary, rel *provider.Release) (la
 	// truncated download) is worth replacing; one the user installed is not
 	// ftm's to judge.
 	if info.Version == "" {
-		return rel.Version, info.Source == SourceBundled && rel.Version != ""
+		return rel.Version, info.Source == core.SourceBundled && rel.Version != ""
 	}
 
 	return rel.Version, provider.IsNewer(rel.Version, info.Version)
 }
 
 // UpdateResult is what an update did.
-type UpdateResult struct {
-	Provider  core.Provider
-	Version   string
-	Restarted []string
-}
-
 type runningTunnel struct {
 	config core.TunnelConfig
 }
@@ -268,23 +222,23 @@ type runningTunnel struct {
 // for ftm's bundled copy. Tunnels running on that provider are stopped first,
 // since Windows will not replace a running executable, and restarted after.
 // A binary installed outside ftm is never touched.
-func (m *Manager) UpdateProvider(ctx context.Context, id core.Provider, progress chan<- provider.DownloadProgress) (*UpdateResult, error) {
+func (m *Manager) UpdateProvider(ctx context.Context, id core.Provider, progress chan<- provider.DownloadProgress) (*core.UpdateResult, error) {
 	if _, ok := m.providers[id]; !ok {
-		return nil, ErrUnknownProvider
+		return nil, core.ErrUnknownProvider
 	}
 	u, ok := m.updatable(id)
 	if !ok {
-		return nil, ErrNotUpdatable
+		return nil, core.ErrNotUpdatable
 	}
 
 	if path := u.FindBinary(); path != "" && !provider.IsBundled(path) {
-		return nil, ErrExternalBinary
+		return nil, core.ErrExternalBinary
 	}
 
 	m.binaries.mu.Lock()
 	if m.binaries.updating[id] {
 		m.binaries.mu.Unlock()
-		return nil, ErrUpdateInProgress
+		return nil, core.ErrUpdateInProgress
 	}
 	m.binaries.updating[id] = true
 	m.binaries.mu.Unlock()
@@ -304,7 +258,7 @@ func (m *Manager) UpdateProvider(ctx context.Context, id core.Provider, progress
 	delete(m.binaries.updating, id)
 	m.binaries.mu.Unlock()
 
-	result := &UpdateResult{Provider: id}
+	result := &core.UpdateResult{Provider: id}
 	for _, t := range stopped {
 		if err := m.Start(t.config); err != nil {
 			log.Printf("providers: could not restart %s after updating %s: %v", t.config.Name, id, err)

@@ -9,7 +9,6 @@ import (
 	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/provider"
-	"github.com/sthbryan/ftm/internal/supervisor"
 	"github.com/sthbryan/ftm/internal/updater"
 )
 
@@ -100,37 +99,58 @@ func TestTunnelViewsMergeLiveStatus(t *testing.T) {
 	}
 }
 
+func TestStatusAndRunningReadTheSupervisor(t *testing.T) {
+	f := newFixture(t, cfgWith())
+	f.svc.sup = statusFake{
+		fakeSupervisor: f.sup,
+		status: map[string]core.TunnelStatus{
+			"up":      {ID: "up", State: core.TunnelStateConnecting},
+			"stopped": {ID: "stopped", State: core.TunnelStateStopped},
+		},
+	}
+
+	if st, ok := f.svc.Status("up"); !ok || st.State != core.TunnelStateConnecting {
+		t.Fatalf("Status(up) = %+v, %v", st, ok)
+	}
+	if _, ok := f.svc.Status("never"); ok {
+		t.Fatal("Status found a tunnel the supervisor never ran")
+	}
+	if !f.svc.Running("up") || f.svc.Running("stopped") || f.svc.Running("never") {
+		t.Fatal("Running disagrees with the live states")
+	}
+}
+
 type binaryFake struct {
 	*fakeSupervisor
-	report   []supervisor.ProviderBinary
+	report   []core.ProviderBinary
 	updated  chan core.Provider
 	updating bool
 	err      error
 }
 
 func (b *binaryFake) CheckLatest(context.Context, bool) {}
-func (b *binaryFake) ProviderBinaries(context.Context) []supervisor.ProviderBinary {
+func (b *binaryFake) ProviderBinaries(context.Context) []core.ProviderBinary {
 	return b.report
 }
-func (b *binaryFake) ProviderBinary(_ context.Context, id core.Provider) supervisor.ProviderBinary {
+func (b *binaryFake) ProviderBinary(_ context.Context, id core.Provider) core.ProviderBinary {
 	for _, r := range b.report {
 		if r.ID == id {
 			return r
 		}
 	}
-	return supervisor.ProviderBinary{ID: id, Source: supervisor.SourceNone, Updatable: true}
+	return core.ProviderBinary{ID: id, Source: core.SourceNone, Updatable: true}
 }
-func (b *binaryFake) UpdateProvider(_ context.Context, id core.Provider, _ chan<- provider.DownloadProgress) (*supervisor.UpdateResult, error) {
+func (b *binaryFake) UpdateProvider(_ context.Context, id core.Provider, _ chan<- provider.DownloadProgress) (*core.UpdateResult, error) {
 	b.updated <- id
-	return &supervisor.UpdateResult{Provider: id, Version: "2"}, b.err
+	return &core.UpdateResult{Provider: id, Version: "2"}, b.err
 }
 func (b *binaryFake) IsUpdating(core.Provider) bool { return b.updating }
 
 func TestProviderUpdateNoticeIsPublishedOncePerVersion(t *testing.T) {
 	f := newFixture(t, nil)
-	sup := &binaryFake{fakeSupervisor: f.sup, report: []supervisor.ProviderBinary{
-		{ID: core.ProviderCloudflared, Version: "2024.6.1", Latest: "2026.11.0", HasUpdate: true, Updatable: true, Source: supervisor.SourceBundled},
-		{ID: core.ProviderBore, Version: "0.6.0", Latest: "0.6.0", Source: supervisor.SourceBundled},
+	sup := &binaryFake{fakeSupervisor: f.sup, report: []core.ProviderBinary{
+		{ID: core.ProviderCloudflared, Version: "2024.6.1", Latest: "2026.11.0", HasUpdate: true, Updatable: true, Source: core.SourceBundled},
+		{ID: core.ProviderBore, Version: "0.6.0", Latest: "0.6.0", Source: core.SourceBundled},
 	}}
 	f.svc.sup = sup
 	ctx := context.Background()
@@ -156,9 +176,9 @@ func TestProviderUpdateNoticeIsPublishedOncePerVersion(t *testing.T) {
 
 func TestUpdateProviderChecksThenReportsTheOutcome(t *testing.T) {
 	f := newFixture(t, nil)
-	sup := &binaryFake{fakeSupervisor: f.sup, updated: make(chan core.Provider, 1), report: []supervisor.ProviderBinary{
-		{ID: core.ProviderServeo, Source: supervisor.SourceSystem},
-		{ID: core.ProviderBore, Source: supervisor.SourcePath},
+	sup := &binaryFake{fakeSupervisor: f.sup, updated: make(chan core.Provider, 1), report: []core.ProviderBinary{
+		{ID: core.ProviderServeo, Source: core.SourceSystem},
+		{ID: core.ProviderBore, Source: core.SourcePath},
 	}}
 	f.svc.sup = sup
 	ctx := context.Background()

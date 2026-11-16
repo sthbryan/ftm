@@ -17,34 +17,34 @@ type ProviderBinary = events.ProviderBinary
 
 // Binary sources, as ProviderBinary.Source reports them.
 const (
-	SourceBundled = string(supervisor.SourceBundled)
-	SourcePath    = string(supervisor.SourcePath)
-	SourceSystem  = string(supervisor.SourceSystem)
-	SourceNone    = string(supervisor.SourceNone)
+	SourceBundled = string(core.SourceBundled)
+	SourcePath    = string(core.SourcePath)
+	SourceSystem  = string(core.SourceSystem)
+	SourceNone    = string(core.SourceNone)
 )
 
 var (
 	// ErrUnknownProvider is returned for a provider id ftm does not know.
-	ErrUnknownProvider = supervisor.ErrUnknownProvider
+	ErrUnknownProvider = core.ErrUnknownProvider
 	// ErrNotUpdatable is returned for a provider that runs on a system tool.
-	ErrNotUpdatable = supervisor.ErrNotUpdatable
+	ErrNotUpdatable = core.ErrNotUpdatable
 	// ErrExternalBinary is returned for a binary installed outside ftm.
-	ErrExternalBinary = supervisor.ErrExternalBinary
+	ErrExternalBinary = core.ErrExternalBinary
 	// ErrUpdateInProgress is returned while the same provider is updating.
-	ErrUpdateInProgress = supervisor.ErrUpdateInProgress
+	ErrUpdateInProgress = core.ErrUpdateInProgress
 )
 
 // binaryManager is implemented by a supervisor that can report and replace
 // provider binaries.
 type binaryManager interface {
 	CheckLatest(ctx context.Context, force bool)
-	ProviderBinaries(ctx context.Context) []supervisor.ProviderBinary
-	ProviderBinary(ctx context.Context, id core.Provider) supervisor.ProviderBinary
-	UpdateProvider(ctx context.Context, id core.Provider, progress chan<- provider.DownloadProgress) (*supervisor.UpdateResult, error)
+	ProviderBinaries(ctx context.Context) []core.ProviderBinary
+	ProviderBinary(ctx context.Context, id core.Provider) core.ProviderBinary
+	UpdateProvider(ctx context.Context, id core.Provider, progress chan<- provider.DownloadProgress) (*core.UpdateResult, error)
 	IsUpdating(id core.Provider) bool
 }
 
-func providerBinaryFrom(b supervisor.ProviderBinary) ProviderBinary {
+func providerBinaryFrom(b core.ProviderBinary) ProviderBinary {
 	return ProviderBinary{
 		ID:         string(b.ID),
 		Name:       b.Name,
@@ -102,9 +102,9 @@ func (s *Service) UpdateProvider(ctx context.Context, id core.Provider) error {
 
 	info := bm.ProviderBinary(ctx, id)
 	switch {
-	case info.Source == supervisor.SourceSystem:
+	case info.Source == core.SourceSystem:
 		return ErrNotUpdatable
-	case info.Source == supervisor.SourcePath:
+	case info.Source == core.SourcePath:
 		return ErrExternalBinary
 	case info.Updating || bm.IsUpdating(id):
 		return ErrUpdateInProgress

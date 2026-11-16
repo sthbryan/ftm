@@ -1,6 +1,7 @@
-package tui
+package open
 
 import (
+	"os"
 	"os/exec"
 	"testing"
 	"time"
@@ -13,7 +14,7 @@ func TestExternalLauncherIsReaped(t *testing.T) {
 	onReaped = func(*exec.Cmd) { close(reaped) }
 	t.Cleanup(func() { onReaped = previous })
 
-	if err := startAndReap(exec.Command("sh", "-c", "exit 0")); err != nil {
+	if err := startAndReap(exec.Command(os.Args[0], "-test.run=^$")); err != nil {
 		t.Fatalf("startAndReap: %v", err)
 	}
 

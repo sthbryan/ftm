@@ -51,8 +51,8 @@ func (m *Model) viewList() string {
 	view.Items = m.collectTunnelData()
 	view.Cursor = m.Cursor
 	view.Message = m.Message
-	view.Dashboard = m.App.WebServer.URL()
-	view.Sessions = m.App.WebServer.ClientCount()
+	view.Dashboard = m.App.Web.URL()
+	view.Sessions = m.App.Web.ClientCount()
 	view.TwoColumnLimit = TwoColumnThreshold
 	view.Shortcuts = m.Keys.listShortcuts()
 	if m.UpdateAvailable != nil {
@@ -72,7 +72,7 @@ func (m *Model) collectTunnelData() []views.TunnelViewData {
 		if ti, ok := item.(TunnelItem); ok {
 			var logs []string
 			if i == m.Cursor {
-				logs = m.App.Manager.GetLogs(ti.Tunnel.ID)
+				logs = m.App.Service.Logs(ti.Tunnel.ID)
 			}
 
 			data = append(data, views.TunnelViewData{
@@ -114,8 +114,8 @@ func (m *Model) viewEmptyState() string {
 	view := views.NewEmptyState()
 	view.Height = m.Height
 	view.Width = m.Width
-	view.Dashboard = m.App.WebServer.URL()
-	view.Sessions = m.App.WebServer.ClientCount()
+	view.Dashboard = m.App.Web.URL()
+	view.Sessions = m.App.Web.ClientCount()
 
 	return view.Render()
 }

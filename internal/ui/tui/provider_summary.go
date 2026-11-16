@@ -8,7 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/supervisor"
+	"github.com/sthbryan/ftm/internal/service"
 )
 
 type providerSummaryMsg struct {
@@ -20,24 +20,24 @@ const providerSummaryTimeout = 20 * time.Second
 // loadProviderSummary reads the provider binaries in the background, since
 // it can run each binary's --version and reach the release APIs.
 func (m *Model) loadProviderSummary() tea.Cmd {
-	manager := m.App.Manager
+	svc := m.App.Service
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), providerSummaryTimeout)
 		defer cancel()
-		return providerSummaryMsg{line: providerSummary(manager.ProviderBinaries(ctx))}
+		return providerSummaryMsg{line: providerSummary(svc.ProviderBinaries(ctx, false))}
 	}
 }
 
 // providerSummary renders the downloaded providers as
 // "cloudflared 2025.8.1 → 2026.11.0 · bore 0.6.0".
-func providerSummary(report []supervisor.ProviderBinary) string {
+func providerSummary(report []service.ProviderBinary) string {
 	parts := make([]string, 0, len(report))
 	for _, b := range report {
-		if !b.Installed || b.Source == supervisor.SourceSystem {
+		if !b.Installed || b.Source == service.SourceSystem {
 			continue
 		}
 
-		part := string(b.ID)
+		part := b.ID
 		if b.Version != "" {
 			part += " " + b.Version
 		}

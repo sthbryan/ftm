@@ -12,11 +12,7 @@ import (
 	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/provider"
-	"github.com/sthbryan/ftm/internal/provider/bore"
-	"github.com/sthbryan/ftm/internal/provider/cloudflared"
-	"github.com/sthbryan/ftm/internal/provider/pinggy"
-	"github.com/sthbryan/ftm/internal/provider/ssh"
-	"github.com/sthbryan/ftm/internal/provider/tunnelmole"
+	"github.com/sthbryan/ftm/internal/provider/registry"
 	"github.com/sthbryan/ftm/internal/supervisor/proxy"
 )
 
@@ -157,14 +153,7 @@ func NewManager() *Manager {
 		processes:       make(map[string]*ManagedProcess),
 		visitorTracking: true,
 		binaries:        newBinaryState(),
-		providers: map[core.Provider]provider.Provider{
-			core.ProviderCloudflared:  cloudflared.New(),
-			core.ProviderTunnelmole:   tunnelmole.New(),
-			core.ProviderLocalhostRun: ssh.NewLocalhostRun(),
-			core.ProviderServeo:       ssh.NewServeo(),
-			core.ProviderPinggy:       pinggy.New(),
-			core.ProviderBore:         bore.New(),
-		},
+		providers:       registry.Default(),
 	}
 }
 

@@ -70,7 +70,7 @@ func (m *Model) moveCursorDown() {
 
 func (m *Model) handleListToggle() (tea.Model, tea.Cmd) {
 	if item, ok := m.selectedItem(); ok {
-		if m.App.Manager.IsRunning(item.Tunnel.ID) {
+		if m.App.Service.Running(item.Tunnel.ID) {
 			m.playBeep()
 			return m, m.stopTunnel(item)
 		}

@@ -26,8 +26,8 @@ func testStore(t *testing.T, cfg *core.Config) *store.Store {
 	}, cfg)
 }
 
-// testApp wires an App around st the way New does, without the instance lock
-// or any background work.
+// testApp wires an App around st the way cmd/ftm does, without the instance
+// lock or any background work.
 func testApp(t *testing.T, st *store.Store) *App {
 	t.Helper()
 
@@ -36,11 +36,10 @@ func testApp(t *testing.T, st *store.Store) *App {
 	t.Cleanup(bus.Close)
 	manager.SetEvents(bus)
 
-	a := &App{
-		Service: service.New(st, manager, bus),
+	svc := service.New(st, manager, bus)
+	return &App{
+		Service: svc,
 		Bus:     bus,
-		Manager: manager,
+		Web:     httpapi.NewServer(svc, bus),
 	}
-	a.WebServer = httpapi.NewServer(a.Service, bus)
-	return a
 }

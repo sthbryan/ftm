@@ -12,12 +12,19 @@ import (
 	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/provider"
-	"github.com/sthbryan/ftm/internal/supervisor"
 )
 
+// Binaries reports and replaces provider binaries. cmd/ftm passes the
+// supervisor.
+type Binaries interface {
+	CheckLatest(ctx context.Context, force bool)
+	ProviderBinaries(ctx context.Context) []core.ProviderBinary
+	ProviderBinary(ctx context.Context, id core.Provider) core.ProviderBinary
+	UpdateProvider(ctx context.Context, id core.Provider, progress chan<- provider.DownloadProgress) (*core.UpdateResult, error)
+}
+
 // Providers runs `ftm providers [update [id]]`.
-func Providers(args []string) error {
-	manager := supervisor.NewManager()
+func Providers(manager Binaries, args []string) error {
 	ctx := context.Background()
 
 	switch {
@@ -34,7 +41,7 @@ func Providers(args []string) error {
 	}
 }
 
-func listProviders(ctx context.Context, out io.Writer, manager *supervisor.Manager) error {
+func listProviders(ctx context.Context, out io.Writer, manager Binaries) error {
 	manager.CheckLatest(ctx, true)
 	report := manager.ProviderBinaries(ctx)
 
@@ -59,7 +66,7 @@ func listProviders(ctx context.Context, out io.Writer, manager *supervisor.Manag
 		}
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", b.ID, dash(b.Version)+marker, dash(b.Latest), sourceLabel(b.Source))
 
-		if b.Error != "" && b.Source != supervisor.SourceSystem {
+		if b.Error != "" && b.Source != core.SourceSystem {
 			failures = append(failures, i18n.TF("providers_check_failed", b.ID, b.Error))
 		}
 	}
@@ -84,7 +91,7 @@ func listProviders(ctx context.Context, out io.Writer, manager *supervisor.Manag
 
 // updateProviders updates one provider, or every bundled one that is behind
 // when id is empty.
-func updateProviders(ctx context.Context, out io.Writer, manager *supervisor.Manager, id string) error {
+func updateProviders(ctx context.Context, out io.Writer, manager Binaries, id string) error {
 	var targets []core.Provider
 
 	if id != "" {
@@ -94,9 +101,9 @@ func updateProviders(ctx context.Context, out io.Writer, manager *supervisor.Man
 		}
 		info := manager.ProviderBinary(ctx, provider)
 		switch info.Source {
-		case supervisor.SourceSystem:
+		case core.SourceSystem:
 			return errors.New(i18n.TF("providers_not_updatable", provider))
-		case supervisor.SourcePath:
+		case core.SourcePath:
 			return errors.New(i18n.TF("providers_external", provider, info.Path))
 		}
 		targets = append(targets, provider)
@@ -168,13 +175,13 @@ func printProgress(out io.Writer) (chan provider.DownloadProgress, <-chan struct
 	return ch, done
 }
 
-func sourceLabel(s supervisor.BinarySource) string {
+func sourceLabel(s core.BinarySource) string {
 	switch s {
-	case supervisor.SourceBundled:
+	case core.SourceBundled:
 		return i18n.T("providers_source_bundled")
-	case supervisor.SourcePath:
+	case core.SourcePath:
 		return i18n.T("providers_source_path")
-	case supervisor.SourceSystem:
+	case core.SourceSystem:
 		return i18n.T("providers_source_system")
 	default:
 		return i18n.T("providers_source_none")

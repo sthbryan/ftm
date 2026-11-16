@@ -1,43 +1,23 @@
 package cli
 
 import (
-	"os"
-	"path/filepath"
+	"errors"
 	"testing"
 
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/store/dirs"
 )
 
-func isolateHome(t *testing.T) string {
-	t.Helper()
-
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-	t.Setenv("AppData", filepath.Join(home, "appdata"))
-	t.Setenv("XDG_CONFIG_HOME", "")
-
-	return home
-}
-
-func writeConfig(t *testing.T, home, body string) {
-	t.Helper()
-
-	dir := filepath.Join(home, ".config", dirs.AppName)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(body), 0644); err != nil {
-		t.Fatal(err)
+func peekLanguage(lang string) func() (core.Config, error) {
+	return func() (core.Config, error) {
+		cfg := core.DefaultConfig()
+		cfg.Language = lang
+		return *cfg, nil
 	}
 }
 
 func TestInitAppliesConfiguredLanguage(t *testing.T) {
-	home := isolateHome(t)
-	writeConfig(t, home, "version: 2\nlanguage: es\ntunnels: []\n")
-
-	if err := Init(); err != nil {
+	if err := Init(peekLanguage(i18n.LangES)); err != nil {
 		t.Fatalf("Init() failed: %v", err)
 	}
 
@@ -47,23 +27,25 @@ func TestInitAppliesConfiguredLanguage(t *testing.T) {
 }
 
 func TestInitFallsBackWhenConfigIsUnreadable(t *testing.T) {
-	home := isolateHome(t)
-	writeConfig(t, home, "tunnels: [oops")
+	broken := func() (core.Config, error) { return core.Config{}, errors.New("bad yaml") }
 
-	if err := Init(); err != nil {
+	if err := Init(broken); err != nil {
 		t.Fatalf("Init() returned an error for a broken config: %v, want a fallback", err)
 	}
 
-	got := i18n.CurrentLanguage()
-	if got != i18n.LangEN && got != i18n.LangES {
-		t.Fatalf("CurrentLanguage() = %q, want a supported language", got)
+	supported := false
+	for _, lang := range i18n.SupportedLanguages() {
+		if i18n.CurrentLanguage() == lang {
+			supported = true
+		}
+	}
+	if !supported {
+		t.Fatalf("CurrentLanguage() = %q, want a supported language", i18n.CurrentLanguage())
 	}
 }
 
 func TestInitLoadsTranslations(t *testing.T) {
-	isolateHome(t)
-
-	if err := Init(); err != nil {
+	if err := Init(peekLanguage(core.LanguageAuto)); err != nil {
 		t.Fatalf("Init() failed: %v", err)
 	}
 

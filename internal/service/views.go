@@ -64,6 +64,28 @@ func (s *Service) TunnelView(id string) (TunnelView, bool) {
 	return s.View(t), true
 }
 
+// Status returns the live status of a tunnel the supervisor has run since ftm
+// started.
+func (s *Service) Status(tunnelID string) (core.TunnelStatus, bool) {
+	if r, ok := s.sup.(statusReader); ok {
+		return r.GetStatus(tunnelID)
+	}
+	return core.TunnelStatus{}, false
+}
+
+// Running reports whether a tunnel is starting, connecting or online.
+func (s *Service) Running(tunnelID string) bool {
+	st, ok := s.Status(tunnelID)
+	if !ok {
+		return false
+	}
+	switch st.State {
+	case core.TunnelStateStarting, core.TunnelStateConnecting, core.TunnelStateOnline:
+		return true
+	}
+	return false
+}
+
 // Logs returns the recent output of a tunnel, oldest first. It is empty for a
 // tunnel that has not run since ftm started.
 func (s *Service) Logs(tunnelID string) []string {

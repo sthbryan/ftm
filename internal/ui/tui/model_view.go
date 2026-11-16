@@ -50,7 +50,7 @@ func (m *Model) refreshItems() {
 	items := make([]list.Item, 0, len(tunnels))
 	for _, t := range tunnels {
 		status := t.Status()
-		if s, ok := m.App.Manager.GetStatus(t.ID); ok {
+		if s, ok := m.App.Service.Status(t.ID); ok {
 			status = s
 		}
 		items = append(items, TunnelItem{Tunnel: t, Status: status})

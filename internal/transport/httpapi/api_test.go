@@ -15,7 +15,6 @@ import (
 	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/provider"
-	"github.com/sthbryan/ftm/internal/supervisor"
 )
 
 // fakeSupervisor runs nothing but behaves like the process manager: a
@@ -119,16 +118,16 @@ type fakeBinaries struct {
 }
 
 func (f *fakeBinaries) CheckLatest(context.Context, bool) {}
-func (f *fakeBinaries) ProviderBinaries(ctx context.Context) []supervisor.ProviderBinary {
-	return []supervisor.ProviderBinary{f.ProviderBinary(ctx, core.ProviderCloudflared)}
+func (f *fakeBinaries) ProviderBinaries(ctx context.Context) []core.ProviderBinary {
+	return []core.ProviderBinary{f.ProviderBinary(ctx, core.ProviderCloudflared)}
 }
-func (f *fakeBinaries) ProviderBinary(_ context.Context, id core.Provider) supervisor.ProviderBinary {
-	return supervisor.ProviderBinary{ID: id, Name: string(id), Installed: true, Version: "1.0", Latest: "2.0",
-		Source: supervisor.SourceBundled, HasUpdate: true, Updatable: true, CheckedAt: time.UnixMilli(1000)}
+func (f *fakeBinaries) ProviderBinary(_ context.Context, id core.Provider) core.ProviderBinary {
+	return core.ProviderBinary{ID: id, Name: string(id), Installed: true, Version: "1.0", Latest: "2.0",
+		Source: core.SourceBundled, HasUpdate: true, Updatable: true, CheckedAt: time.UnixMilli(1000)}
 }
-func (f *fakeBinaries) UpdateProvider(_ context.Context, id core.Provider, _ chan<- provider.DownloadProgress) (*supervisor.UpdateResult, error) {
+func (f *fakeBinaries) UpdateProvider(_ context.Context, id core.Provider, _ chan<- provider.DownloadProgress) (*core.UpdateResult, error) {
 	f.updated <- id
-	return &supervisor.UpdateResult{Provider: id, Version: "2.0", Restarted: []string{"world"}}, nil
+	return &core.UpdateResult{Provider: id, Version: "2.0", Restarted: []string{"world"}}, nil
 }
 func (f *fakeBinaries) IsUpdating(core.Provider) bool { return false }
 

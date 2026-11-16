@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/provider"
 )
 
@@ -21,16 +22,16 @@ func TestCompareReleaseByVersion(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		info       ProviderBinary
+		info       core.ProviderBinary
 		wantLatest string
 		wantUpdate bool
 	}{
-		{"older bundled", ProviderBinary{Installed: true, Source: SourceBundled, Version: "2024.6.1"}, "2026.11.0", true},
-		{"current bundled", ProviderBinary{Installed: true, Source: SourceBundled, Version: "2026.11.0"}, "2026.11.0", false},
-		{"older on PATH still reports", ProviderBinary{Installed: true, Source: SourcePath, Version: "2025.1.0"}, "2026.11.0", true},
-		{"unreadable bundled copy is replaced", ProviderBinary{Installed: true, Source: SourceBundled}, "2026.11.0", true},
-		{"unreadable copy on PATH is left alone", ProviderBinary{Installed: true, Source: SourcePath}, "2026.11.0", false},
-		{"not installed", ProviderBinary{Source: SourceNone}, "2026.11.0", false},
+		{"older bundled", core.ProviderBinary{Installed: true, Source: core.SourceBundled, Version: "2024.6.1"}, "2026.11.0", true},
+		{"current bundled", core.ProviderBinary{Installed: true, Source: core.SourceBundled, Version: "2026.11.0"}, "2026.11.0", false},
+		{"older on PATH still reports", core.ProviderBinary{Installed: true, Source: core.SourcePath, Version: "2025.1.0"}, "2026.11.0", true},
+		{"unreadable bundled copy is replaced", core.ProviderBinary{Installed: true, Source: core.SourceBundled}, "2026.11.0", true},
+		{"unreadable copy on PATH is left alone", core.ProviderBinary{Installed: true, Source: core.SourcePath}, "2026.11.0", false},
+		{"not installed", core.ProviderBinary{Source: core.SourceNone}, "2026.11.0", false},
 	}
 
 	for _, tt := range tests {
@@ -46,7 +47,7 @@ func TestCompareReleaseByVersion(t *testing.T) {
 func TestCompareReleaseByETag(t *testing.T) {
 	isolateHome(t)
 
-	installed := ProviderBinary{Installed: true, Source: SourceBundled, Version: "2.3.9"}
+	installed := core.ProviderBinary{Installed: true, Source: core.SourceBundled, Version: "2.3.9"}
 	rel := &provider.Release{Version: "2.4.0", ETag: `"one"`}
 
 	// Without a recorded ETag the npm version decides, once.
@@ -90,10 +91,10 @@ func TestLatestEntryFreshness(t *testing.T) {
 
 func TestUpdateProviderRefusesSystemProviders(t *testing.T) {
 	m := NewManager()
-	if _, err := m.UpdateProvider(t.Context(), "serveo", nil); err != ErrNotUpdatable {
-		t.Errorf("UpdateProvider(serveo) = %v, want ErrNotUpdatable", err)
+	if _, err := m.UpdateProvider(t.Context(), "serveo", nil); err != core.ErrNotUpdatable {
+		t.Errorf("UpdateProvider(serveo) = %v, want core.ErrNotUpdatable", err)
 	}
-	if _, err := m.UpdateProvider(t.Context(), "nope", nil); err != ErrUnknownProvider {
-		t.Errorf("UpdateProvider(nope) = %v, want ErrUnknownProvider", err)
+	if _, err := m.UpdateProvider(t.Context(), "nope", nil); err != core.ErrUnknownProvider {
+		t.Errorf("UpdateProvider(nope) = %v, want core.ErrUnknownProvider", err)
 	}
 }

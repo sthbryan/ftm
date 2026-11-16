@@ -9,21 +9,24 @@ import (
 	"syscall"
 
 	"github.com/sthbryan/ftm/internal/cli"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/platform/instance"
-	"github.com/sthbryan/ftm/internal/ui/tui"
+	"github.com/sthbryan/ftm/internal/platform/open"
+	"github.com/sthbryan/ftm/internal/store"
+	"github.com/sthbryan/ftm/internal/supervisor"
 	"github.com/sthbryan/ftm/internal/updater"
 	"github.com/sthbryan/ftm/internal/version"
 )
 
 func main() {
-	if err := cli.Init(); err != nil {
+	if err := cli.Init(peekConfig); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "providers" {
-		if err := cli.Providers(os.Args[2:]); err != nil {
+		if err := cli.Providers(supervisor.NewManager(), os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
 		}
@@ -70,7 +73,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	application, err := tui.New()
+	application, err := newApp()
 	if err != nil {
 		var running *instance.RunningError
 		if errors.As(err, &running) {
@@ -136,6 +139,12 @@ func main() {
 	}
 }
 
+// peekConfig reads the config without writing it, since another ftm may own
+// it.
+func peekConfig() (core.Config, error) {
+	return store.Peek(store.DefaultDirs())
+}
+
 // attach runs when another ftm or ftm-desktop already owns the tunnels: it
 // points at that process's dashboard instead of starting a second manager that
 // would fight it over the config and the port. It returns the exit code.
@@ -148,7 +157,7 @@ func attach(info *instance.Info, openBrowser, headless bool) int {
 	fmt.Println(i18n.TF("already_running", info.URL()))
 
 	if openBrowser {
-		if err := tui.OpenURL(info.URL()); err != nil {
+		if err := open.URL(info.URL()); err != nil {
 			fmt.Fprintf(os.Stderr, "Could not open the dashboard: %v\n", err)
 			return 1
 		}
