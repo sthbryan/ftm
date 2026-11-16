@@ -49,7 +49,6 @@ func (p *CloudflaredProvider) FindBinary() string {
 		filepath.Join(home, ".cloudflared", p.BinaryName()),
 		"/usr/local/bin/" + p.BinaryName(),
 		"/usr/bin/" + p.BinaryName(),
-		"./" + p.BinaryName(),
 	}
 
 	if runtime.GOOS == "windows" {

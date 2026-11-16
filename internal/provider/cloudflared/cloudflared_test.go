@@ -1,6 +1,10 @@
 package cloudflared
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestParseURL(t *testing.T) {
 	p := &CloudflaredProvider{}
@@ -38,5 +42,36 @@ func TestParseURL(t *testing.T) {
 				t.Errorf("ParseURL() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+// A cloudflared sitting in the working directory is never picked up: ftm only
+// runs one from PATH, its own bin dir or a known install location.
+func TestFindBinaryIgnoresWorkingDirectory(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("AppData", filepath.Join(home, "appdata"))
+	t.Setenv("XDG_CONFIG_HOME", "")
+	t.Setenv("PATH", "")
+	t.Setenv("ProgramFiles", filepath.Join(home, "programs"))
+
+	work := t.TempDir()
+	t.Chdir(work)
+	p := New().(*CloudflaredProvider)
+	if err := os.WriteFile(filepath.Join(work, p.BinaryName()), []byte("x"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	got := p.FindBinary()
+	if got == "" {
+		return
+	}
+	abs, err := filepath.Abs(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Dir(abs) == work || filepath.Dir(got) == "." {
+		t.Fatalf("FindBinary() = %q, picked up the copy in the working directory", got)
 	}
 }
