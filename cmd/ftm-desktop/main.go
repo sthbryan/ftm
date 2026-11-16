@@ -83,7 +83,7 @@ func main() {
 		BackgroundColour: application.NewRGB(255, 255, 255),
 		DevToolsEnabled:  false,
 		Mac: application.MacWindow{
-			TitleBar: application.MacTitleBarHiddenInset,
+			TitleBar: application.MacTitleBarHiddenInsetUnified,
 		},
 	})
 
