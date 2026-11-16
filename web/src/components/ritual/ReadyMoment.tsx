@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Button } from '@zovaris/sephiro/button';
-import { IconButton } from '@zovaris/sephiro/icon-button';
+import { IconAction } from '@/components/IconAction';
 import { ArrowClockwise, CheckCircle, Play, Plus, Question, WarningCircle } from '@phosphor-icons/react';
 import { foundryCheck } from '@/lib/ritual';
 import { unlockSound } from '@/lib/sound';
@@ -74,7 +74,7 @@ export function ReadyMoment({ tunnel, onCreate }: { tunnel: Tunnel | null; onCre
         <span class={check === 'answers' ? 'text-text' : 'text-text-muted'}>
           {t(`foundry_${check}`, port)}
         </span>
-        <IconButton
+        <IconAction
           label={t('foundry_recheck')}
           size="sm"
           variant="ghost"
