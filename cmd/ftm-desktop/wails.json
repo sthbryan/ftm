@@ -7,9 +7,9 @@
     "email": "bryamu.u@gmail.com"
   },
   "frontend": {
-    "dir": "../web",
+    "dir": "../../web",
     "install": "bun install",
-    "build": "../scripts/build-web-assets.sh"
+    "build": "../../scripts/build-web-assets.sh"
   },
   "info": {
     "companyName": "sthbryan",
