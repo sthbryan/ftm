@@ -102,6 +102,9 @@ func join(ctx context.Context, n int, target string, say func(string, ...any)) {
 		return
 	}
 	defer conn.CloseNow()
+	// Pongs only arrive while something reads the connection; CloseRead reads
+	// in the background and ends ctx when the server hangs up.
+	ctx = conn.CloseRead(ctx)
 
 	// A ping every 20 s keeps proxies (Cloudflare closes idle sockets) from
 	// dropping the connection.
