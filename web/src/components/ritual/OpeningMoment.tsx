@@ -1,7 +1,6 @@
 import { useState } from 'preact/hooks';
 import { Button } from '@zovaris/sephiro/button';
 import { Progress } from '@zovaris/sephiro/progress';
-import { X } from '@phosphor-icons/react';
 import { t } from '@/lib/stores/i18n';
 import { providerLabel } from '@/lib/stores/providers';
 import { installProgress, stopTunnel } from '@/lib/stores/tunnels';
@@ -27,30 +26,26 @@ export function OpeningMoment({ tunnel }: { tunnel: Tunnel }) {
   }
 
   return (
-    <section class="flex flex-col items-center py-12 text-center" aria-labelledby="opening-title">
-      <h1
-        id="opening-title"
-        class="m-0 max-w-full font-serif text-[clamp(26px,7vw,36px)] leading-tight font-medium break-words text-text"
-      >
-        {t('opening_title', { name: tunnel.name })}
+    <section class="ftm-moment" aria-labelledby="opening-title" aria-busy="true">
+      <h1 id="opening-title" class="ftm-title">
+        {tunnel.name}
       </h1>
 
-      <div class="mt-8 w-full max-w-md text-start" aria-live="polite">
-        <Progress value={percent} label={t(tunnel.state)} />
-        <div class="mt-3 flex items-baseline gap-3 text-sm text-text-muted">
+      <div class="w-full max-w-80 text-start" aria-live="polite">
+        <Progress value={percent} label={t(tunnel.state)} size="sm" />
+        <div class="mt-2.5 flex items-baseline gap-3 text-xs text-text-muted">
           <p class="m-0 min-w-0 flex-1 truncate">
             {installing
               ? progress?.step || t('hero_installing', { 0: provider })
               : t('hero_connecting', { 0: provider })}
           </p>
           {percent !== undefined && (
-            <span class="shrink-0 font-mono text-xs tabular-nums">{percent}%</span>
+            <span class="shrink-0 font-mono text-2xs tabular-nums">{percent}%</span>
           )}
         </div>
       </div>
 
-      <Button variant="quiet" className="mt-6" loading={busy} onClick={cancel}>
-        <X size={16} />
+      <Button variant="quiet" loading={busy} onClick={cancel}>
         {t('cancel')}
       </Button>
     </section>

@@ -2,6 +2,10 @@ import { useEffect, useState } from 'preact/hooks';
 import { Button } from '@zovaris/sephiro/button';
 import { SegmentedControl } from '@zovaris/sephiro/segmented-control';
 import { HoldButton } from '@zovaris/sephiro/hold-button';
+import { Card } from '@zovaris/sephiro/card';
+import type { Renderable } from '@zovaris/sephiro';
+import { Spinner } from '@zovaris/sephiro/spinner';
+import { Toggle } from '@zovaris/sephiro/toggle';
 import { IconAction } from '@/components/IconAction';
 import {
   ArrowClockwise,
@@ -35,35 +39,6 @@ import {
 } from '@/lib/stores/installed';
 import { unlockSound } from '@/lib/sound';
 import { ThemeGrid } from './ThemeGrid';
-
-function Switch({
-  checked,
-  disabled,
-  label,
-  onChange,
-}: {
-  checked: boolean;
-  disabled?: boolean;
-  label: string;
-  onChange: (next: boolean) => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled}
-      class="sph-toggle"
-      data-state={checked ? 'checked' : 'unchecked'}
-      onClick={() => onChange(!checked)}
-    >
-      <span class="sph-toggle__track">
-        <span class="sph-toggle__thumb" />
-      </span>
-    </button>
-  );
-}
 
 function Row({
   icon,
@@ -131,7 +106,7 @@ function Section({
         </div>
         {action}
       </header>
-      <div class="sph-card">{children}</div>
+      <Card className="ftm-settings-card">{children as Renderable}</Card>
     </section>
   );
 }
@@ -219,13 +194,13 @@ export function SettingsPage() {
     <div class="flex w-full flex-col">
       <div class="mb-8 flex items-center justify-between gap-3">
         <h1 class="m-0 text-2xl font-semibold text-text">{t('web_settings_title')}</h1>
-        {saving && <span class="sph-spinner sph-spinner--sm" />}
+        {saving && <Spinner size="sm" label={t('loading')} />}
       </div>
 
       <div>
         {!settingsLoaded.value ? (
           <div class="flex justify-center py-10">
-            <span class="sph-spinner sph-spinner--md" />
+            <Spinner size="md" label={t('loading')} />
           </div>
         ) : (
           <div class="flex flex-col">
@@ -235,11 +210,11 @@ export function SettingsPage() {
                 title={t('enable_notifications_web')}
                 description={t('settings_notifications_desc')}
               >
-                <Switch
+                <Toggle
                   checked={notificationsEnabled.value}
                   disabled={saving}
                   label={t('enable_notifications_web')}
-                  onChange={toggleNotifications}
+                  onCheckedChange={toggleNotifications}
                 />
               </Row>
 
@@ -248,11 +223,11 @@ export function SettingsPage() {
                 title={t('sound_effects')}
                 description={t('settings_sound_desc')}
               >
-                <Switch
+                <Toggle
                   checked={soundEnabled.value}
                   disabled={saving}
                   label={t('sound_effects')}
-                  onChange={toggleSound}
+                  onCheckedChange={toggleSound}
                 />
               </Row>
 
@@ -262,11 +237,11 @@ export function SettingsPage() {
                   title={t('autostart_login')}
                   description={t('settings_autostart_desc')}
                 >
-                  <Switch
+                  <Toggle
                     checked={settings.value.autostart_enabled}
                     disabled={saving}
                     label={t('autostart_login')}
-                    onChange={toggleAutostart}
+                    onCheckedChange={toggleAutostart}
                   />
                 </Row>
               )}
