@@ -19,7 +19,11 @@ func (m *Model) updateLogViewport() {
 
 	following := m.LogViewport.AtBottom()
 
-	m.LogViewport.SetContent(strings.Join(m.App.Service.Logs(m.SelectedTunnel), "\n"))
+	var lines []string
+	if m.SelectedTunnel == m.logsID {
+		lines = m.logs
+	}
+	m.LogViewport.SetContent(strings.Join(lines, "\n"))
 
 	if following {
 		m.LogViewport.GotoBottom()

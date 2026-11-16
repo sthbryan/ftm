@@ -52,12 +52,12 @@ func (s *SettingsView) Render() string {
 			Render(i18n.T("settings_nav_hint")),
 	}, "\n")
 
-	return ui.Panel(i18n.T("settings_title"), body, settingsWidth, lipgloss.Height(body)+ui.PanelChrome, t.Gold)
+	return ui.Panel(i18n.T("settings_title"), body, settingsWidth, lipgloss.Height(body)+ui.PanelChrome, t.Accent)
 }
 
 func (s *SettingsView) marker(focused bool) string {
 	if focused {
-		return lipgloss.NewStyle().Foreground(ui.ThemeDefault.Gold).Bold(true).Render("▸ ")
+		return lipgloss.NewStyle().Foreground(ui.ThemeDefault.Accent).Bold(true).Render("▸ ")
 	}
 	return "  "
 }
@@ -82,7 +82,7 @@ func (s *SettingsView) toggle(width int, label string, enabled, focused bool) st
 
 	labelStyle := lipgloss.NewStyle().Foreground(t.Text)
 	if focused {
-		labelStyle = labelStyle.Foreground(t.Gold).Bold(true)
+		labelStyle = labelStyle.Foreground(t.Accent).Bold(true)
 	}
 
 	marker := s.marker(focused)
@@ -129,7 +129,7 @@ func (s *SettingsView) languages(width int) string {
 
 	labelStyle := lipgloss.NewStyle().Foreground(t.Text)
 	if s.Focused == 2 {
-		labelStyle = labelStyle.Foreground(t.Gold).Bold(true)
+		labelStyle = labelStyle.Foreground(t.Accent).Bold(true)
 	}
 
 	label := i18n.T("language")

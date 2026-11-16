@@ -147,7 +147,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("failed to start web server: %w", err)
 	}
 
-	relaunch, err := tui.Run(&tui.App{Service: a.Service, Bus: a.Bus, Web: a.WebServer})
+	relaunch, err := tui.Run(tui.NewLocal(a.Service, a.Bus, a.WebServer))
 	if err != nil {
 		return err
 	}

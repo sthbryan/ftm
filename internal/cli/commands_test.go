@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/sthbryan/ftm/internal/client"
 )
 
 // Every command runs the same against a running ftm and against the core it
@@ -193,6 +195,17 @@ func TestServeRelaunchesAfterAnUpdate(t *testing.T) {
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("serve did not end when a restart was requested")
+	}
+}
+
+func TestTUIAttachesToTheRunningFtm(t *testing.T) {
+	h := newHarness(t, modes[1])
+	running, _ := h.deps.Attach()
+	var attached *client.Client
+	h.deps.AttachTUI = func(c *client.Client) error { attached = c; return nil }
+	h.mustRun()
+	if attached == nil || attached.URL() != running.URL() {
+		t.Fatalf("the TUI attached to %v, want the running ftm at %s", attached, running.URL())
 	}
 }
 

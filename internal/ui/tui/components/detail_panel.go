@@ -41,7 +41,7 @@ func (d *DetailPanel) details() string {
 
 	nameStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(ui.ThemeDefault.Gold).
+		Foreground(ui.ThemeDefault.Accent).
 		Width(d.Width)
 	b.WriteString(nameStyle.Render(d.Name))
 	b.WriteString("\n\n")
@@ -73,7 +73,7 @@ func (d *DetailPanel) details() string {
 
 		urlBox := lipgloss.NewStyle().
 			BorderStyle(lipgloss.NormalBorder()).
-			BorderForeground(ui.ThemeDefault.Gold).
+			BorderForeground(ui.ThemeDefault.Accent).
 			Foreground(ui.ThemeDefault.Text).
 			Padding(0, 1).
 			Width(d.Width).
@@ -82,7 +82,7 @@ func (d *DetailPanel) details() string {
 		b.WriteString("\n")
 
 		copyHint := lipgloss.NewStyle().
-			Foreground(ui.ThemeDefault.Bronze).
+			Foreground(ui.ThemeDefault.AccentMuted).
 			Render(i18n.T("press_c_copy"))
 		b.WriteString(copyHint)
 		b.WriteString("\n\n")
@@ -134,7 +134,7 @@ func (d *DetailPanel) logTail(rows int) string {
 	body := make([]string, 0, len(lines))
 	for _, line := range lines {
 		body = append(body, lipgloss.NewStyle().
-			Foreground(ui.ThemeDefault.Bronze).
+			Foreground(ui.ThemeDefault.AccentMuted).
 			Render(ui.Truncate(line, d.Width)))
 	}
 

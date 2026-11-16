@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -8,9 +9,9 @@ import (
 	"charm.land/bubbles/v2/list"
 	"charm.land/bubbles/v2/progress"
 	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
 
 	"github.com/sthbryan/ftm/internal/core"
-	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/provider"
 	"github.com/sthbryan/ftm/internal/ui/tui/views"
@@ -45,7 +46,7 @@ type Settings struct {
 const TwoColumnThreshold = 100
 
 type Model struct {
-	App                 *App
+	App                 Backend
 	Keys                KeyMap
 	Help                help.Model
 	State               viewState
@@ -71,7 +72,14 @@ type Model struct {
 	pendingDeleteName   string
 	pendingConfirm      confirmKind
 	messageUntil        time.Time
-	events              <-chan events.Event
+	messageSeq          int
+	messageTimer        int
+	prefs               Prefs
+	logsID              string
+	logs                []string
+	lost                bool
+	ctx                 context.Context
+	events              <-chan tea.Msg
 	stopEvents          func()
 }
 
@@ -85,6 +93,8 @@ type TunnelDraft struct {
 type TunnelItem struct {
 	Tunnel core.TunnelConfig
 	Status core.TunnelStatus
+	// Running is true while the tunnel is starting, connecting or online.
+	Running bool
 }
 
 func (i TunnelItem) FilterValue() string { return i.Tunnel.Name }

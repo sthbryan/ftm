@@ -41,7 +41,7 @@ func (m *Model) View() tea.View {
 }
 
 func (m *Model) viewList() string {
-	if len(m.Items) == 0 && !m.App.Config().Onboarded {
+	if len(m.Items) == 0 && !m.prefs.Onboarded {
 		return m.viewEmptyState()
 	}
 
@@ -51,8 +51,8 @@ func (m *Model) viewList() string {
 	view.Items = m.collectTunnelData()
 	view.Cursor = m.Cursor
 	view.Message = m.Message
-	view.Dashboard = m.App.Web.URL()
-	view.Sessions = m.App.Web.ClientCount()
+	view.Dashboard = m.App.DashboardURL()
+	view.Sessions = m.App.Sessions()
 	view.TwoColumnLimit = TwoColumnThreshold
 	view.Shortcuts = m.Keys.listShortcuts()
 	if m.UpdateAvailable != nil {
@@ -71,8 +71,8 @@ func (m *Model) collectTunnelData() []views.TunnelViewData {
 	for i, item := range m.Items {
 		if ti, ok := item.(TunnelItem); ok {
 			var logs []string
-			if i == m.Cursor {
-				logs = m.App.Service.Logs(ti.Tunnel.ID)
+			if i == m.Cursor && ti.Tunnel.ID == m.logsID {
+				logs = m.logs
 			}
 
 			data = append(data, views.TunnelViewData{
@@ -114,8 +114,8 @@ func (m *Model) viewEmptyState() string {
 	view := views.NewEmptyState()
 	view.Height = m.Height
 	view.Width = m.Width
-	view.Dashboard = m.App.Web.URL()
-	view.Sessions = m.App.Web.ClientCount()
+	view.Dashboard = m.App.DashboardURL()
+	view.Sessions = m.App.Sessions()
 
 	return view.Render()
 }
@@ -141,9 +141,9 @@ func (m *Model) getTunnelName(id string) string {
 		return item.Tunnel.Name
 	}
 
-	for _, t := range m.App.Service.Tunnels() {
-		if t.ID == id {
-			return t.Name
+	for _, item := range m.Items {
+		if ti, ok := item.(TunnelItem); ok && ti.Tunnel.ID == id {
+			return ti.Tunnel.Name
 		}
 	}
 	return ""
@@ -218,7 +218,7 @@ func (m *Model) confirmBackdrop() string {
 }
 
 func (m *Model) clearTunnelsMessage() string {
-	count := len(m.App.Service.Tunnels())
+	count := len(m.Items)
 	if count == 1 {
 		return i18n.T("confirm_reset_body_one")
 	}
@@ -232,6 +232,6 @@ func (m *Model) viewSettings() string {
 		view.NotificationSound = m.SettingsView.NotificationSound
 		view.Focused = m.SettingsView.Focused
 	}
-	view.TunnelCount = len(m.App.Service.Tunnels())
+	view.TunnelCount = len(m.Items)
 	return view.Render()
 }

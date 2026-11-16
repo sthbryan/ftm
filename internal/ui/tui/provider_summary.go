@@ -20,11 +20,15 @@ const providerSummaryTimeout = 20 * time.Second
 // loadProviderSummary reads the provider binaries in the background, since
 // it can run each binary's --version and reach the release APIs.
 func (m *Model) loadProviderSummary() tea.Cmd {
-	svc := m.App.Service
+	b := m.App
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), providerSummaryTimeout)
 		defer cancel()
-		return providerSummaryMsg{line: providerSummary(svc.ProviderBinaries(ctx, false))}
+		report, err := b.ProviderBinaries(ctx)
+		if err != nil {
+			return nil
+		}
+		return providerSummaryMsg{line: providerSummary(report)}
 	}
 }
 
