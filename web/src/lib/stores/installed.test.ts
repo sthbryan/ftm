@@ -4,7 +4,7 @@ const success = vi.fn();
 const error = vi.fn();
 vi.mock('./toast', () => ({ toast: { success, error } }));
 vi.mock('./i18n', () => ({ t: (key: string, args?: Record<string, unknown>) => `${key}:${JSON.stringify(args ?? {})}` }));
-vi.mock('@/lib/api/ws', () => ({ subscribeWsMessages: vi.fn(() => () => undefined) }));
+vi.mock('@/lib/api/events', () => ({ subscribeEvents: vi.fn(() => () => undefined) }));
 
 class FakeHTTPError extends Error {
   constructor(public response: { text: () => Promise<string> }) {

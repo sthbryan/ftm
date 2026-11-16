@@ -1,55 +1,42 @@
-import { sendWsMessage, subscribeWsMessages } from '../ws';
 import { api } from '../client';
+import type { LogFrame } from '../types';
 
 export interface LogStreamOptions {
+  /** The recent lines; sent first and again after every reconnect, so it replaces what is shown. */
+  onSnapshot: (lines: string[]) => void;
   onLine: (line: string) => void;
-  onClose?: () => void;
 }
 
-interface LogWsMessage {
-  type?: string;
-  id?: string;
-  line?: string;
+type LogData = LogFrame['data'];
+
+function streamUrl(tunnelId: string): string {
+  return `/api/tunnels/${encodeURIComponent(tunnelId)}/logs?follow=1`;
 }
 
-function createStream(
-  tunnelId: string,
-  options: LogStreamOptions
-): { close: () => void } {
-  let closed = false;
+/** Follow a tunnel's output over Server-Sent Events. */
+function createStream(tunnelId: string, options: LogStreamOptions): { close: () => void } {
+  if (typeof EventSource === 'undefined') return { close: () => undefined };
 
-  const unsubscribe = subscribeWsMessages((message) => {
-    if (closed || typeof message !== 'object' || message === null) {
-      return;
+  const es = new EventSource(streamUrl(tunnelId));
+
+  const read = (raw: MessageEvent): LogData | null => {
+    try {
+      return JSON.parse(raw.data as string) as LogData;
+    } catch {
+      return null;
     }
+  };
 
-    const payload = message as LogWsMessage;
-
-    if (payload.type === '__ws_open') {
-      void sendWsMessage({ type: 'logs_subscribe', id: tunnelId });
-      return;
-    }
-
-    if (payload.type === 'log' && payload.id === tunnelId && typeof payload.line === 'string') {
-      options.onLine(payload.line);
-    }
+  es.addEventListener('log_snapshot', (raw) => {
+    const data = read(raw as MessageEvent);
+    if (data && 'lines' in data) options.onSnapshot(data.lines ?? []);
+  });
+  es.addEventListener('log', (raw) => {
+    const data = read(raw as MessageEvent);
+    if (data && 'line' in data && typeof data.line === 'string') options.onLine(data.line);
   });
 
-  void sendWsMessage({ type: 'logs_subscribe', id: tunnelId });
-
-  return {
-    close: () => {
-      if (closed) {
-        return;
-      }
-      closed = true;
-      unsubscribe();
-      void sendWsMessage({ type: 'logs_unsubscribe', id: tunnelId });
-      if (options.onClose) {
-        options.onClose();
-      }
-    },
-  };
+  return { close: () => es.close() };
 }
 
 function get(tunnelId: string): Promise<string> {
@@ -59,4 +46,5 @@ function get(tunnelId: string): Promise<string> {
 export const logsApi = {
   createStream,
   get,
+  streamUrl,
 };

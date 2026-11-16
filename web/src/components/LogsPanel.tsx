@@ -17,46 +17,24 @@ function toLines(text: string): TerminalLine[] {
 
 export function LogsPanel({ tunnelId, state }: { tunnelId: string; state: string }) {
   const [lines, setLines] = useState<TerminalLine[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const running = isRunningState(state);
 
   useEffect(() => {
-    let stream: { close: () => void } | null = null;
-    let cancelled = false;
-
     setLines([]);
-    setError(null);
-
     if (!tunnelId || !running) return;
 
-    logsApi
-      .get(tunnelId)
-      .then((initial) => {
-        if (!cancelled) setLines(toLines(formatLogs(initial)));
-      })
-      .catch(() => {
-        if (!cancelled) setError(t('error_loading_logs'));
-      });
-
-    stream = logsApi.createStream(tunnelId, {
-      onLine: (line) => {
-        if (cancelled) return;
-        setLines((current) => [...current, ...toLines(formatLogs(line))].slice(-MAX_LINES));
-      },
-      onClose: () => {
-        stream = null;
-      },
+    const stream = logsApi.createStream(tunnelId, {
+      onSnapshot: (snapshot) => setLines(toLines(formatLogs(snapshot.join('\n')))),
+      onLine: (line) =>
+        setLines((current) => [...current, ...toLines(formatLogs(line))].slice(-MAX_LINES)),
     });
 
-    return () => {
-      cancelled = true;
-      stream?.close();
-    };
+    return () => stream.close();
   }, [tunnelId, running]);
 
   return (
     <Terminal
-      lines={error ? [{ text: error, tone: 'error' }] : lines}
+      lines={lines}
       label={t('detail_logs')}
       title={t('detail_logs')}
       running={running}

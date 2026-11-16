@@ -1,6 +1,6 @@
 import { computed, signal } from '@preact/signals';
 import { settingsApi, tunnelsApi, type Settings } from '@/lib/api';
-import { subscribeWsMessages } from '@/lib/api/ws';
+import { subscribeEvents, type ServerEvent } from '@/lib/api/events';
 import { renderNotificationEvent, syncNotificationSettings } from './notification';
 import { startExpiration, stopAllExpirations, stopExpiration } from './expiration';
 import type { Tunnel, TunnelState } from '@/lib/types';
@@ -9,31 +9,6 @@ export interface InstallProgress {
   provider: string;
   percent: number;
   step: string;
-}
-
-interface TunnelMessage {
-  type?: string;
-  id?: string;
-  state?: TunnelState;
-  name?: string;
-  provider?: string;
-  port?: number;
-  publicUrl?: string;
-  errorMessage?: string;
-  expiresAt?: number;
-  startedAt?: number;
-  visitors?: number;
-  activeSessions?: number;
-  done?: boolean;
-  install?: InstallProgress;
-  notification?: {
-    channel?: string;
-    title?: string;
-    body?: string;
-    toastType?: string;
-    soundType?: string;
-    soundEnabled?: boolean;
-  };
 }
 
 const tunnelsById = signal<Record<string, Tunnel>>({});
@@ -45,7 +20,7 @@ export const tunnelsConnected = signal(false);
 export const tunnelsOnboarded = signal(true);
 export const installProgress = signal<Record<string, InstallProgress>>({});
 
-let unsubscribeWs: (() => void) | null = null;
+let unsubscribeEvents: (() => void) | null = null;
 let resolvedOnce = false;
 
 export function getTunnel(id: string): Tunnel | undefined {
@@ -58,7 +33,12 @@ export function patchTunnel(id: string, patch: Partial<Tunnel>): void {
   tunnelsById.value = { ...tunnelsById.value, [id]: { ...current, ...patch } };
 }
 
-function processMessage(msg: TunnelMessage): void {
+function processMessage(msg: ServerEvent): void {
+  if (msg.type === 'resync') {
+    void syncTunnels();
+    return;
+  }
+
   if (msg.type === 'install' && msg.install) {
     installProgress.value = { ...installProgress.value, [msg.install.provider]: msg.install };
     if (msg.done) void syncTunnels();
@@ -94,8 +74,7 @@ function processMessage(msg: TunnelMessage): void {
     return;
   }
 
-  const isStateMessage = msg.type === 'tunnel_state' || msg.type === undefined;
-  if (!isStateMessage || !msg.id) return;
+  if (msg.type !== 'tunnel_state' || !msg.id) return;
 
   const tunnel = tunnelsById.value[msg.id];
   if (!tunnel) return;
@@ -150,7 +129,7 @@ async function syncTunnels(): Promise<void> {
       }
     }
   } catch {
-    /* the websocket reconnect will retry */
+    /* the next connected or resync event retries */
   }
 }
 
@@ -182,25 +161,21 @@ async function loadTunnels(): Promise<void> {
 }
 
 export function connectTunnels(): void {
-  if (unsubscribeWs) return;
+  if (unsubscribeEvents) return;
 
-  unsubscribeWs = subscribeWsMessages((message) => {
-    if (typeof message !== 'object' || message === null) return;
-
-    const msg = message as TunnelMessage;
-
-    if (msg.type === '__ws_open') {
+  unsubscribeEvents = subscribeEvents((event) => {
+    if (event.type === 'connected') {
       tunnelsConnected.value = true;
       tunnelsError.value = null;
       void syncTunnels();
       return;
     }
-    if (msg.type === '__ws_close') {
+    if (event.type === 'disconnected') {
       tunnelsConnected.value = false;
       return;
     }
 
-    processMessage(msg);
+    processMessage(event);
   });
 
   void syncNotificationSettings();
@@ -208,8 +183,8 @@ export function connectTunnels(): void {
 }
 
 export function disconnectTunnels(): void {
-  unsubscribeWs?.();
-  unsubscribeWs = null;
+  unsubscribeEvents?.();
+  unsubscribeEvents = null;
   tunnelsConnected.value = false;
   stopAllExpirations();
 }
