@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { Spinner } from '@zovaris/sephiro/spinner';
 import { useEffect, useState } from 'preact/hooks';
 
 /** Renders a QR for a URL with a white quiet zone, sized in CSS pixels. */
@@ -35,7 +36,7 @@ export function QrImage({
   }, [value, size]);
 
   if (!dataUrl) {
-    return <span class="sph-spinner sph-spinner--md" />;
+    return <Spinner size="md" label={alt ?? value} />;
   }
 
   return (
