@@ -10,23 +10,26 @@ import (
 	"sort"
 	"sync"
 	"time"
-
-	"github.com/sthbryan/ftm/internal/supervisor/proxy"
 )
 
 // foundryProbeTimeout bounds one look at a busy port. Foundry answers its own
 // pages in a few milliseconds on the same machine; anything slower is not it.
-const foundryProbeTimeout = 600 * time.Millisecond
+const foundryProbeTimeout = 1500 * time.Millisecond
 
 // foundryMarker is in the <title> of every page Foundry VTT serves before a
 // world loads (setup, license, join) and in the game page itself.
 var foundryMarker = []byte("Foundry Virtual Tabletop")
 
-// foundryClient reaches Foundry on either loopback, the way the tunnel does.
 var foundryClient = &http.Client{
 	Timeout:   foundryProbeTimeout,
-	Transport: &http.Transport{DialContext: proxy.DialLoopbackAddr, DisableKeepAlives: true},
+	Transport: &http.Transport{Proxy: nil, DisableKeepAlives: true},
 }
+
+// loopbackHosts are asked at once and the first real answer wins. Something
+// else can share the port on one of them (a Windows port forward, for one)
+// and accept connections without ever answering, so a connection alone
+// proves nothing.
+var loopbackHosts = []string{"127.0.0.1", "[::1]"}
 
 // FoundryStatus is what a running Foundry says about itself on /api/status:
 // whether a world is launched, which one, its game system, how many users are
@@ -105,21 +108,38 @@ func get(ctx context.Context, port int, path string) ([]byte, bool) {
 	ctx, cancel := context.WithTimeout(ctx, foundryProbeTimeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d%s", port, path), nil)
+	answers := make(chan []byte, len(loopbackHosts))
+	for _, host := range loopbackHosts {
+		go func(host string) { answers <- getFrom(ctx, host, port, path) }(host)
+	}
+	for range loopbackHosts {
+		if body := <-answers; body != nil {
+			return body, true
+		}
+	}
+	return nil, false
+}
+
+// getFrom is one GET to one loopback address; nil unless it answered 200.
+func getFrom(ctx context.Context, host string, port int, path string) []byte {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s:%d%s", host, port, path), nil)
 	if err != nil {
-		return nil, false
+		return nil
 	}
 	resp, err := foundryClient.Do(req)
 	if err != nil {
-		return nil, false
+		return nil
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, false
+		return nil
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
 	if err != nil && len(body) == 0 {
-		return nil, false
+		return nil
 	}
-	return body, true
+	if body == nil {
+		body = []byte{}
+	}
+	return body
 }
