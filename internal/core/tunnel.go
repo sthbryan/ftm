@@ -1,0 +1,70 @@
+package core
+
+type Provider string
+
+const (
+	ProviderCloudflared  Provider = "cloudflared"
+	ProviderTunnelmole   Provider = "tunnelmole"
+	ProviderLocalhostRun Provider = "localhostrun"
+	ProviderServeo       Provider = "serveo"
+	ProviderPinggy       Provider = "pinggy"
+	ProviderBore         Provider = "bore"
+)
+
+func AllProviders() []Provider {
+	return []Provider{
+		ProviderCloudflared,
+		ProviderTunnelmole,
+		ProviderLocalhostRun,
+		ProviderServeo,
+		ProviderPinggy,
+		ProviderBore,
+	}
+}
+
+type TunnelState string
+
+const (
+	TunnelStateNone       TunnelState = ""
+	TunnelStateDownload   TunnelState = "downloading"
+	TunnelStateInstall    TunnelState = "installing"
+	TunnelStateStarting   TunnelState = "starting"
+	TunnelStateConnecting TunnelState = "connecting"
+	TunnelStateOnline     TunnelState = "online"
+	TunnelStateStopping   TunnelState = "stopping"
+	TunnelStateStopped    TunnelState = "stopped"
+	TunnelStateTimeout    TunnelState = "timeout"
+	TunnelStateError      TunnelState = "error"
+)
+
+type TunnelConfig struct {
+	ID        string   `yaml:"id"`
+	Name      string   `yaml:"name"`
+	Provider  Provider `yaml:"provider"`
+	LocalPort int      `yaml:"local_port"`
+}
+
+type TunnelStatus struct {
+	ID             string
+	Name           string
+	Provider       Provider
+	LocalPort      int
+	PublicURL      string
+	State          TunnelState
+	ErrorMessage   string
+	LogLines       []string
+	Visitors       int
+	ActiveSessions int
+	ExpiresAt      int64
+	StartedAt      int64
+}
+
+func (tc *TunnelConfig) Status() TunnelStatus {
+	return TunnelStatus{
+		ID:        tc.ID,
+		Name:      tc.Name,
+		Provider:  tc.Provider,
+		LocalPort: tc.LocalPort,
+		State:     TunnelStateStopped,
+	}
+}

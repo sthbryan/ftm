@@ -6,10 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
-	"github.com/sthbryan/ftm/internal/process"
-	"github.com/sthbryan/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/provider"
 	"github.com/sthbryan/ftm/internal/updater"
 )
 
@@ -59,11 +58,11 @@ func TestRequestRestartClosesTheChannelOnce(t *testing.T) {
 
 type statusFake struct {
 	*fakeSupervisor
-	status map[string]config.TunnelStatus
+	status map[string]core.TunnelStatus
 	logs   map[string][]string
 }
 
-func (s statusFake) GetStatus(id string) (config.TunnelStatus, bool) {
+func (s statusFake) GetStatus(id string) (core.TunnelStatus, bool) {
 	st, ok := s.status[id]
 	return st, ok
 }
@@ -72,18 +71,18 @@ func (s statusFake) GetLogs(id string) []string { return s.logs[id] }
 
 func TestTunnelViewsMergeLiveStatus(t *testing.T) {
 	f := newFixture(t, cfgWith(
-		config.TunnelConfig{ID: "a", Name: "A", Provider: config.ProviderBore, LocalPort: 30000},
-		config.TunnelConfig{ID: "b", Name: "B", Provider: config.ProviderBore, LocalPort: 30001},
+		core.TunnelConfig{ID: "a", Name: "A", Provider: core.ProviderBore, LocalPort: 30000},
+		core.TunnelConfig{ID: "b", Name: "B", Provider: core.ProviderBore, LocalPort: 30001},
 	))
 	sup := statusFake{
 		fakeSupervisor: f.sup,
-		status:         map[string]config.TunnelStatus{"a": {ID: "a", State: config.TunnelStateOnline}},
+		status:         map[string]core.TunnelStatus{"a": {ID: "a", State: core.TunnelStateOnline}},
 		logs:           map[string][]string{"a": {"line"}},
 	}
 	f.svc.sup = sup
 
 	views := f.svc.TunnelViews()
-	if len(views) != 2 || !views[0].Running || views[0].Status.State != config.TunnelStateOnline || views[0].NeedsInstall {
+	if len(views) != 2 || !views[0].Running || views[0].Status.State != core.TunnelStateOnline || views[0].NeedsInstall {
 		t.Fatalf("views[0] = %+v", views[0])
 	}
 	if views[1].Running || !views[1].NeedsInstall {
@@ -100,37 +99,58 @@ func TestTunnelViewsMergeLiveStatus(t *testing.T) {
 	}
 }
 
+func TestStatusAndRunningReadTheSupervisor(t *testing.T) {
+	f := newFixture(t, cfgWith())
+	f.svc.sup = statusFake{
+		fakeSupervisor: f.sup,
+		status: map[string]core.TunnelStatus{
+			"up":      {ID: "up", State: core.TunnelStateConnecting},
+			"stopped": {ID: "stopped", State: core.TunnelStateStopped},
+		},
+	}
+
+	if st, ok := f.svc.Status("up"); !ok || st.State != core.TunnelStateConnecting {
+		t.Fatalf("Status(up) = %+v, %v", st, ok)
+	}
+	if _, ok := f.svc.Status("never"); ok {
+		t.Fatal("Status found a tunnel the supervisor never ran")
+	}
+	if !f.svc.Running("up") || f.svc.Running("stopped") || f.svc.Running("never") {
+		t.Fatal("Running disagrees with the live states")
+	}
+}
+
 type binaryFake struct {
 	*fakeSupervisor
-	report   []process.ProviderBinary
-	updated  chan config.Provider
+	report   []core.ProviderBinary
+	updated  chan core.Provider
 	updating bool
 	err      error
 }
 
 func (b *binaryFake) CheckLatest(context.Context, bool) {}
-func (b *binaryFake) ProviderBinaries(context.Context) []process.ProviderBinary {
+func (b *binaryFake) ProviderBinaries(context.Context) []core.ProviderBinary {
 	return b.report
 }
-func (b *binaryFake) ProviderBinary(_ context.Context, id config.Provider) process.ProviderBinary {
+func (b *binaryFake) ProviderBinary(_ context.Context, id core.Provider) core.ProviderBinary {
 	for _, r := range b.report {
 		if r.ID == id {
 			return r
 		}
 	}
-	return process.ProviderBinary{ID: id, Source: process.SourceNone, Updatable: true}
+	return core.ProviderBinary{ID: id, Source: core.SourceNone, Updatable: true}
 }
-func (b *binaryFake) UpdateProvider(_ context.Context, id config.Provider, _ chan<- providers.DownloadProgress) (*process.UpdateResult, error) {
+func (b *binaryFake) UpdateProvider(_ context.Context, id core.Provider, _ chan<- provider.DownloadProgress) (*core.UpdateResult, error) {
 	b.updated <- id
-	return &process.UpdateResult{Provider: id, Version: "2"}, b.err
+	return &core.UpdateResult{Provider: id, Version: "2"}, b.err
 }
-func (b *binaryFake) IsUpdating(config.Provider) bool { return b.updating }
+func (b *binaryFake) IsUpdating(core.Provider) bool { return b.updating }
 
 func TestProviderUpdateNoticeIsPublishedOncePerVersion(t *testing.T) {
 	f := newFixture(t, nil)
-	sup := &binaryFake{fakeSupervisor: f.sup, report: []process.ProviderBinary{
-		{ID: config.ProviderCloudflared, Version: "2024.6.1", Latest: "2026.11.0", HasUpdate: true, Updatable: true, Source: process.SourceBundled},
-		{ID: config.ProviderBore, Version: "0.6.0", Latest: "0.6.0", Source: process.SourceBundled},
+	sup := &binaryFake{fakeSupervisor: f.sup, report: []core.ProviderBinary{
+		{ID: core.ProviderCloudflared, Version: "2024.6.1", Latest: "2026.11.0", HasUpdate: true, Updatable: true, Source: core.SourceBundled},
+		{ID: core.ProviderBore, Version: "0.6.0", Latest: "0.6.0", Source: core.SourceBundled},
 	}}
 	f.svc.sup = sup
 	ctx := context.Background()
@@ -156,17 +176,17 @@ func TestProviderUpdateNoticeIsPublishedOncePerVersion(t *testing.T) {
 
 func TestUpdateProviderChecksThenReportsTheOutcome(t *testing.T) {
 	f := newFixture(t, nil)
-	sup := &binaryFake{fakeSupervisor: f.sup, updated: make(chan config.Provider, 1), report: []process.ProviderBinary{
-		{ID: config.ProviderServeo, Source: process.SourceSystem},
-		{ID: config.ProviderBore, Source: process.SourcePath},
+	sup := &binaryFake{fakeSupervisor: f.sup, updated: make(chan core.Provider, 1), report: []core.ProviderBinary{
+		{ID: core.ProviderServeo, Source: core.SourceSystem},
+		{ID: core.ProviderBore, Source: core.SourcePath},
 	}}
 	f.svc.sup = sup
 	ctx := context.Background()
 
-	for id, want := range map[config.Provider]error{
-		"nope":                ErrUnknownProvider,
-		config.ProviderServeo: ErrNotUpdatable,
-		config.ProviderBore:   ErrExternalBinary,
+	for id, want := range map[core.Provider]error{
+		"nope":              ErrUnknownProvider,
+		core.ProviderServeo: ErrNotUpdatable,
+		core.ProviderBore:   ErrExternalBinary,
 	} {
 		if err := f.svc.UpdateProvider(ctx, id); !errors.Is(err, want) {
 			t.Errorf("UpdateProvider(%s) = %v, want %v", id, err, want)
@@ -174,13 +194,13 @@ func TestUpdateProviderChecksThenReportsTheOutcome(t *testing.T) {
 	}
 
 	sup.updating = true
-	if err := f.svc.UpdateProvider(ctx, config.ProviderCloudflared); !errors.Is(err, ErrUpdateInProgress) {
+	if err := f.svc.UpdateProvider(ctx, core.ProviderCloudflared); !errors.Is(err, ErrUpdateInProgress) {
 		t.Fatalf("UpdateProvider while updating = %v", err)
 	}
 	sup.updating = false
 
 	sup.err = errors.New("checksum mismatch")
-	if err := f.svc.UpdateProvider(ctx, config.ProviderCloudflared); err != nil {
+	if err := f.svc.UpdateProvider(ctx, core.ProviderCloudflared); err != nil {
 		t.Fatalf("UpdateProvider = %v", err)
 	}
 	<-sup.updated
@@ -196,7 +216,7 @@ func TestProviderBinariesWithoutSupport(t *testing.T) {
 	if got := f.svc.ProviderBinaries(context.Background(), false); got == nil || len(got) != 0 {
 		t.Fatalf("ProviderBinaries = %#v, want empty", got)
 	}
-	if err := f.svc.UpdateProvider(context.Background(), config.ProviderCloudflared); !errors.Is(err, ErrUnknownProvider) {
+	if err := f.svc.UpdateProvider(context.Background(), core.ProviderCloudflared); !errors.Is(err, ErrUnknownProvider) {
 		t.Fatalf("UpdateProvider = %v", err)
 	}
 }

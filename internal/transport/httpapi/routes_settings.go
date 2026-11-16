@@ -7,9 +7,9 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/sthbryan/ftm/internal/autostart"
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/i18n"
+	"github.com/sthbryan/ftm/internal/platform/autostart"
 	"github.com/sthbryan/ftm/internal/service"
 )
 
@@ -60,7 +60,7 @@ type i18nCurrentOutput struct {
 }
 
 func isSelectableLanguage(lang string) bool {
-	if lang == config.LanguageAuto {
+	if lang == core.LanguageAuto {
 		return true
 	}
 	for _, supported := range i18n.AvailableLanguages() {

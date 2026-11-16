@@ -9,7 +9,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/service"
 )
 
@@ -109,7 +109,7 @@ func (s *Server) registerTunnels(api huma.API) {
 
 		tunnel, err := s.svc.CreateTunnel(service.TunnelInput{
 			Name:      b.Name,
-			Provider:  config.Provider(b.Provider),
+			Provider:  core.Provider(b.Provider),
 			LocalPort: b.LocalPort,
 		})
 		if err != nil {
@@ -162,7 +162,7 @@ func (s *Server) registerTunnels(api huma.API) {
 			patch.Name = &name
 		}
 		if in.Body.Provider != "" {
-			provider := config.Provider(in.Body.Provider)
+			provider := core.Provider(in.Body.Provider)
 			patch.Provider = &provider
 		}
 		if port := in.Body.LocalPort; port >= 1 && port <= 65535 {
@@ -223,7 +223,7 @@ func (s *Server) registerTunnels(api huma.API) {
 				Name:     state.Name,
 				Provider: state.Provider,
 				Port:     state.Port,
-				State:    string(config.TunnelStateInstall),
+				State:    string(core.TunnelStateInstall),
 			}
 		}
 		return &tunnelOutput{Body: state}, nil

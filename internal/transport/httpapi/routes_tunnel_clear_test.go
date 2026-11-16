@@ -5,15 +5,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sthbryan/ftm/internal/config"
-	"github.com/sthbryan/ftm/internal/process"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/store"
+	"github.com/sthbryan/ftm/internal/supervisor"
 )
 
-func clearServer(t *testing.T, cfg *config.Config) *Server {
+func clearServer(t *testing.T, cfg *core.Config) *Server {
 	t.Helper()
 
-	return newTestServer(t, process.NewManager(), cfg)
+	return newTestServer(t, supervisor.NewManager(), cfg)
 }
 
 func decodeDeleted(t *testing.T, body []byte) int {
@@ -29,10 +29,10 @@ func decodeDeleted(t *testing.T, body []byte) int {
 }
 
 func TestClearTunnelsRemovesEveryConnection(t *testing.T) {
-	cfg := config.DefaultConfig()
+	cfg := core.DefaultConfig()
 	cfg.Language = "es"
-	cfg.AddTunnel(config.TunnelConfig{ID: "a", Name: "First", LocalPort: 30000})
-	cfg.AddTunnel(config.TunnelConfig{ID: "b", Name: "Second", LocalPort: 30001})
+	cfg.AddTunnel(core.TunnelConfig{ID: "a", Name: "First", LocalPort: 30000})
+	cfg.AddTunnel(core.TunnelConfig{ID: "b", Name: "Second", LocalPort: 30001})
 
 	s := clearServer(t, cfg)
 
@@ -62,7 +62,7 @@ func TestClearTunnelsRemovesEveryConnection(t *testing.T) {
 }
 
 func TestClearTunnelsOnAnEmptyConfig(t *testing.T) {
-	cfg := config.DefaultConfig()
+	cfg := core.DefaultConfig()
 	s := clearServer(t, cfg)
 
 	w := call(t, s, http.MethodDelete, "/api/tunnels", "")
@@ -73,8 +73,8 @@ func TestClearTunnelsOnAnEmptyConfig(t *testing.T) {
 }
 
 func TestListTunnelsAfterClearingReturnsAnArray(t *testing.T) {
-	cfg := config.DefaultConfig()
-	cfg.AddTunnel(config.TunnelConfig{ID: "a", Name: "First", LocalPort: 30000})
+	cfg := core.DefaultConfig()
+	cfg.AddTunnel(core.TunnelConfig{ID: "a", Name: "First", LocalPort: 30000})
 
 	s := clearServer(t, cfg)
 	call(t, s, http.MethodDelete, "/api/tunnels", "")

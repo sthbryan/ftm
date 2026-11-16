@@ -16,8 +16,8 @@ func TestDoesNotImportTheTUI(t *testing.T) {
 		t.Fatalf("go list -deps: %v", err)
 	}
 	for _, dep := range strings.Fields(string(out)) {
-		if dep == "github.com/sthbryan/ftm/internal/app" ||
-			strings.HasPrefix(dep, "github.com/sthbryan/ftm/internal/app/") ||
+		if dep == "github.com/sthbryan/ftm/internal/ui/tui" ||
+			strings.HasPrefix(dep, "github.com/sthbryan/ftm/internal/ui/tui/") ||
 			strings.HasPrefix(dep, "charm.land/bubbletea") {
 			t.Errorf("ftm-desktop depends on %s", dep)
 		}

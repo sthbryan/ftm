@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/store/dirs"
 )
 
@@ -24,7 +24,7 @@ func DefaultDirs() Dirs { return dirs.Default() }
 type Store struct {
 	mu   sync.RWMutex
 	dirs Dirs
-	cfg  *config.Config
+	cfg  *core.Config
 }
 
 // Open loads config.yaml from d, creating it with defaults when it is missing,
@@ -48,7 +48,7 @@ func Open(d Dirs) (*Store, error) {
 
 // Peek reads config.yaml without writing anything, for a process that must not
 // own the config (a second instance, or a command that only needs the language).
-func Peek(d Dirs) (config.Config, error) {
+func Peek(d Dirs) (core.Config, error) {
 	path := d.ConfigFile()
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		path = d.LegacyConfigFile()
@@ -56,24 +56,24 @@ func Peek(d Dirs) (config.Config, error) {
 
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
-		return *config.DefaultConfig(), nil
+		return *core.DefaultConfig(), nil
 	}
 	if err != nil {
-		return config.Config{}, fmt.Errorf("failed to read config: %w", err)
+		return core.Config{}, fmt.Errorf("failed to read config: %w", err)
 	}
 
-	cfg, _, err := config.Parse(data)
+	cfg, _, err := core.Parse(data)
 	if err != nil {
-		return config.Config{}, err
+		return core.Config{}, err
 	}
 	return *cfg, nil
 }
 
 // New wraps cfg without reading the disk. Writes still go to d. Meant for
 // tests and for callers that already hold a config.
-func New(d Dirs, cfg *config.Config) *Store {
+func New(d Dirs, cfg *core.Config) *Store {
 	if cfg == nil {
-		cfg = config.DefaultConfig()
+		cfg = core.DefaultConfig()
 	}
 	return &Store{dirs: d, cfg: cfg.Clone()}
 }
@@ -83,34 +83,34 @@ func (s *Store) Dirs() Dirs { return s.dirs }
 
 // Snapshot returns a deep copy of the current config. Changing it changes
 // nothing; use Update for that.
-func (s *Store) Snapshot() config.Config {
+func (s *Store) Snapshot() core.Config {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return *s.cfg.Clone()
 }
 
 // Tunnels returns a copy of the saved connections.
-func (s *Store) Tunnels() []config.TunnelConfig {
+func (s *Store) Tunnels() []core.TunnelConfig {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return append([]config.TunnelConfig{}, s.cfg.Tunnels...)
+	return append([]core.TunnelConfig{}, s.cfg.Tunnels...)
 }
 
 // Tunnel returns a copy of the connection with id.
-func (s *Store) Tunnel(id string) (config.TunnelConfig, bool) {
+func (s *Store) Tunnel(id string) (core.TunnelConfig, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	if t := s.cfg.GetTunnel(id); t != nil {
 		return *t, true
 	}
-	return config.TunnelConfig{}, false
+	return core.TunnelConfig{}, false
 }
 
 // Update applies fn to a copy of the config and saves it. The change only
 // becomes visible once it is on disk: if fn or the save fails, the config is
 // left as it was and the error is returned. Updates are serialised, so fn sees
 // every earlier update.
-func (s *Store) Update(fn func(*config.Config) error) error {
+func (s *Store) Update(fn func(*core.Config) error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -125,21 +125,21 @@ func (s *Store) Update(fn func(*config.Config) error) error {
 	return nil
 }
 
-func read(d Dirs) (*config.Config, bool, error) {
+func read(d Dirs) (*core.Config, bool, error) {
 	data, err := os.ReadFile(d.ConfigFile())
 	if os.IsNotExist(err) {
-		return config.DefaultConfig(), true, nil
+		return core.DefaultConfig(), true, nil
 	}
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to read config: %w", err)
 	}
-	return config.Parse(data)
+	return core.Parse(data)
 }
 
 // write replaces config.yaml through a sibling temp file and a rename. A crash,
 // a full disk or a scanner holding the file then leaves the previous config
 // intact instead of a half-written one that cannot be parsed on the next start.
-func write(d Dirs, cfg *config.Config) error {
+func write(d Dirs, cfg *core.Config) error {
 	if err := os.MkdirAll(d.Config, 0o755); err != nil {
 		return fmt.Errorf("failed to create config dir: %w", err)
 	}

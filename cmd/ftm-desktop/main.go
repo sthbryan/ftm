@@ -9,8 +9,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/sthbryan/ftm/internal/autostart"
 	"github.com/sthbryan/ftm/internal/buildinfo"
+	"github.com/sthbryan/ftm/internal/platform/autostart"
 	"github.com/sthbryan/ftm/internal/platform/instance"
 	"github.com/sthbryan/ftm/internal/version"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -34,7 +34,7 @@ func main() {
 		log.Printf("Could not refresh the autostart entry: %v", err)
 	}
 
-	var ftm *core
+	var ftm *appCore
 
 	// application.New exits a second launch after handing over to this one,
 	// before it can take the core lock or open a window.
@@ -95,7 +95,7 @@ func main() {
 
 // openCore starts the core, or returns the dashboard of the ftm process
 // (TUI or `ftm serve`) that already owns it, with a nil core.
-func openCore(port int) (string, *core, error) {
+func openCore(port int) (string, *appCore, error) {
 	c, err := startCore(port)
 	var running *instance.RunningError
 	switch {

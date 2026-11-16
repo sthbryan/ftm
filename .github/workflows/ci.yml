@@ -54,8 +54,8 @@ jobs:
       # not: it must reach the core through internal/service, never the TUI.
       - name: Desktop does not import the TUI
         run: |
-          if go list -deps ./cmd/ftm-desktop | grep -E "^(github.com/sthbryan/ftm/internal/app(/|$)|charm.land/bubbletea)"; then
-            echo "cmd/ftm-desktop must not import internal/app or Bubble Tea"
+          if go list -deps ./cmd/ftm-desktop | grep -E "^(github.com/sthbryan/ftm/internal/ui/tui(/|$)|charm.land/bubbletea)"; then
+            echo "cmd/ftm-desktop must not import internal/ui/tui or Bubble Tea"
             exit 1
           fi
 
@@ -79,7 +79,7 @@ jobs:
 
       # Windows is the primary target and none of this used to be compiled on
       # it. unsafeptr is disabled because the COM vtable glue in
-      # internal/autostart is uintptr by design.
+      # internal/platform/autostart is uintptr by design.
       - name: Vet
         run: go vet -unsafeptr=false $(go list ./... | grep -v '/cmd/ftm-desktop')
 
@@ -91,8 +91,8 @@ jobs:
           go build -trimpath -ldflags "-H windowsgui" -o ftm-desktop-windows-x64.exe ./cmd/ftm-desktop
           go test ./cmd/ftm-desktop/
 
-      - name: Test the platform-independent packages
-        run: go test ./internal/config/ ./internal/i18n/ ./internal/transport/... ./internal/store/... ./internal/platform/... ./internal/events/ ./internal/service/
+      - name: Test
+        run: go test -race $(go list ./... | grep -v /cmd/ftm-desktop)
 
   lint-frontend:
     name: Lint & Test Frontend

@@ -1,7 +1,7 @@
 package httpapi
 
 import (
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/service"
 )
@@ -62,7 +62,7 @@ func tunnelStateFromView(v service.TunnelView) TunnelState {
 		Name:     v.Tunnel.Name,
 		Provider: string(v.Tunnel.Provider),
 		Port:     v.Tunnel.LocalPort,
-		State:    string(config.TunnelStateStopped),
+		State:    string(core.TunnelStateStopped),
 	}
 
 	if v.Running {
@@ -75,7 +75,7 @@ func tunnelStateFromView(v service.TunnelView) TunnelState {
 		msg.ActiveSessions = v.Status.ActiveSessions
 	}
 
-	if msg.State == string(config.TunnelStateStopped) && v.NeedsInstall {
+	if msg.State == string(core.TunnelStateStopped) && v.NeedsInstall {
 		msg.State = "need_installing"
 	}
 	return msg
@@ -83,7 +83,7 @@ func tunnelStateFromView(v service.TunnelView) TunnelState {
 
 // tunnelStateFromStatus builds the message from a status the supervisor
 // already published.
-func tunnelStateFromStatus(status config.TunnelStatus) TunnelState {
+func tunnelStateFromStatus(status core.TunnelStatus) TunnelState {
 	return TunnelState{
 		Type:         eventTunnelState,
 		ID:           status.ID,

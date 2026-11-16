@@ -7,13 +7,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 )
 
 func newPiPTestServer(t *testing.T) *Server {
-	cfg := &config.Config{
-		Tunnels: []config.TunnelConfig{
-			{ID: "test", Name: "cloudflared", Provider: config.ProviderCloudflared, LocalPort: 3000},
+	cfg := &core.Config{
+		Tunnels: []core.TunnelConfig{
+			{ID: "test", Name: "cloudflared", Provider: core.ProviderCloudflared, LocalPort: 3000},
 		},
 	}
 
