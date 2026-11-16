@@ -47,16 +47,16 @@ jobs:
 
       - name: Build desktop
         run: |
-          mkdir -p desktop/build/bin
+          mkdir -p cmd/ftm-desktop/build/bin
           CGO_ENABLED=1 go build -tags "production,gtk3" -ldflags "-s -w" \
-            -o desktop/build/bin/ftm-desktop-linux ./desktop
+            -o cmd/ftm-desktop/build/bin/ftm-desktop-linux ./cmd/ftm-desktop
 
       - name: Package AppImage
-        run: ./scripts/package-appimage.sh desktop/build/bin/ftm-desktop-linux desktop/build/bin
+        run: ./scripts/package-appimage.sh cmd/ftm-desktop/build/bin/ftm-desktop-linux cmd/ftm-desktop/build/bin
 
       - name: Smoke test the AppImage
         run: |
-          APPIMAGE=desktop/build/bin/ftm-desktop-linux-x86_64.AppImage
+          APPIMAGE=cmd/ftm-desktop/build/bin/ftm-desktop-linux-x86_64.AppImage
           test -x "$APPIMAGE"
           ls -lh "$APPIMAGE"
           APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGE" --appimage-extract >/dev/null
@@ -74,5 +74,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: appimage-ftm-desktop
-          path: desktop/build/bin/*.AppImage
+          path: cmd/ftm-desktop/build/bin/*.AppImage
           retention-days: 14

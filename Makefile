@@ -6,7 +6,7 @@
 BINARY_NAME=ftm
 BUILD_DIR=bin
 PKG=./cmd/ftm
-DESKTOP_DIR=./desktop
+DESKTOP_DIR=./cmd/ftm-desktop
 
 # git describe includes the leading "v" from tags; strip it so callers can print "v$(Version)".
 VERSION=$(shell (git describe --tags --always --dirty 2>/dev/null || echo dev) | sed 's/^v//')
@@ -27,6 +27,8 @@ DESKTOP_OUT := $(DESKTOP_DIR)/build/bin
 DESKTOP_BIN := ftm-desktop
 ifeq ($(OS),Windows_NT)
 DESKTOP_BIN := ftm-desktop.exe
+# A GUI-subsystem binary, so launching the app never opens a console window.
+DESKTOP_LDFLAGS := -H windowsgui
 endif
 UNAME_S := $(shell uname -s)
 DESKTOP_DEV_TAGS_ARG :=
@@ -74,16 +76,16 @@ uninstall: ## Remove the installed binary from $BINDIR
 desktop: web ## Build the Wails v3 desktop shell for the host OS
 	@echo "Building desktop (production tags)..."
 	@mkdir -p $(DESKTOP_OUT)
-	CGO_ENABLED=1 go build $(if $(DESKTOP_PROD_TAGS_ARG),-tags $(DESKTOP_PROD_TAGS_ARG),) -ldflags "-s -w" -o $(DESKTOP_OUT)/$(DESKTOP_BIN) ./desktop
+	CGO_ENABLED=1 go build $(if $(DESKTOP_PROD_TAGS_ARG),-tags $(DESKTOP_PROD_TAGS_ARG),) -ldflags "-s -w $(DESKTOP_LDFLAGS)" -o $(DESKTOP_OUT)/$(DESKTOP_BIN) ./cmd/ftm-desktop
 
 .PHONY: desktop-dev
 desktop-dev: web ## Build the desktop shell without production tags
 	@echo "Building desktop (dev)..."
 	@mkdir -p $(DESKTOP_OUT)
-	CGO_ENABLED=1 go build $(if $(DESKTOP_DEV_TAGS_ARG),-tags $(DESKTOP_DEV_TAGS_ARG),) -o $(DESKTOP_OUT)/$(DESKTOP_BIN) ./desktop
+	CGO_ENABLED=1 go build $(if $(DESKTOP_DEV_TAGS_ARG),-tags $(DESKTOP_DEV_TAGS_ARG),) -ldflags "$(DESKTOP_LDFLAGS)" -o $(DESKTOP_OUT)/$(DESKTOP_BIN) ./cmd/ftm-desktop
 
 .PHONY: desktop-winres
-desktop-winres: ## Regenerate the Windows icon/manifest resources after changing desktop/icon.png
+desktop-winres: ## Regenerate the Windows icon/manifest resources after changing cmd/ftm-desktop/icon.png
 	@echo "Generating Windows resources (icon, manifest, version info)..."
 	go run github.com/tc-hib/go-winres@v0.3.3 make \
 		--in $(DESKTOP_DIR)/winres/winres.json \

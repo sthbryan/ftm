@@ -44,8 +44,8 @@ node_modules
 .lazyload/
 
 # Desktop app (Wails)
-desktop/build/
-desktop/frontend/
+cmd/ftm-desktop/build/
+cmd/ftm-desktop/frontend/
 *.app
 *.dmg
 
@@ -57,7 +57,7 @@ desktop/frontend/
 AGENTS.md
 PLAN.md
 # Generated Windows resources
-desktop/*.syso
+cmd/ftm-desktop/*.syso
 __pycache__/
 
 # Local plans and specs (ADRs go in docs/adr)

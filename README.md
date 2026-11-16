@@ -223,7 +223,7 @@ make test-race    # go test -race ./...
 make vet          # go vet ./...
 make fmt          # gofmt -w, then verify nothing is left unformatted
 make install      # web + binary → $BINDIR (default $(go env GOPATH)/bin)
-make desktop      # Wails v3 desktop shell → desktop/build/bin/ftm-desktop
+make desktop      # Wails v3 desktop shell → cmd/ftm-desktop/build/bin/ftm-desktop
 make help         # full target list
 ```
 
@@ -243,7 +243,7 @@ make version ARGS="patch"     # non-interactive bump
 make version ARGS="0.11.0 --dry-run"
 ```
 
-`make version` (alias: `make release`) updates every place that holds the version string (`internal/version/version.go`, `web/package.json`, `desktop/wails.json` — both `version` and `productVersion`), commits with `chore(release): vX.Y.Z`, creates an annotated tag, and pushes branch + tag to `origin`. Flags: `--dry-run`, `--no-push`, `--allow-dirty`, `--yes`/`-y`. Run `make version ARGS="--help"` for the full reference.
+`make version` (alias: `make release`) updates every place that holds the version string (`internal/version/version.go`, `web/package.json`, `cmd/ftm-desktop/wails.json` — both `version` and `productVersion`), commits with `chore(release): vX.Y.Z`, creates an annotated tag, and pushes branch + tag to `origin`. Flags: `--dry-run`, `--no-push`, `--allow-dirty`, `--yes`/`-y`. Run `make version ARGS="--help"` for the full reference.
 
 ---
 

@@ -24,7 +24,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/ftm-desktop"
 chmod +x "$APP/Contents/MacOS/ftm-desktop"
 
-ICON_SOURCE="$PWD/desktop/AppIcon.icon"
+ICON_SOURCE="$PWD/cmd/ftm-desktop/AppIcon.icon"
 LAYERED_ICON=""
 
 # Needs Xcode 26+; older toolchains cannot read .icon, so keep going without it.
@@ -49,7 +49,7 @@ fi
 
 if [ -n "$LAYERED_ICON" ]; then
   :
-elif [ -f desktop/icon.png ]; then
+elif [ -f cmd/ftm-desktop/icon.png ]; then
   ICONSET="$(mktemp -d)/AppIcon.iconset"
   mkdir -p "$ICONSET"
   trap 'rm -rf "$(dirname "$ICONSET")"' EXIT
@@ -57,11 +57,11 @@ elif [ -f desktop/icon.png ]; then
   # Generate all required sizes from the 1024x1024 source.
   declare -a SIZES=(16 32 64 128 256 512)
   for size in "${SIZES[@]}"; do
-    sips -z "$size" "$size" desktop/icon.png --out "$ICONSET/icon_${size}x${size}.png" >/dev/null
-    sips -z $((size * 2)) $((size * 2)) desktop/icon.png --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null
+    sips -z "$size" "$size" cmd/ftm-desktop/icon.png --out "$ICONSET/icon_${size}x${size}.png" >/dev/null
+    sips -z $((size * 2)) $((size * 2)) cmd/ftm-desktop/icon.png --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null
   done
   # 512@2x = 1024 source, already in place, but iconutil wants it named explicitly.
-  cp desktop/icon.png "$ICONSET/icon_512x512@2x.png"
+  cp cmd/ftm-desktop/icon.png "$ICONSET/icon_512x512@2x.png"
 
   iconutil -c icns "$ICONSET" -o "$ICNS_PATH"
 else
