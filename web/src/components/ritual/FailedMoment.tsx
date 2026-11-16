@@ -21,29 +21,31 @@ export function FailedMoment({ tunnel, onEdit }: { tunnel: Tunnel; onEdit: (id: 
   }
 
   return (
-    <section class="flex flex-col items-center py-10 text-center" aria-labelledby="failed-title">
-      <p class="m-0 max-w-full truncate text-[13px] text-text-muted">{tunnel.name}</p>
-      <h1
-        id="failed-title"
-        class="m-0 mt-1 font-serif text-[clamp(26px,7vw,36px)] leading-tight font-medium text-text"
-      >
-        {hint ? t(hint) : t('hero_failed')}
-      </h1>
-      {tunnel.errorMessage && (
-        <p class="m-0 mt-3 max-w-[60ch] font-mono text-xs break-words text-text-muted">
-          {tunnel.errorMessage}
+    <section class="ftm-moment" aria-labelledby="failed-title">
+      <div class="flex max-w-full flex-col items-center">
+        <h1 id="failed-title" class="ftm-title">
+          {tunnel.name}
+        </h1>
+        <p class="m-0 mt-2 flex items-center gap-2 text-sm text-text" role="status">
+          <span class="ftm-dot" data-check="failed" aria-hidden="true" />
+          {hint ? t(hint) : t('hero_failed')}
         </p>
-      )}
-      <div class="mt-7 flex flex-wrap justify-center gap-2">
-        <Button variant="primary" size="lg" loading={busy} onClick={retry}>
-          <ArrowClockwise size={16} />
+        {tunnel.errorMessage && (
+          <p class="m-0 mt-2 max-w-[60ch] font-mono text-2xs break-words text-text-muted">
+            {tunnel.errorMessage}
+          </p>
+        )}
+      </div>
+      <div class="flex flex-wrap justify-center gap-2">
+        <Button variant="primary" size="lg" className="ftm-hero-action" loading={busy} onClick={retry}>
+          <ArrowClockwise size={20} />
           {t('retry')}
         </Button>
-        <Button variant="secondary" size="lg" onClick={() => onEdit(tunnel.id)}>
-          <PencilSimple size={16} />
-          {t('edit')}
-        </Button>
       </div>
+      <Button variant="quiet" size="sm" onClick={() => onEdit(tunnel.id)}>
+        <PencilSimple size={16} />
+        {t('edit_connection')}
+      </Button>
     </section>
   );
 }

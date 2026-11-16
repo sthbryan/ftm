@@ -214,3 +214,218 @@ input[type="number"]::-webkit-inner-spin-button {
   background: var(--color-hover);
   border-color: var(--color-border);
 }
+
+/* ── Home: the four moments ─────────────────────────────────────────────── */
+
+/* The stage fills the space under the header and centres its moment, the way
+ * the approved mockup does; strips and the session footer sit around it. */
+.ftm-stage {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  padding-block: 2rem 3rem;
+}
+
+.ftm-moment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  text-align: center;
+}
+
+.ftm-title {
+  margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: var(--font-serif);
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--color-text);
+}
+
+.ftm-hero-action.sph-button {
+  height: 3.25rem;
+  padding-inline: 2rem;
+  border-radius: var(--sph-radius-md);
+  font-size: 0.9375rem;
+}
+
+/* Foundry check and failure, as a dot before the sentence. */
+.ftm-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--sph-text-muted);
+}
+
+.ftm-dot[data-check="answers"] {
+  background: var(--sph-success);
+}
+
+.ftm-dot[data-check="silent"] {
+  background: var(--sph-warning);
+}
+
+.ftm-dot[data-check="failed"] {
+  background: var(--sph-danger);
+}
+
+/* Preset chips: Sephiro buttons with a hairline, the picked one filled. */
+.ftm-chip.sph-button {
+  box-shadow: inset 0 0 0 1px var(--sph-border);
+  color: var(--sph-text-muted);
+}
+
+.ftm-chip.sph-button.is-selected {
+  color: var(--sph-text);
+}
+
+.ftm-invite {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1.5rem;
+  border: 1px solid var(--sph-border);
+}
+
+.ftm-qr {
+  padding: 10px;
+  border-radius: 10px;
+  background: #fff;
+  line-height: 0;
+}
+
+.ftm-url {
+  margin: 0.375rem 0 1rem;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  color: var(--color-url-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 40rem) {
+  .ftm-invite {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
+
+  .ftm-invite .ftm-url {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .ftm-invite .flex-wrap {
+    justify-content: center;
+  }
+}
+
+/* In session: one slim strip, everything on a line that wraps on a phone. */
+.ftm-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 1rem;
+  row-gap: 0.5rem;
+  padding: 0.625rem 0.75rem 0.625rem 1rem;
+  border: 1px solid var(--sph-border);
+}
+
+.ftm-seats {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.ftm-seat {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--sph-accent-soft);
+  color: var(--sph-accent-strong);
+}
+
+.ftm-session-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.ftm-brand.sph-link {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--sph-text);
+  text-decoration: none;
+}
+
+/* ── New and edit connection ────────────────────────────────────────────── */
+
+.ftm-page {
+  display: flex;
+  width: 100%;
+  max-width: 40rem;
+  flex-direction: column;
+  gap: 2rem;
+  margin-inline: auto;
+  padding-block: 0.5rem 2rem;
+}
+
+/* The provider radio group as cards, each with what that provider allows. */
+.ftm-provider-cards .sph-radio-group__options {
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.ftm-provider-cards .sph-radio-group__option {
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--sph-radius-sm);
+  box-shadow: inset 0 0 0 1px var(--sph-border);
+  transition: box-shadow var(--sph-motion-fast) var(--sph-ease-standard),
+    background-color var(--sph-motion-fast) var(--sph-ease-standard);
+}
+
+.ftm-provider-cards .sph-radio-group__option:hover {
+  background: var(--sph-surface);
+}
+
+.ftm-provider-cards .sph-radio-group__option:has(input:checked) {
+  background: var(--sph-surface);
+  box-shadow: inset 0 0 0 1px var(--sph-accent);
+}
+
+.ftm-mini-url.sph-button {
+  background: var(--color-url-bg);
+  box-shadow: none;
+}
+
+.ftm-brand .sph-link__label {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Settings rows sit flush on their card; the rows carry their own padding. */
+.ftm-settings-card > .sph-card__content {
+  padding: 0;
+}
+
+.ftm-banner > .sph-card__content {
+  padding: 0.5rem 0.75rem;
+}

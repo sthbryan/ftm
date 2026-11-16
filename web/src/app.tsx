@@ -9,7 +9,9 @@ import { connectTunnels, disconnectTunnels } from '@/lib/stores/tunnels';
 import { fetchProviders } from '@/lib/stores/providers';
 import { loadSettings } from '@/lib/stores/settings';
 import { checkForUpdate } from '@/lib/stores/update';
-import { route } from '@/router';
+import { ConnectionPage } from '@/components/ConnectionPage';
+import { Spinner } from '@zovaris/sephiro/spinner';
+import { connectionRoute, route } from '@/router';
 
 export function App() {
   const [ready, setReady] = useState(i18nReady.value);
@@ -32,7 +34,7 @@ export function App() {
     <>
       {ready ? (
         <Shell>
-          {route.value === '/settings' ? <SettingsPage /> : <Dashboard />}
+          <Page path={route.value} />
         </Shell>
       ) : (
         <BootScreen />
@@ -42,10 +44,16 @@ export function App() {
   );
 }
 
+function Page({ path }: { path: string }) {
+  if (path === '/settings') return <SettingsPage />;
+  const form = connectionRoute(path);
+  return form ? <ConnectionPage route={form} /> : <Dashboard />;
+}
+
 function BootScreen() {
   return (
     <div class="flex h-dvh items-center justify-center bg-bg" aria-busy="true" aria-live="polite">
-      <span class="sph-spinner sph-spinner--md" />
+      <Spinner size="md" label="Loading" />
     </div>
   );
 }

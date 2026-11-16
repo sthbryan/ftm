@@ -1,6 +1,8 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
+import { Button } from '@zovaris/sephiro/button';
 import { Kbd } from '@zovaris/sephiro/kbd';
+import { Link } from '@zovaris/sephiro/link';
 import { IconAction } from '@/components/IconAction';
 import { ArrowLeft, GearSix } from '@phosphor-icons/react';
 import { t } from '@/lib/stores/i18n';
@@ -32,34 +34,39 @@ export function Shell({ children }: { children: ComponentChildren }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const isSettings = route.value === '/settings';
+  const isHome = route.value === '/';
 
   return (
     <div class="min-h-dvh w-full bg-bg text-text">
-      <div class="mx-auto flex w-full max-w-app flex-col px-4 pb-16 sm:px-6 lg:px-8">
-        <header class="flex items-center gap-3 py-6">
-          <a
-            href="/"
-            class="flex min-w-0 flex-1 items-center gap-3 text-text no-underline"
-            onClick={(event) => {
-              event.preventDefault();
-              navigate('/');
-            }}
-          >
-            <Mark class="size-8 shrink-0" />
-            <span class="truncate text-base font-medium">{t('app_name')}</span>
-          </a>
+      <div class="mx-auto flex min-h-dvh w-full max-w-app flex-col px-4 pb-8 sm:px-6 lg:px-8">
+        <header class="flex items-center gap-2 py-4 sm:py-5">
+          <div class="flex min-w-0 flex-1">
+            <Link
+              href="/"
+              variant="subtle"
+              className="ftm-brand"
+              onClick={(event) => {
+                event.preventDefault();
+                navigate('/');
+              }}
+            >
+              <Mark class="size-7 shrink-0" />
+              <span class="truncate text-sm font-medium">{t('app_name')}</span>
+            </Link>
+          </div>
 
-          <button
-            type="button"
-            class="flex cursor-pointer items-center rounded-control border-0 bg-transparent p-1 max-sm:hidden"
-            aria-label={t('command_palette_placeholder')}
-            onClick={() => setPaletteOpen(true)}
-          >
-            <Kbd keys={['⌘', 'K']} variant="ghost" />
-          </button>
+          <div class="max-sm:hidden">
+            <Button
+              variant="quiet"
+              size="sm"
+              aria-label={t('command_palette_placeholder')}
+              onClick={() => setPaletteOpen(true)}
+            >
+              <Kbd keys={['⌘', 'K']} variant="ghost" />
+            </Button>
+          </div>
 
-          {isSettings ? (
+          {route.value === '/settings' ? (
             <IconAction
               label={t('go_back')}
               side="bottom"
@@ -76,7 +83,7 @@ export function Shell({ children }: { children: ComponentChildren }) {
           )}
         </header>
 
-        <main class="min-w-0">{children}</main>
+        <main class={`flex min-w-0 flex-1 flex-col ${isHome ? '' : 'pt-2'}`}>{children}</main>
       </div>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
