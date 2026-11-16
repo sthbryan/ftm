@@ -39,7 +39,7 @@ export function Shell({ children }: { children: ComponentChildren }) {
   return (
     <div class="min-h-dvh w-full bg-bg text-text">
       <div class="mx-auto flex min-h-dvh w-full max-w-app flex-col px-4 pb-8 sm:px-6 lg:px-8">
-        <header class="flex items-center gap-2 py-4 sm:py-5">
+        <header class="ftm-header flex items-center gap-2 py-4 sm:py-5">
           <div class="flex min-w-0 flex-1">
             <Link
               href="/"

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { connectionPath, connectionRoute } from './router';
+import { vi } from 'vitest';
+import { connectionPath, connectionRoute, withViewTransition } from './router';
 
 describe('connectionRoute', () => {
   it('opens the new form on /new', () => {
@@ -18,5 +19,24 @@ describe('connectionRoute', () => {
       expect(connectionRoute(path)).toBeNull();
     }
     expect(connectionRoute('/edit/abc')).not.toEqual({ mode: 'new' });
+  });
+});
+
+describe('withViewTransition', () => {
+  it('swaps inside a view transition when the browser has one', () => {
+    const update = vi.fn();
+    const startViewTransition = vi.fn((run: () => unknown) => void run());
+    withViewTransition(update, { startViewTransition }, false);
+    expect(startViewTransition).toHaveBeenCalledOnce();
+    expect(update).toHaveBeenCalledOnce();
+  });
+
+  it('swaps at once without the API or with reduced motion', () => {
+    const startViewTransition = vi.fn();
+    const update = vi.fn();
+    withViewTransition(update, {}, false);
+    withViewTransition(update, { startViewTransition }, true);
+    expect(update).toHaveBeenCalledTimes(2);
+    expect(startViewTransition).not.toHaveBeenCalled();
   });
 });

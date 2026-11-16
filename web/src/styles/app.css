@@ -72,18 +72,29 @@ input[type="number"]::-webkit-inner-spin-button {
   }
 }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: var(--sph-motion-slow);
-  animation-timing-function: var(--sph-ease-standard);
+/* Page changes (home, new/edit, settings) cross-fade with a short rise; the
+ * header has its own name so it holds still while the page under it changes. */
+.ftm-header {
+  view-transition-name: ftm-header;
+}
+
+::view-transition-group(ftm-header) {
+  animation: none;
 }
 
 ::view-transition-old(root) {
-  animation-name: fade-out;
+  animation: fade-out var(--sph-motion-fast) var(--sph-ease-standard) both;
 }
 
 ::view-transition-new(root) {
-  animation-name: fade-in;
+  animation: page-in var(--sph-motion-normal) var(--sph-ease-emphasis) both;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 @keyframes fade-out {
@@ -100,7 +111,8 @@ input[type="number"]::-webkit-inner-spin-button {
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
-  ::view-transition-new(root) {
+  ::view-transition-new(root),
+  ::view-transition-group(*) {
     animation: none;
   }
 }
