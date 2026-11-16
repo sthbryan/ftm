@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// appUserModelID matches the identity in desktop/winres/winres.json, so a toast
+// appUserModelID matches the identity in cmd/ftm-desktop/winres/winres.json, so a toast
 // is attributed to ftm instead of to the PowerShell host process.
 const appUserModelID = "com.justcallmebryan.ftm"
 
@@ -33,9 +33,13 @@ func init() {
 
 // runPowerShell runs a script without flashing a console window. Every
 // notification used to open one.
+// createNoWindow is CREATE_NO_WINDOW: powershell gets no console at all, so
+// nothing can flash before -WindowStyle Hidden applies.
+const createNoWindow = 0x08000000
+
 func runPowerShell(script string) error {
 	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: createNoWindow}
 	return cmd.Run()
 }
 

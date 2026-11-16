@@ -8,11 +8,17 @@ import (
 	"syscall"
 )
 
+// createNoWindow is CREATE_NO_WINDOW, which syscall does not export.
+const createNoWindow = 0x08000000
+
 func configureProcessGroup(cmd *exec.Cmd) {
 	if cmd.SysProcAttr == nil {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
 	}
-	cmd.SysProcAttr.CreationFlags |= syscall.CREATE_NEW_PROCESS_GROUP
+	// CREATE_NO_WINDOW: the desktop app has no console, so without it every
+	// tunnel binary would open a console window of its own.
+	cmd.SysProcAttr.CreationFlags |= syscall.CREATE_NEW_PROCESS_GROUP | createNoWindow
+	cmd.SysProcAttr.HideWindow = true
 }
 
 func taskkill(cmd *exec.Cmd, force bool) {
