@@ -168,7 +168,7 @@ Every command talks to the ftm that is already running (the desktop app, `ftm se
 
 | Command | Effect |
 |---------|--------|
-| *(none)* | TUI + web server |
+| *(none)* | TUI + web server; with ftm already running, the TUI attaches to it and changes show in both right away |
 | `ftm up [name…] [--all]` | Open connections and print their links |
 | `ftm down [name…]` | Close connections (all open ones when none is named) |
 | `ftm share [name] [--port N]` | Open a connection, copy the link, print an invite |

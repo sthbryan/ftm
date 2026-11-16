@@ -24,7 +24,7 @@ const confirmWidth = 46
 func (c *ConfirmView) Render() string {
 	t := ui.ThemeDefault
 
-	accent := t.Gold
+	accent := t.Accent
 	if c.Danger {
 		accent = t.Danger
 	}

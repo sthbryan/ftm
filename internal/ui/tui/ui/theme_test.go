@@ -102,3 +102,19 @@ func TestSetDarkBackgroundSwapsTheActiveTheme(t *testing.T) {
 		t.Errorf("switching to a dark background did not lighten the text (%.2f then %.2f)", lightText, darkText)
 	}
 }
+
+func TestThemeIsTintaInkBlue(t *testing.T) {
+	for _, isDark := range []bool{true, false} {
+		theme := BuildTheme(isDark)
+		for label, c := range map[string]color.Color{
+			"accent":        theme.Accent,
+			"muted accent":  theme.AccentMuted,
+			"active button": theme.ButtonActive,
+		} {
+			r, g, b, _ := c.RGBA()
+			if b <= r || b <= g {
+				t.Errorf("dark=%v: the %s is not ink blue", isDark, label)
+			}
+		}
+	}
+}

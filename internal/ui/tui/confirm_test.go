@@ -39,7 +39,7 @@ func TestDeleteAsksForConfirmationFirst(t *testing.T) {
 	if m.pendingDeleteName != "Foundry VTT" {
 		t.Errorf("pendingDeleteName = %q, want the tunnel name", m.pendingDeleteName)
 	}
-	if len(m.App.Config().Tunnels) != 1 {
+	if len(m.App.(*Local).Service.Config().Tunnels) != 1 {
 		t.Fatal("the tunnel was removed before the user confirmed")
 	}
 }
@@ -53,7 +53,7 @@ func TestCancellingKeepsTheTunnel(t *testing.T) {
 	if m.State != viewList {
 		t.Errorf("State = %v after cancelling, want viewList", m.State)
 	}
-	if len(m.App.Config().Tunnels) != 1 {
+	if len(m.App.(*Local).Service.Config().Tunnels) != 1 {
 		t.Error("cancelling still deleted the tunnel")
 	}
 	if m.pendingDeleteID != "" {
@@ -70,7 +70,7 @@ func TestEscapeCancelsTheConfirmation(t *testing.T) {
 	if m.State != viewList {
 		t.Errorf("State = %v after escape, want viewList", m.State)
 	}
-	if len(m.App.Config().Tunnels) != 1 {
+	if len(m.App.(*Local).Service.Config().Tunnels) != 1 {
 		t.Error("escape deleted the tunnel")
 	}
 	if m.pendingDeleteID != "" {
@@ -84,7 +84,7 @@ func TestConfirmingWithNothingPendingIsANoop(t *testing.T) {
 
 	m.confirmDelete()
 
-	if len(m.App.Config().Tunnels) != 1 {
+	if len(m.App.(*Local).Service.Config().Tunnels) != 1 {
 		t.Error("confirming with no pending delete removed a tunnel")
 	}
 	if m.State != viewList {

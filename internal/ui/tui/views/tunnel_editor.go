@@ -67,7 +67,7 @@ func (f *TunnelEditor) Render() string {
 
 	body := strings.Join(lines, "\n")
 
-	return ui.Panel(title, body, editorWidth, lipgloss.Height(body)+ui.PanelChrome, t.Gold)
+	return ui.Panel(title, body, editorWidth, lipgloss.Height(body)+ui.PanelChrome, t.Accent)
 }
 
 const (
@@ -102,13 +102,13 @@ func (f *TunnelEditor) field(inner, index int, label, hint, focusedHint, value s
 	}
 
 	labelStyle := lipgloss.NewStyle().Foreground(t.TextDim)
-	border, foreground := t.Bronze, t.TextDim
+	border, foreground := t.AccentMuted, t.TextDim
 
 	if focused {
 		label = "▸ " + label
 		hint = focusedHint
-		labelStyle = labelStyle.Foreground(t.Gold).Bold(true)
-		border, foreground = t.Gold, t.Text
+		labelStyle = labelStyle.Foreground(t.Accent).Bold(true)
+		border, foreground = t.Accent, t.Text
 
 		if index == 1 {
 			value = "‹ " + value + " ›"
@@ -126,7 +126,7 @@ func (f *TunnelEditor) field(inner, index int, label, hint, focusedHint, value s
 	return strings.Join([]string{
 		labelStyle.Render(label),
 		input,
-		lipgloss.NewStyle().Foreground(t.Bronze).Render(hint),
+		lipgloss.NewStyle().Foreground(t.AccentMuted).Render(hint),
 	}, "\n")
 }
 

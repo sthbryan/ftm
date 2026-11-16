@@ -36,7 +36,7 @@ func (e *EmptyState) Render() string {
 		body = e.body(inner, "")
 	}
 
-	panel := ui.Panel(i18n.T("welcome_title"), body, width, lipgloss.Height(body)+ui.PanelChrome, t.Gold)
+	panel := ui.Panel(i18n.T("welcome_title"), body, width, lipgloss.Height(body)+ui.PanelChrome, t.Accent)
 
 	return ui.Overlay("", panel, e.Width, e.Height)
 }
@@ -62,8 +62,8 @@ func (e *EmptyState) body(inner int, steps string) string {
 		"",
 		centered.Foreground(t.TextDim).Render(i18n.T("press_a_hint")),
 		"",
-		centered.Foreground(t.Bronze).Render(
-			i18n.T("tip_dashboard")+" "+e.Dashboard+"  •  ws "+fmt.Sprintf("%d", e.Sessions)),
+		centered.Foreground(t.AccentMuted).Render(
+			joinMeta(i18n.T("tip_dashboard")+" "+e.Dashboard, webViews(e.Sessions))),
 	), "\n")
 }
 
@@ -73,7 +73,7 @@ func (e *EmptyState) steps(inner int) string {
 	const numberWidth = 3
 	textWidth := ui.Clamp(inner-numberWidth, 1)
 
-	number := lipgloss.NewStyle().Width(numberWidth).Foreground(t.Gold).Bold(true)
+	number := lipgloss.NewStyle().Width(numberWidth).Foreground(t.Accent).Bold(true)
 	title := lipgloss.NewStyle().Width(textWidth).Foreground(t.Text).Bold(true)
 	detail := lipgloss.NewStyle().Width(textWidth).Foreground(t.TextDim)
 
@@ -94,4 +94,28 @@ func (e *EmptyState) steps(inner int) string {
 	}
 
 	return strings.Join(rows, "\n\n")
+}
+
+// webViews says how many web views are open, or nothing when the count is
+// unknown, as it is when the TUI is attached to another ftm.
+func webViews(n int) string {
+	switch {
+	case n < 0:
+		return ""
+	case n == 1:
+		return i18n.T("web_views_one")
+	default:
+		return i18n.TF("web_views_other", n)
+	}
+}
+
+// joinMeta joins the parts of a status line that are not empty.
+func joinMeta(parts ...string) string {
+	kept := parts[:0:0]
+	for _, p := range parts {
+		if p != "" {
+			kept = append(kept, p)
+		}
+	}
+	return strings.Join(kept, "  ·  ")
 }

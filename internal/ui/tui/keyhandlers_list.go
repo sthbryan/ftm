@@ -10,6 +10,7 @@ import (
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/platform/clipboard"
 	"github.com/sthbryan/ftm/internal/platform/notify"
+	"github.com/sthbryan/ftm/internal/platform/open"
 	"github.com/sthbryan/ftm/internal/updater"
 )
 
@@ -70,7 +71,7 @@ func (m *Model) moveCursorDown() {
 
 func (m *Model) handleListToggle() (tea.Model, tea.Cmd) {
 	if item, ok := m.selectedItem(); ok {
-		if m.App.Service.Running(item.Tunnel.ID) {
+		if item.Running {
 			m.playBeep()
 			return m, m.stopTunnel(item)
 		}
@@ -140,7 +141,9 @@ func (m *Model) confirmDelete() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	saveErr := m.App.Service.DeleteTunnel(id)
+	ctx, cancel := m.call()
+	saveErr := m.App.DeleteTunnel(ctx, id)
+	cancel()
 	m.refreshItems()
 
 	if m.Cursor >= len(m.Items) && m.Cursor > 0 {
@@ -184,7 +187,7 @@ func (m *Model) copyTunnelURL(item TunnelItem) {
 }
 
 func (m *Model) openDashboard() {
-	if err := m.App.OpenDashboard(); err != nil {
+	if err := openDashboard(m.App); err != nil {
 		m.showMessage(i18n.TF("error_dashboard", err.Error()))
 		return
 	}
@@ -192,7 +195,7 @@ func (m *Model) openDashboard() {
 }
 
 func (m *Model) openConfigDir() {
-	if err := m.App.OpenConfigDir(); err != nil {
+	if err := open.Dir(m.App.ConfigDir()); err != nil {
 		m.showMessage(i18n.TF("error_config", err.Error()))
 		return
 	}
@@ -212,7 +215,7 @@ func (m *Model) handleListUpdate() (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) playBeep() {
-	if m.App.Config().NotificationSound {
+	if m.prefs.Sound {
 		_ = notify.PlaySound(notify.SoundInfo)
 	}
 }

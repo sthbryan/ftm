@@ -1,7 +1,6 @@
 package views
 
 import (
-	"fmt"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -87,13 +86,13 @@ func (l *ListView) header() string {
 	t := ui.ThemeDefault
 
 	title := lipgloss.NewStyle().
-		Foreground(t.Gold).
+		Foreground(t.Accent).
 		Bold(true).
 		Render(i18n.T("app_name_tui"))
 
 	meta := lipgloss.NewStyle().
 		Foreground(t.TextDim).
-		Render(fmt.Sprintf("v%s  •  ws %d", version.Version, l.Sessions))
+		Render(joinMeta("v"+version.Version, webViews(l.Sessions)))
 
 	gap := ui.Clamp(l.Width-lipgloss.Width(title)-lipgloss.Width(meta), 1)
 
@@ -101,14 +100,14 @@ func (l *ListView) header() string {
 
 	if l.UpdateBadge != "" {
 		lines = append(lines, lipgloss.NewStyle().
-			Foreground(t.Gold).
+			Foreground(t.Accent).
 			Bold(true).
 			Render(l.UpdateBadge))
 	}
 
 	if l.Dashboard != "" {
 		lines = append(lines, lipgloss.NewStyle().Foreground(t.TextDim).Render(i18n.T("dashboard_label")+" ")+
-			lipgloss.NewStyle().Foreground(t.Bronze).Render(l.Dashboard))
+			lipgloss.NewStyle().Foreground(t.AccentMuted).Render(l.Dashboard))
 	}
 
 	return strings.Join(append(lines, ""), "\n")
@@ -138,13 +137,13 @@ func (l *ListView) twoColumn(bodyHeight int) string {
 	left := ui.Panel(
 		i18n.T("connections"),
 		l.renderTunnelList(ui.PanelInner(leftWidth)),
-		leftWidth, bodyHeight, ui.ThemeDefault.Gold,
+		leftWidth, bodyHeight, ui.ThemeDefault.Accent,
 	)
 
 	right := ui.Panel(
 		i18n.T("selected_tunnel"),
 		l.renderDetailPanel(ui.PanelInner(rightWidth), bodyHeight-ui.PanelChrome),
-		rightWidth, bodyHeight, ui.ThemeDefault.Bronze,
+		rightWidth, bodyHeight, ui.ThemeDefault.AccentMuted,
 	)
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, left, " ", right)
@@ -158,7 +157,7 @@ func (l *ListView) singleColumn(bodyHeight int) string {
 		content = l.emptyBody(inner, bodyHeight-ui.PanelChrome)
 	}
 
-	return ui.Panel(i18n.T("connections"), content, l.Width, bodyHeight, ui.ThemeDefault.Gold)
+	return ui.Panel(i18n.T("connections"), content, l.Width, bodyHeight, ui.ThemeDefault.Accent)
 }
 
 func (l *ListView) emptyBody(width, height int) string {
