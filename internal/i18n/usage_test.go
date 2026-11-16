@@ -18,7 +18,7 @@ var dynamicKeyFamilies = map[string][]string{
 	"foundry_": {"answers", "silent", "unknown"}, // web/src/lib/ritual.ts FoundryCheck
 	// ConnectionPage provider cards; the ids /api/providers returns.
 	"provider_note_": {"cloudflared", "tunnelmole", "localhostrun", "serveo", "pinggy", "bore"},
-	"lang_":    {LangEN, LangES, LangPT},         // SettingsPage language picker
+	"lang_":          {LangEN, LangES, LangPT}, // SettingsPage language picker
 	// SettingsPage provider rows; process.BinarySource ("none" is skipped there).
 	"providers_source_": {"bundled", "path", "system", "none"},
 }

@@ -1,5 +1,6 @@
 import { Button } from '@zovaris/sephiro/button';
-import { Bell } from '@phosphor-icons/react';
+import { Bell, X } from '@phosphor-icons/react';
+import { IconAction } from '@/components/IconAction';
 import {
   notificationsEnabled,
   notificationStatus,
@@ -9,8 +10,9 @@ import {
 import { t } from '@/lib/stores/i18n';
 
 /**
- * Asks once for notifications, inline where they matter: next to an open
- * table, not as a card floating over the main action. Settings keeps the switch.
+ * Asks once for notifications, inline where they matter: one quiet row next to
+ * an open table, not a card floating over the main action. Settings keeps the
+ * switch for later.
  */
 export function NotificationNudge({ fallback }: { fallback?: string }) {
   const pending = notificationStatus.value === 'pending' && !notificationsEnabled.value;
@@ -20,18 +22,19 @@ export function NotificationNudge({ fallback }: { fallback?: string }) {
   }
 
   return (
-    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
-      <p class="m-0 flex min-w-0 items-start gap-2">
-        <Bell size={16} className="mt-px shrink-0" aria-hidden="true" />
-        {t('notifications_prompt')}
-      </p>
-      <span class="flex items-center gap-1">
-        <Button variant="secondary" size="sm" onClick={() => void requestNotificationPermission()}>
+    <div class="ftm-nudge" role="group" aria-label={t('enable_notifications_web')}>
+      <Bell size={16} className="shrink-0 text-text-muted" aria-hidden="true" />
+      <p class="m-0 min-w-0 text-xs text-text-muted">{t('notifications_nudge')}</p>
+      <span class="flex shrink-0 items-center">
+        <Button variant="quiet" size="sm" className="ftm-nudge-action" onClick={() => void requestNotificationPermission()}>
           {t('enable')}
         </Button>
-        <Button variant="quiet" size="sm" onClick={() => rejectNotifications()}>
-          {t('not_now')}
-        </Button>
+        <IconAction
+          label={t('not_now')}
+          size="sm"
+          icon={<X size={14} />}
+          onClick={() => rejectNotifications()}
+        />
       </span>
     </div>
   );
