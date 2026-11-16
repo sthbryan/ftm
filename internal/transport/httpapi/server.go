@@ -5,8 +5,7 @@
 //
 // REST routes are declared with huma, which also serves the OpenAPI 3.1
 // document at /openapi.json. Live updates go out as Server-Sent Events on
-// /api/events and /api/tunnels/{id}/logs?follow=1, and on the /ws/events
-// WebSocket until the web has moved to SSE.
+// /api/events and /api/tunnels/{id}/logs?follow=1.
 package httpapi
 
 import (
@@ -66,7 +65,6 @@ func NewServer(svc *service.Service, bus *events.Bus) *Server {
 		autostart: autostart.New(),
 	}
 	s.ctx, s.cancel = context.WithCancel(context.Background())
-	s.hub.dropWS = s.removeClient
 	s.handler = s.routes()
 	return s
 }
@@ -204,7 +202,7 @@ func (s *Server) OpenPiP(tunnelID string) error {
 	return opener(tunnelID)
 }
 
-// ClientCount is how many dashboards are listening, over WebSocket or SSE.
+// ClientCount is how many dashboards are listening on /api/events.
 func (s *Server) ClientCount() int { return s.hub.clients() }
 
 func (s *Server) handleEvent(e events.Event) {

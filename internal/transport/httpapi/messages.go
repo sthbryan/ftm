@@ -6,10 +6,10 @@ import (
 	"github.com/sthbryan/ftm/internal/service"
 )
 
-// The types in this file are what goes over the wire: in REST responses, as
-// WebSocket messages and as Server-Sent Events. An SSE event carries the same
-// JSON as the WebSocket message of the same type, and its event name is that
-// type, so the web can move from one to the other without new parsing.
+// The types in this file are what goes over the wire: in REST responses and
+// as Server-Sent Events. An event's name is also the "type" field of its
+// data. The web's types are generated from the OpenAPI document built from
+// them (bun run gen:api).
 
 // Event names on /api/events. Each one is also the "type" field of its data.
 const (
