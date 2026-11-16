@@ -64,3 +64,43 @@ func TestDialLoopbackFailsWhenNothingListens(t *testing.T) {
 		t.Fatal("dialed a port nothing listens on")
 	}
 }
+
+// A Windows port forward can hold 127.0.0.1 on Foundry's port, accept every
+// connection and never answer, while Foundry answers on ::1. Every request
+// through the proxy must still reach Foundry.
+func TestProxySkipsALoopbackThatNeverAnswers(t *testing.T) {
+	port := serveOn(t, "::1")
+	silent, err := net.Listen("tcp", net.JoinHostPort("127.0.0.1", fmt.Sprint(port)))
+	if err != nil {
+		t.Skipf("can't share the port on 127.0.0.1: %v", err)
+	}
+	t.Cleanup(func() { _ = silent.Close() })
+	go func() {
+		for {
+			conn, err := silent.Accept()
+			if err != nil {
+				return
+			}
+			t.Cleanup(func() { _ = conn.Close() })
+		}
+	}()
+
+	p, err := Start(port, Options{Window: time.Minute})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+
+	client := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{DisableKeepAlives: true}}
+	for i := range 20 {
+		resp, err := client.Get(fmt.Sprintf("http://127.0.0.1:%d/", p.Port()))
+		if err != nil {
+			t.Fatalf("request %d: %v", i, err)
+		}
+		body, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusOK || string(body) != "foundry" {
+			t.Fatalf("request %d: got %d %q", i, resp.StatusCode, body)
+		}
+	}
+}

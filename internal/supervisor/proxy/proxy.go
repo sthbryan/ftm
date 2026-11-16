@@ -44,9 +44,11 @@ func Start(targetPort int, opts Options) (*Proxy, error) {
 	reverse := httputil.NewSingleHostReverseProxy(target)
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil
-	transport.DialContext = DialLoopbackAddr
+	foundry := &upstream{port: targetPort}
+	transport.DialContext = foundry.dial
 	reverse.Transport = transport
 	reverse.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, _ error) {
+		foundry.forget()
 		w.WriteHeader(http.StatusBadGateway)
 	}
 
