@@ -52,20 +52,44 @@ type DetectAnswer = {
 
 let watchedPort: number | undefined;
 
+/** Ports Foundry went missing from on the last check, given one more chance. */
+let missedOnce = new Set<number>();
+
+/**
+ * A Foundry seen last time but missing now stays for one more check: a single
+ * slow answer should not make the header flicker. Missing twice, it is gone.
+ */
+export function keepThroughOneMiss(previous: FoundryWorld[], next: FoundryWorld[], missed: Set<number>) {
+  const seen = new Set(next.map((world) => world.port));
+  const kept = [...next];
+  const stillMissing = new Set<number>();
+  for (const world of previous) {
+    if (seen.has(world.port) || missed.has(world.port)) continue;
+    kept.push(world);
+    stillMissing.add(world.port);
+  }
+  kept.sort((a, b) => a.port - b.port);
+  return { worlds: kept, missed: stillMissing };
+}
+
 export async function checkFoundry(port: number | undefined = watchedPort): Promise<void> {
   checkingPorts.value = true;
   try {
     const searchParams = port ? { port } : undefined;
     const data = await api.get('detect-port', { searchParams, retry: 0 }).json<DetectAnswer>();
+    const kept = keepThroughOneMiss(foundryWorlds.peek(), data.worlds ?? [], missedOnce);
+    missedOnce = kept.missed;
     busyPorts.value = data.ports ?? [];
-    foundryPorts.value = data.foundry ?? [];
+    foundryPorts.value = kept.worlds.map((world) => world.port);
     scannedPorts.value = data.scanned ?? [];
-    foundryWorlds.value = data.worlds ?? [];
+    foundryWorlds.value = kept.worlds;
   } catch {
+    const kept = keepThroughOneMiss(foundryWorlds.peek(), [], missedOnce);
+    missedOnce = kept.missed;
     busyPorts.value = null;
-    foundryPorts.value = null;
+    foundryPorts.value = kept.worlds.length > 0 ? kept.worlds.map((world) => world.port) : null;
     scannedPorts.value = [];
-    foundryWorlds.value = [];
+    foundryWorlds.value = kept.worlds;
   } finally {
     checkingPorts.value = false;
   }
