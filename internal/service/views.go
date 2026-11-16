@@ -1,13 +1,13 @@
 package service
 
 import (
-	"net"
+	"context"
 	"slices"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/sthbryan/ftm/internal/core"
+	"github.com/sthbryan/ftm/internal/supervisor/proxy"
 )
 
 // statusReader is implemented by a supervisor that knows the live status of
@@ -142,14 +142,15 @@ func (s *Service) DetectFoundryPorts(extra ...int) (inUse, scanned []int, sugges
 
 // listening reports whether something accepts connections on the port on this
 // computer. Binding the port instead would miss a server that listens only on
-// 127.0.0.1: macOS still lets the wildcard address bind next to it.
+// 127.0.0.1: macOS still lets the wildcard address bind next to it. Both
+// loopbacks count, since Foundry on Windows may listen on ::1 alone.
 func listening(port int) bool {
-	for _, host := range []string{"127.0.0.1", "::1"} {
-		conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, strconv.Itoa(port)), 200*time.Millisecond)
-		if err == nil {
-			_ = conn.Close()
-			return true
-		}
+	ctx, cancel := context.WithTimeout(context.Background(), 400*time.Millisecond)
+	defer cancel()
+	conn, err := proxy.DialLoopback(ctx, port)
+	if err != nil {
+		return false
 	}
-	return false
+	_ = conn.Close()
+	return true
 }

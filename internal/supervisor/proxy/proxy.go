@@ -42,6 +42,10 @@ func Start(targetPort int, opts Options) (*Proxy, error) {
 
 	c := newCounter(opts.Window)
 	reverse := httputil.NewSingleHostReverseProxy(target)
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.Proxy = nil
+	transport.DialContext = DialLoopbackAddr
+	reverse.Transport = transport
 	reverse.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, _ error) {
 		w.WriteHeader(http.StatusBadGateway)
 	}

@@ -10,6 +10,8 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/sthbryan/ftm/internal/supervisor/proxy"
 )
 
 // foundryProbeTimeout bounds one look at a busy port. Foundry answers its own
@@ -20,7 +22,11 @@ const foundryProbeTimeout = 600 * time.Millisecond
 // world loads (setup, license, join) and in the game page itself.
 var foundryMarker = []byte("Foundry Virtual Tabletop")
 
-var foundryClient = &http.Client{Timeout: foundryProbeTimeout}
+// foundryClient reaches Foundry on either loopback, the way the tunnel does.
+var foundryClient = &http.Client{
+	Timeout:   foundryProbeTimeout,
+	Transport: &http.Transport{DialContext: proxy.DialLoopbackAddr, DisableKeepAlives: true},
+}
 
 // FoundryStatus is what a running Foundry says about itself on /api/status:
 // whether a world is launched, which one, its game system, how many users are
