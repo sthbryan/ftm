@@ -1,11 +1,12 @@
 import { signal } from '@preact/signals';
-import { settingsApi, type Settings } from '@/lib/api';
+import { settingsApi, type Settings, type SettingsPatch } from '@/lib/api';
 import { applyNotificationSettings } from './notification';
 
 export const settings = signal<Settings>({
   notifications_enabled: 'pending',
   notification_sound: true,
   language: 'en',
+  language_resolved: 'en',
   onboarded: true,
   autostart_supported: false,
   autostart_enabled: false,
@@ -19,7 +20,7 @@ export async function loadSettings(): Promise<void> {
   settingsLoaded.value = true;
 }
 
-export async function updateSettings(partial: Partial<Settings>): Promise<Settings> {
+export async function updateSettings(partial: SettingsPatch): Promise<Settings> {
   const previous = { ...settings.value };
   settings.value = { ...settings.value, ...partial };
 

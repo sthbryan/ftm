@@ -1,16 +1,9 @@
 import { api } from '../client';
+import type { Settings, SettingsPatch } from '../types';
 
-export interface Settings {
-  notifications_enabled: "granted" | "pending" | "rejected";
-  notification_sound: boolean;
-  language: string;
-  onboarded: boolean;
-  autostart_supported: boolean;
-  autostart_enabled: boolean;
-}
 
 export const settingsApi = {
   get: (): Promise<Settings> => api.get('settings').json(),
-  update: (settings: Partial<Settings>): Promise<Settings> =>
+  update: (settings: SettingsPatch): Promise<Settings> =>
     api.patch('settings', { json: settings }).json(),
 };

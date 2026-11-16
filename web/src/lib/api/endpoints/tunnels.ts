@@ -1,5 +1,5 @@
 import { api } from '../client';
-import type { Tunnel, CreateTunnelInput, UpdateTunnelInput, StartResponse } from '../types';
+import type { Tunnel, CreateTunnelInput, UpdateTunnelInput } from '../types';
 
 export const tunnelsApi = {
   getAll: (): Promise<Tunnel[]> => api.get('tunnels').json<Tunnel[]>(),
@@ -13,8 +13,8 @@ export const tunnelsApi = {
   update: (id: string, data: UpdateTunnelInput): Promise<Tunnel> =>
     api.put(`tunnels/${id}`, { json: data }).json<Tunnel>(),
 
-  start: (id: string): Promise<StartResponse> =>
-    api.post(`tunnels/${id}/start`).json<StartResponse>(),
+  start: (id: string): Promise<Tunnel> =>
+    api.post(`tunnels/${id}/start`).json<Tunnel>(),
 
   stop: async (id: string): Promise<void> => {
     await api.post(`tunnels/${id}/stop`);

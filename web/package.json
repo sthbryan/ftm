@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "gen:api": "go run ../tools/openapi | openapi-typescript -o src/lib/api/types/openapi.ts",
+    "check:api": "go run ../tools/openapi | openapi-typescript -o src/lib/api/types/openapi.ts --check"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
@@ -28,6 +30,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "openapi-typescript": "7.13.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
     "vite": "^8.2.0",
