@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"embed"
+	"encoding/json"
 	"io/fs"
 	"net/http"
 	"os"
@@ -52,18 +53,26 @@ func newAPI(mux *http.ServeMux) huma.API {
 
 func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
-	api := newAPI(mux)
+	s.register(newAPI(mux))
+	mux.Handle("/", staticHandler())
 
+	return s.guard(jsonMisses(mux))
+}
+
+func (s *Server) register(api huma.API) {
 	s.registerTunnels(api)
 	s.registerEvents(api)
 	s.registerProviders(api)
 	s.registerSettings(api)
 	s.registerApp(api)
+}
 
-	mux.HandleFunc("/ws/events", s.handleWebSocket)
-	mux.Handle("/", staticHandler())
-
-	return s.guard(jsonMisses(mux))
+// OpenAPI is the API's OpenAPI 3.1 document, the one served at /openapi.json,
+// built without a service or a listener. The web's types are generated from it.
+func OpenAPI() ([]byte, error) {
+	api := newAPI(http.NewServeMux())
+	(&Server{}).register(api)
+	return json.MarshalIndent(api.OpenAPI(), "", "  ")
 }
 
 // jsonMisses answers an /api path that matches no route, or matches one only
