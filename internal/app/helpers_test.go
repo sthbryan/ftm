@@ -9,7 +9,7 @@ import (
 	"github.com/sthbryan/ftm/internal/process"
 	"github.com/sthbryan/ftm/internal/service"
 	"github.com/sthbryan/ftm/internal/store"
-	"github.com/sthbryan/ftm/internal/web"
+	"github.com/sthbryan/ftm/internal/transport/httpapi"
 )
 
 // testStore wraps cfg in a store that saves under a temp dir.
@@ -41,6 +41,6 @@ func testApp(t *testing.T, st *store.Store) *App {
 		Bus:     bus,
 		Manager: manager,
 	}
-	a.WebServer = web.NewServer(manager, a.Service, bus)
+	a.WebServer = httpapi.NewServer(a.Service, bus)
 	return a
 }

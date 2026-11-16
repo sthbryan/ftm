@@ -12,6 +12,7 @@ import (
 	"github.com/sthbryan/ftm/internal/cli"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/platform/instance"
+	"github.com/sthbryan/ftm/internal/updater"
 	"github.com/sthbryan/ftm/internal/version"
 )
 
@@ -105,8 +106,16 @@ func main() {
 			}
 		}
 
-		<-stop
-		application.Shutdown()
+		select {
+		case <-stop:
+			application.Shutdown()
+		case <-application.RestartRequested():
+			application.Shutdown()
+			if err := updater.Relaunch(); err != nil {
+				fmt.Fprintf(os.Stderr, "Could not restart after the update: %v\n", err)
+				os.Exit(1)
+			}
+		}
 		return
 	}
 

@@ -26,8 +26,8 @@ jobs:
 
       - name: Stub embedded assets
         run: |
-          mkdir -p internal/web/static
-          touch internal/web/static/index.html
+          mkdir -p internal/transport/httpapi/static
+          touch internal/transport/httpapi/static/index.html
 
       - name: Check formatting
         run: |
@@ -74,8 +74,8 @@ jobs:
 
       - name: Stub embedded assets
         run: |
-          mkdir -p internal/web/static
-          touch internal/web/static/index.html
+          mkdir -p internal/transport/httpapi/static
+          touch internal/transport/httpapi/static/index.html
 
       # Windows is the primary target and none of this used to be compiled on
       # it. unsafeptr is disabled because the COM vtable glue in
@@ -92,7 +92,7 @@ jobs:
           go test ./cmd/ftm-desktop/
 
       - name: Test the platform-independent packages
-        run: go test ./internal/config/ ./internal/i18n/ ./internal/web/ ./internal/store/... ./internal/platform/... ./internal/events/ ./internal/service/
+        run: go test ./internal/config/ ./internal/i18n/ ./internal/transport/... ./internal/store/... ./internal/platform/... ./internal/events/ ./internal/service/
 
   lint-frontend:
     name: Lint & Test Frontend

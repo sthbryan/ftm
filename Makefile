@@ -43,14 +43,14 @@ endif
 ##@ Build
 
 .PHONY: web
-web: ## Build the Preact UI into internal/web/static (+ desktop dist)
+web: ## Build the Preact UI into internal/transport/httpapi/static (+ desktop dist)
 	@echo "Building web UI..."
 	./scripts/build-web-assets.sh
 	mkdir -p $(DESKTOP_DIR)/build
 	cp $(DESKTOP_DIR)/icon.png $(DESKTOP_DIR)/build/appicon.png
 
 .PHONY: build
-build: ## Build the CLI with whatever is already embedded in internal/web/static
+build: ## Build the CLI with whatever is already embedded in internal/transport/httpapi/static
 	@echo "Building $(BINARY_NAME) for current platform... ($(VERSION))"
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=$(CGO_ENABLED) go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(PKG)
@@ -144,7 +144,7 @@ release: version ## Alias of version
 ##@ Housekeeping
 
 .PHONY: clean
-clean: ## Remove build artifacts (leaves internal/web/static, which build embeds)
+clean: ## Remove build artifacts (leaves internal/transport/httpapi/static, which build embeds)
 	@echo "Cleaning build artifacts..."
 	rm -rf $(BUILD_DIR)
 	rm -f $(BINARY_NAME) ftm-*

@@ -13,7 +13,16 @@ class FakeHTTPError extends Error {
 }
 vi.mock('ky', () => ({ HTTPError: FakeHTTPError }));
 const post = vi.fn();
-vi.mock('@/lib/api/client', () => ({ api: { post: (...a: unknown[]) => post(...a), get: vi.fn() } }));
+vi.mock('@/lib/api/client', () => ({
+  api: { post: (...a: unknown[]) => post(...a), get: vi.fn() },
+  extractErrorMessage: (body: string) => {
+    try {
+      return (JSON.parse(body) as { message: string }).message;
+    } catch {
+      return body.trim();
+    }
+  },
+}));
 
 const { applyProviderUpdated, canUpdate, installedProviders, updateProvider } = await import('./installed');
 type Row = import('./installed').InstalledProvider;
@@ -66,5 +75,15 @@ describe('updateProvider', () => {
     await updateProvider('cloudflared');
     expect(error.mock.calls[0][0]).toContain('already updating');
     expect(installedProviders.value?.[0].updating).toBe(false);
+  });
+
+  it('shows the message of a JSON error body', async () => {
+    error.mockClear();
+    post.mockRejectedValue(
+      new FakeHTTPError({ text: async () => '{"code":"update_in_progress","message":"already updating"}' }),
+    );
+    await updateProvider('cloudflared');
+    expect(error.mock.calls[0][0]).toContain('already updating');
+    expect(error.mock.calls[0][0]).not.toContain('update_in_progress');
   });
 });

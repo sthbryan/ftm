@@ -14,7 +14,7 @@ import (
 	"github.com/sthbryan/ftm/internal/process"
 	"github.com/sthbryan/ftm/internal/service"
 	"github.com/sthbryan/ftm/internal/store"
-	"github.com/sthbryan/ftm/internal/web"
+	"github.com/sthbryan/ftm/internal/transport/httpapi"
 )
 
 // core is the application core this window owns: the store, the supervisor,
@@ -24,7 +24,7 @@ type core struct {
 	service    *service.Service
 	bus        *events.Bus
 	manager    *process.Manager
-	web        *web.Server
+	web        *httpapi.Server
 	expiration *notifications.ExpirationMonitor
 
 	lock         *instance.Lock
@@ -82,7 +82,8 @@ func startCore(port int) (*core, error) {
 		}
 	}
 
-	c.web = web.NewServer(manager, c.service, bus)
+	c.web = httpapi.NewServer(c.service, bus)
+	c.web.SetToken(lock.Token())
 	if err := c.web.Start(); err != nil {
 		c.web = nil
 		c.shutdown()

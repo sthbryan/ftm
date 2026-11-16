@@ -1,10 +1,9 @@
-package web
+package httpapi
 
 import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/sthbryan/ftm/internal/autostart"
@@ -36,13 +35,13 @@ func (s *stubAutostart) Disable() error {
 	return nil
 }
 
-func settingsHandlers(t *testing.T, manager autostart.Manager) *Handlers {
+func settingsServer(t *testing.T, manager autostart.Manager) *Server {
 	t.Helper()
 
-	h := clearHandlers(t, config.DefaultConfig())
-	h.autostart = manager
+	s := newTestServer(t, nil, config.DefaultConfig())
+	s.autostart = manager
 
-	return h
+	return s
 }
 
 func decodeSettings(t *testing.T, body []byte) map[string]interface{} {
@@ -56,21 +55,16 @@ func decodeSettings(t *testing.T, body []byte) map[string]interface{} {
 	return payload
 }
 
-func patchSettings(t *testing.T, h *Handlers, body string) *httptest.ResponseRecorder {
+func patchSettings(t *testing.T, s *Server, body string) *httptest.ResponseRecorder {
 	t.Helper()
 
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPatch, "/api/settings", strings.NewReader(body))
-	h.handleSettings(rec, req)
-
-	return rec
+	return call(t, s, http.MethodPatch, "/api/settings", body)
 }
 
 func TestGetSettingsHidesAutostartOnUnsupportedBuilds(t *testing.T) {
-	h := settingsHandlers(t, &stubAutostart{supported: false, enabled: true})
+	s := settingsServer(t, &stubAutostart{supported: false, enabled: true})
 
-	rec := httptest.NewRecorder()
-	h.handleGetSettings(rec)
+	rec := call(t, s, http.MethodGet, "/api/settings", "")
 
 	payload := decodeSettings(t, rec.Body.Bytes())
 
@@ -84,10 +78,9 @@ func TestGetSettingsHidesAutostartOnUnsupportedBuilds(t *testing.T) {
 }
 
 func TestGetSettingsReportsAutostartOnDesktopBuilds(t *testing.T) {
-	h := settingsHandlers(t, &stubAutostart{supported: true, enabled: true})
+	s := settingsServer(t, &stubAutostart{supported: true, enabled: true})
 
-	rec := httptest.NewRecorder()
-	h.handleGetSettings(rec)
+	rec := call(t, s, http.MethodGet, "/api/settings", "")
 
 	payload := decodeSettings(t, rec.Body.Bytes())
 
@@ -102,9 +95,9 @@ func TestGetSettingsReportsAutostartOnDesktopBuilds(t *testing.T) {
 
 func TestPatchAutostartIsRefusedOnUnsupportedBuilds(t *testing.T) {
 	manager := &stubAutostart{supported: false}
-	h := settingsHandlers(t, manager)
+	s := settingsServer(t, manager)
 
-	rec := patchSettings(t, h, `{"autostart_enabled":true}`)
+	rec := patchSettings(t, s, `{"autostart_enabled":true}`)
 
 	if rec.Code != http.StatusNotImplemented {
 		t.Errorf("status = %d, want %d so the CLI cannot register a console binary at login", rec.Code, http.StatusNotImplemented)
@@ -116,9 +109,9 @@ func TestPatchAutostartIsRefusedOnUnsupportedBuilds(t *testing.T) {
 }
 
 func TestPatchAutostartReportsAUserBlockedToggle(t *testing.T) {
-	h := settingsHandlers(t, &stubAutostart{supported: true, enableErr: autostart.ErrDisabledByUser})
+	s := settingsServer(t, &stubAutostart{supported: true, enableErr: autostart.ErrDisabledByUser})
 
-	rec := patchSettings(t, h, `{"autostart_enabled":true}`)
+	rec := patchSettings(t, s, `{"autostart_enabled":true}`)
 
 	if rec.Code != http.StatusConflict {
 		t.Errorf("status = %d, want %d so the UI can point the user at the system settings", rec.Code, http.StatusConflict)
@@ -127,9 +120,9 @@ func TestPatchAutostartReportsAUserBlockedToggle(t *testing.T) {
 
 func TestPatchAutostartTogglesAndEchoesTheFullPayload(t *testing.T) {
 	manager := &stubAutostart{supported: true}
-	h := settingsHandlers(t, manager)
+	s := settingsServer(t, manager)
 
-	rec := patchSettings(t, h, `{"autostart_enabled":true}`)
+	rec := patchSettings(t, s, `{"autostart_enabled":true}`)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
@@ -147,7 +140,7 @@ func TestPatchAutostartTogglesAndEchoesTheFullPayload(t *testing.T) {
 		}
 	}
 
-	rec = patchSettings(t, h, `{"autostart_enabled":false}`)
+	rec = patchSettings(t, s, `{"autostart_enabled":false}`)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
@@ -160,9 +153,9 @@ func TestPatchAutostartTogglesAndEchoesTheFullPayload(t *testing.T) {
 
 func TestPatchWithoutAutostartLeavesItAlone(t *testing.T) {
 	manager := &stubAutostart{supported: true, enabled: true}
-	h := settingsHandlers(t, manager)
+	s := settingsServer(t, manager)
 
-	rec := patchSettings(t, h, `{"notification_sound":false}`)
+	rec := patchSettings(t, s, `{"notification_sound":false}`)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)

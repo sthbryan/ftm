@@ -63,6 +63,15 @@ type Service struct {
 	checkUpdate func() (*updater.Info, error)
 	applyUpdate func(*updater.Info) error
 
+	providerMu sync.Mutex
+	announced  map[config.Provider]string
+
+	runMu  sync.Mutex
+	runCtx context.Context
+
+	restart     chan struct{}
+	restartOnce sync.Once
+
 	// applySettings pushes saved preferences into the packages that keep
 	// their own copy (language, notifications). Swapped out in tests.
 	applySettings func(config.Config)
@@ -71,10 +80,12 @@ type Service struct {
 // New wires a service. bus may be nil, in which case nothing is published.
 func New(st *store.Store, sup Supervisor, bus events.Publisher) *Service {
 	return &Service{
-		store:    st,
-		sup:      sup,
-		bus:      bus,
-		installs: make(map[config.Provider]*install),
+		store:     st,
+		sup:       sup,
+		bus:       bus,
+		installs:  make(map[config.Provider]*install),
+		announced: make(map[config.Provider]string),
+		restart:   make(chan struct{}),
 		checkUpdate: func() (*updater.Info, error) {
 			return updater.New(updateRepo).Check(version.Version)
 		},
@@ -91,9 +102,27 @@ func (s *Service) publish(e events.Event) {
 	}
 }
 
-// Run starts the background work: visitor stats and the periodic update
-// check. It returns at once; the work stops when ctx is done.
+// background is the context of the work Run started, or a context that is
+// never done before Run was called.
+func (s *Service) background() context.Context {
+	s.runMu.Lock()
+	defer s.runMu.Unlock()
+	if s.runCtx == nil {
+		return context.Background()
+	}
+	return s.runCtx
+}
+
+// Run starts the background work: visitor stats, the periodic ftm update
+// check and the provider binary check. It returns at once, before any check
+// answers; the work stops when ctx is done.
 func (s *Service) Run(ctx context.Context) {
+	s.runMu.Lock()
+	s.runCtx = ctx
+	s.runMu.Unlock()
+
+	go s.runProviderChecks(ctx)
+
 	if r, ok := s.sup.(statsRunner); ok {
 		go r.RunStats(ctx, statsInterval)
 	}

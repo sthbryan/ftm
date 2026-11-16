@@ -1,4 +1,4 @@
-package web
+package httpapi
 
 import (
 	"net/http"
@@ -80,7 +80,7 @@ func TestAllowedHost(t *testing.T) {
 
 func TestGuardHostRejectsRebinding(t *testing.T) {
 	reached := false
-	handler := guardHost(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+	handler := (&Server{}).guard(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		reached = true
 	}))
 

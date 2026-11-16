@@ -1,0 +1,99 @@
+package service
+
+import (
+	"fmt"
+	"net"
+
+	"github.com/sthbryan/ftm/internal/config"
+)
+
+// statusReader is implemented by a supervisor that knows the live status of
+// the tunnels it runs.
+type statusReader interface {
+	GetStatus(tunnelID string) (config.TunnelStatus, bool)
+}
+
+// logReader is implemented by a supervisor that keeps the recent output of
+// each tunnel it runs.
+type logReader interface {
+	GetLogs(tunnelID string) []string
+}
+
+// TunnelView is a saved connection together with its live status.
+type TunnelView struct {
+	Tunnel config.TunnelConfig
+	// Status is the live status. Running is false and Status is zero when the
+	// supervisor has never run the tunnel.
+	Status  config.TunnelStatus
+	Running bool
+	// NeedsInstall is set for a stopped tunnel whose provider has to be
+	// downloaded before it can start.
+	NeedsInstall bool
+}
+
+// View merges a saved connection with what the supervisor knows about it.
+func (s *Service) View(t config.TunnelConfig) TunnelView {
+	v := TunnelView{Tunnel: t}
+	if r, ok := s.sup.(statusReader); ok {
+		v.Status, v.Running = r.GetStatus(t.ID)
+	}
+	if !v.Running || v.Status.State == config.TunnelStateStopped {
+		needsInstall, canInstall := s.sup.CheckInstallation(t.Provider)
+		v.NeedsInstall = needsInstall && canInstall
+	}
+	return v
+}
+
+// TunnelViews returns every saved connection with its live status, in the
+// saved order.
+func (s *Service) TunnelViews() []TunnelView {
+	tunnels := s.store.Tunnels()
+	views := make([]TunnelView, 0, len(tunnels))
+	for _, t := range tunnels {
+		views = append(views, s.View(t))
+	}
+	return views
+}
+
+// TunnelView returns one saved connection with its live status.
+func (s *Service) TunnelView(id string) (TunnelView, bool) {
+	t, ok := s.store.Tunnel(id)
+	if !ok {
+		return TunnelView{}, false
+	}
+	return s.View(t), true
+}
+
+// Logs returns the recent output of a tunnel, oldest first. It is empty for a
+// tunnel that has not run since ftm started.
+func (s *Service) Logs(tunnelID string) []string {
+	if r, ok := s.sup.(logReader); ok {
+		if lines := r.GetLogs(tunnelID); lines != nil {
+			return lines
+		}
+	}
+	return []string{}
+}
+
+// foundryPorts are the ports Foundry VTT usually listens on.
+var foundryPorts = []int{30000, 30001, 30002, 30003, 30004, 30005, 30006, 30007, 30008, 30009}
+
+// DetectFoundryPorts reports which of the usual Foundry ports are taken, and
+// the one to suggest for a new connection.
+func (s *Service) DetectFoundryPorts() (inUse []int, suggested int) {
+	inUse = []int{}
+	for _, port := range foundryPorts {
+		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+		if err != nil {
+			inUse = append(inUse, port)
+			continue
+		}
+		_ = ln.Close()
+	}
+
+	suggested = foundryPorts[0]
+	if len(inUse) > 0 {
+		suggested = inUse[0]
+	}
+	return inUse, suggested
+}

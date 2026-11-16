@@ -1,6 +1,6 @@
 import { signal } from '@preact/signals';
 import { HTTPError } from 'ky';
-import { api } from '@/lib/api/client';
+import { api, extractErrorMessage } from '@/lib/api/client';
 import { subscribeWsMessages } from '@/lib/api/ws';
 import { t } from './i18n';
 import { toast } from './toast';
@@ -110,7 +110,7 @@ export async function updateProvider(id: string): Promise<void> {
     setUpdating(id, false);
     let reason = (error as Error).message;
     if (error instanceof HTTPError) {
-      reason = (await error.response.text().catch(() => '')).trim() || reason;
+      reason = extractErrorMessage(await error.response.text().catch(() => '')) || reason;
     }
     toast.error(t('providers_update_failed', { 0: nameOf(id), 1: reason }));
   }

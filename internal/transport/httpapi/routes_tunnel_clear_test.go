@@ -1,8 +1,8 @@
-package web
+package httpapi
 
 import (
 	"encoding/json"
-	"net/http/httptest"
+	"net/http"
 	"testing"
 
 	"github.com/sthbryan/ftm/internal/config"
@@ -10,10 +10,10 @@ import (
 	"github.com/sthbryan/ftm/internal/store"
 )
 
-func clearHandlers(t *testing.T, cfg *config.Config) *Handlers {
+func clearServer(t *testing.T, cfg *config.Config) *Server {
 	t.Helper()
 
-	return newTestServer(t, process.NewManager(), cfg).handlers
+	return newTestServer(t, process.NewManager(), cfg)
 }
 
 func decodeDeleted(t *testing.T, body []byte) int {
@@ -34,15 +34,14 @@ func TestClearTunnelsRemovesEveryConnection(t *testing.T) {
 	cfg.AddTunnel(config.TunnelConfig{ID: "a", Name: "First", LocalPort: 30000})
 	cfg.AddTunnel(config.TunnelConfig{ID: "b", Name: "Second", LocalPort: 30001})
 
-	h := clearHandlers(t, cfg)
+	s := clearServer(t, cfg)
 
-	w := httptest.NewRecorder()
-	h.clearTunnels(w)
+	w := call(t, s, http.MethodDelete, "/api/tunnels", "")
 
 	if got := decodeDeleted(t, w.Body.Bytes()); got != 2 {
 		t.Errorf("deleted = %d, want 2", got)
 	}
-	got := h.svc.Config()
+	got := s.svc.Config()
 	if len(got.Tunnels) != 0 {
 		t.Fatalf("Tunnels = %+v, want empty", got.Tunnels)
 	}
@@ -53,7 +52,7 @@ func TestClearTunnelsRemovesEveryConnection(t *testing.T) {
 		t.Errorf("Language = %q, want it untouched", got.Language)
 	}
 
-	saved, err := store.Peek(h.svc.Dirs())
+	saved, err := store.Peek(s.svc.Dirs())
 	if err != nil {
 		t.Fatalf("Peek() failed: %v", err)
 	}
@@ -64,10 +63,9 @@ func TestClearTunnelsRemovesEveryConnection(t *testing.T) {
 
 func TestClearTunnelsOnAnEmptyConfig(t *testing.T) {
 	cfg := config.DefaultConfig()
-	h := clearHandlers(t, cfg)
+	s := clearServer(t, cfg)
 
-	w := httptest.NewRecorder()
-	h.clearTunnels(w)
+	w := call(t, s, http.MethodDelete, "/api/tunnels", "")
 
 	if got := decodeDeleted(t, w.Body.Bytes()); got != 0 {
 		t.Errorf("deleted = %d, want 0", got)
@@ -78,11 +76,10 @@ func TestListTunnelsAfterClearingReturnsAnArray(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.AddTunnel(config.TunnelConfig{ID: "a", Name: "First", LocalPort: 30000})
 
-	h := clearHandlers(t, cfg)
-	h.clearTunnels(httptest.NewRecorder())
+	s := clearServer(t, cfg)
+	call(t, s, http.MethodDelete, "/api/tunnels", "")
 
-	w := httptest.NewRecorder()
-	h.listTunnels(w)
+	w := call(t, s, http.MethodGet, "/api/tunnels", "")
 
 	if got := w.Body.String(); got != "[]\n" {
 		t.Fatalf("body = %q, want an empty JSON array and not null", got)

@@ -18,8 +18,8 @@ import (
 	"github.com/sthbryan/ftm/internal/process"
 	"github.com/sthbryan/ftm/internal/service"
 	"github.com/sthbryan/ftm/internal/store"
+	"github.com/sthbryan/ftm/internal/transport/httpapi"
 	"github.com/sthbryan/ftm/internal/updater"
-	"github.com/sthbryan/ftm/internal/web"
 )
 
 // App wires the core for one process. Every surface changes things through
@@ -28,7 +28,7 @@ type App struct {
 	Service           *service.Service
 	Bus               *events.Bus
 	Manager           *process.Manager
-	WebServer         *web.Server
+	WebServer         *httpapi.Server
 	ExpirationMonitor *notifications.ExpirationMonitor
 
 	instance     *instance.Lock
@@ -145,6 +145,18 @@ func (a *App) Run() error {
 	model := NewModel(a)
 	p := tea.NewProgram(model)
 
+	// An update applied from the dashboard ends the TUI the same way one
+	// applied from the TUI does: quit, shut down, relaunch.
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		select {
+		case <-a.RestartRequested():
+			p.Send(updateApplyMsg{})
+		case <-done:
+		}
+	}()
+
 	final, err := p.Run()
 	if err != nil {
 		return err
@@ -163,7 +175,10 @@ func (a *App) StartWebServer() error {
 		return nil
 	}
 
-	a.WebServer = web.NewServer(a.Manager, a.Service, a.Bus)
+	a.WebServer = httpapi.NewServer(a.Service, a.Bus)
+	if a.instance != nil {
+		a.WebServer.SetToken(a.instance.Token())
+	}
 
 	if err := a.WebServer.Start(); err != nil {
 		a.WebServer = nil
@@ -177,6 +192,13 @@ func (a *App) StartWebServer() error {
 	}
 
 	return nil
+}
+
+// RestartRequested is closed when something asked ftm to restart, such as an
+// update applied from the dashboard. The owner of the process shuts down and
+// relaunches when it fires.
+func (a *App) RestartRequested() <-chan struct{} {
+	return a.Service.RestartRequested()
 }
 
 // SetWebPort makes the web server prefer port the next time it starts.
