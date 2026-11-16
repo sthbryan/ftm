@@ -74,10 +74,12 @@ func (p *CloudflaredProvider) Start(ctx context.Context, tunnel core.TunnelConfi
 
 	ctx, cancel := context.WithCancel(ctx)
 
-	args := []string{
-		"tunnel",
-		"--url", fmt.Sprintf("http://localhost:%d", tunnel.LocalPort),
+	config, err := emptyConfig()
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to prepare cloudflared: %w", err)
 	}
+	args := quickTunnelArgs(config, tunnel.LocalPort)
 
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Stdout = logWriter
@@ -119,4 +121,31 @@ func (p *CloudflaredProvider) LatestRelease(ctx context.Context) (*provider.Rele
 
 func (p *CloudflaredProvider) InstallRelease(ctx context.Context, rel *provider.Release, progress chan<- provider.DownloadProgress) error {
 	return p.installer.InstallRelease(ctx, rel, progress)
+}
+
+// quickTunnelArgs runs a quick tunnel to the local port. --config points at an
+// empty file so a config.yml the user keeps for their own named tunnels
+// (~/.cloudflared, /etc/cloudflared) is never loaded: its ingress rules would
+// not know the trycloudflare host and every request would get a 404. The
+// target is 127.0.0.1 because ftm's proxy listens on IPv4 only, and
+// "localhost" can resolve to ::1 first.
+func quickTunnelArgs(config string, port int) []string {
+	return []string{
+		"tunnel",
+		"--config", config,
+		"--url", fmt.Sprintf("http://127.0.0.1:%d", port),
+	}
+}
+
+// emptyConfig returns the path of an empty cloudflared config file, creating
+// it in the temp directory when it is missing.
+func emptyConfig() (string, error) {
+	path := filepath.Join(os.TempDir(), "ftm-cloudflared.yml")
+	if _, err := os.Stat(path); err == nil {
+		return path, nil
+	}
+	if err := os.WriteFile(path, nil, 0o600); err != nil {
+		return "", err
+	}
+	return path, nil
 }

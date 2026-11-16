@@ -3,6 +3,7 @@ package cloudflared
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -73,5 +74,22 @@ func TestFindBinaryIgnoresWorkingDirectory(t *testing.T) {
 	}
 	if filepath.Dir(abs) == work || filepath.Dir(got) == "." {
 		t.Fatalf("FindBinary() = %q, picked up the copy in the working directory", got)
+	}
+}
+
+func TestQuickTunnelIgnoresTheUsersOwnConfig(t *testing.T) {
+	args := quickTunnelArgs("/tmp/ftm-cloudflared.yml", 51234)
+	want := []string{"tunnel", "--config", "/tmp/ftm-cloudflared.yml", "--url", "http://127.0.0.1:51234"}
+	if strings.Join(args, " ") != strings.Join(want, " ") {
+		t.Fatalf("args = %v, want %v", args, want)
+	}
+
+	path, err := emptyConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(path)
+	if err != nil || info.Size() != 0 {
+		t.Fatalf("emptyConfig %q: %v, size %d", path, err, info.Size())
 	}
 }

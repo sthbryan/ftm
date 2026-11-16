@@ -61,7 +61,7 @@ func (p *PinggyCliProvider) Start(ctx context.Context, tunnel core.TunnelConfig,
 	ctx, cancel := context.WithCancel(ctx)
 
 	args := []string{
-		"-l", fmt.Sprintf("http://localhost:%d", tunnel.LocalPort),
+		"-l", fmt.Sprintf("http://127.0.0.1:%d", tunnel.LocalPort),
 	}
 
 	cmd := exec.CommandContext(ctx, binary, args...)

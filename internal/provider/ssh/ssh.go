@@ -100,7 +100,7 @@ func (p *SSHProvider) Start(ctx context.Context, tunnel core.TunnelConfig, logWr
 	case "localhost.run":
 		args = append(baseArgs,
 			"-o", "BatchMode=yes",
-			"-R", fmt.Sprintf("80:localhost:%d", tunnel.LocalPort),
+			"-R", fmt.Sprintf("80:127.0.0.1:%d", tunnel.LocalPort),
 			"nokey@localhost.run",
 		)
 	case "serveo.net":
@@ -113,7 +113,7 @@ func (p *SSHProvider) Start(ctx context.Context, tunnel core.TunnelConfig, logWr
 		args = append(baseArgs,
 			"-i", keyPath,
 			"-o", "IdentitiesOnly=yes",
-			"-R", fmt.Sprintf("80:localhost:%d", tunnel.LocalPort),
+			"-R", fmt.Sprintf("80:127.0.0.1:%d", tunnel.LocalPort),
 			"serveo.net",
 		)
 	}
