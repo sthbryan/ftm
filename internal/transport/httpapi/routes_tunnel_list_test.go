@@ -1,19 +1,17 @@
-package web
+package httpapi
 
 import (
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/sthbryan/ftm/internal/config"
 )
 
 func TestListTunnelsReturnsAnArrayWhenThereAreNone(t *testing.T) {
-	h := newTestServer(t, nil, &config.Config{}).handlers
+	s := newTestServer(t, nil, &config.Config{})
 
-	w := httptest.NewRecorder()
-	h.listTunnels(w)
+	w := call(t, s, http.MethodGet, "/api/tunnels", "")
 
 	if got := w.Body.String(); got != "[]\n" {
 		t.Fatalf("body = %q, want an empty JSON array", got)

@@ -1,4 +1,4 @@
-package web
+package httpapi
 
 import (
 	"context"
@@ -26,9 +26,7 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := newWSClient(conn)
-	s.clientsMu.Lock()
-	s.clients[client] = struct{}{}
-	s.clientsMu.Unlock()
+	s.hub.addWS(client)
 
 	defer s.removeClient(client)
 
@@ -153,13 +151,13 @@ func (s *Server) subscribeLogs(client *wsClient, tunnelID string) error {
 		return nil
 	}
 
-	logCh, unsubscribe := s.manager.SubscribeLogs(tunnelID)
+	logCh, unsubscribe := s.followLogs(tunnelID)
 	if logCh == nil {
 		client.subsMu.Unlock()
 		return errors.New("logs unavailable")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(s.ctx)
 	client.logSubscriptions[tunnelID] = func() {
 		cancel()
 		unsubscribe()
@@ -176,11 +174,7 @@ func (s *Server) subscribeLogs(client *wsClient, tunnelID string) error {
 				if !ok {
 					return
 				}
-				payload, err := json.Marshal(map[string]interface{}{
-					"type": "log",
-					"id":   tunnelID,
-					"line": line,
-				})
+				payload, err := json.Marshal(logMessage{Type: eventLog, ID: tunnelID, Line: line})
 				if err != nil {
 					continue
 				}
@@ -217,9 +211,7 @@ func (s *Server) unsubscribeLogs(client *wsClient, tunnelID string) error {
 func (s *Server) removeClient(client *wsClient) {
 	client.close()
 
-	s.clientsMu.Lock()
-	delete(s.clients, client)
-	s.clientsMu.Unlock()
+	s.hub.removeWS(client)
 
 	client.subsMu.Lock()
 	cancels := make([]context.CancelFunc, 0, len(client.logSubscriptions))
@@ -234,21 +226,4 @@ func (s *Server) removeClient(client *wsClient) {
 	}
 
 	client.conn.Close()
-}
-
-func (s *Server) broadcast(msg string) {
-	payload := []byte(msg)
-
-	s.clientsMu.RLock()
-	clients := make([]*wsClient, 0, len(s.clients))
-	for client := range s.clients {
-		clients = append(clients, client)
-	}
-	s.clientsMu.RUnlock()
-
-	for _, client := range clients {
-		if !client.enqueue(payload) {
-			s.removeClient(client)
-		}
-	}
 }

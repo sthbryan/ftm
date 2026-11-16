@@ -40,10 +40,10 @@ jobs:
       - name: Build web assets
         run: |
           cd web && bun install && bun run build
-          rm -rf ../internal/web/static
-          mkdir -p ../internal/web/static
-          cp -r dist/* ../internal/web/static/
-          touch ../internal/web/static/.gitkeep
+          rm -rf ../internal/transport/httpapi/static
+          mkdir -p ../internal/transport/httpapi/static
+          cp -r dist/* ../internal/transport/httpapi/static/
+          touch ../internal/transport/httpapi/static/.gitkeep
 
       - name: Build desktop
         run: |

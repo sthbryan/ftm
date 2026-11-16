@@ -1,11 +1,10 @@
-package web
+package httpapi
 
 import (
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/sthbryan/ftm/internal/config"
@@ -21,17 +20,14 @@ func newPiPTestServer(t *testing.T) *Server {
 	return newTestServer(t, nil, cfg)
 }
 
-func postPiP(s *Server, body string) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(http.MethodPost, "/api/pip", strings.NewReader(body))
-	rec := httptest.NewRecorder()
-	s.handlers.Route(rec, req)
-	return rec
+func postPiP(t *testing.T, s *Server, body string) *httptest.ResponseRecorder {
+	return call(t, s, http.MethodPost, "/api/pip", body)
 }
 
 func TestHandlePiPWithoutOpener(t *testing.T) {
 	s := newPiPTestServer(t)
 
-	rec := postPiP(s, `{"id":"test"}`)
+	rec := postPiP(t, s, `{"id":"test"}`)
 
 	if rec.Code != http.StatusNotImplemented {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusNotImplemented)
@@ -47,7 +43,7 @@ func TestHandlePiPWithOpener(t *testing.T) {
 		return nil
 	})
 
-	rec := postPiP(s, `{"id":"test"}`)
+	rec := postPiP(t, s, `{"id":"test"}`)
 
 	if rec.Code != http.StatusNoContent {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusNoContent)
@@ -64,7 +60,7 @@ func TestHandlePiPUnknownTunnel(t *testing.T) {
 		return nil
 	})
 
-	rec := postPiP(s, `{"id":"nope"}`)
+	rec := postPiP(t, s, `{"id":"nope"}`)
 
 	if rec.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusNotFound)
@@ -74,7 +70,7 @@ func TestHandlePiPUnknownTunnel(t *testing.T) {
 func TestHandlePiPMissingID(t *testing.T) {
 	s := newPiPTestServer(t)
 
-	rec := postPiP(s, `{}`)
+	rec := postPiP(t, s, `{}`)
 
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
@@ -84,9 +80,7 @@ func TestHandlePiPMissingID(t *testing.T) {
 func TestHandlePiPRejectsGet(t *testing.T) {
 	s := newPiPTestServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/pip", nil)
-	rec := httptest.NewRecorder()
-	s.handlers.Route(rec, req)
+	rec := call(t, s, http.MethodGet, "/api/pip", "")
 
 	if rec.Code != http.StatusMethodNotAllowed {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
@@ -99,7 +93,7 @@ func TestHandlePiPOpenerError(t *testing.T) {
 		return errors.New("boom")
 	})
 
-	rec := postPiP(s, `{"id":"test"}`)
+	rec := postPiP(t, s, `{"id":"test"}`)
 
 	if rec.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
@@ -123,9 +117,7 @@ func TestStatusReportsNativePiP(t *testing.T) {
 func nativePiPFromStatus(t *testing.T, s *Server) bool {
 	t.Helper()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/status", nil)
-	rec := httptest.NewRecorder()
-	s.handlers.Route(rec, req)
+	rec := call(t, s, http.MethodGet, "/api/status", "")
 
 	var payload struct {
 		NativePiP bool `json:"nativePip"`

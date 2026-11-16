@@ -33,8 +33,8 @@ coverage.txt
 # Web build artifacts
 web/node_modules/
 web/dist/
-internal/web/static/*
-!internal/web/static/.gitkeep
+internal/transport/httpapi/static/*
+!internal/transport/httpapi/static/.gitkeep
 node_modules
 
 # Logs
