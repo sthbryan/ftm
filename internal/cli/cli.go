@@ -76,6 +76,9 @@ type Deps struct {
 	Peek func() (core.Config, error)
 	// Attach returns a client for the running ftm, or nil when there is none.
 	Attach func() (*client.Client, error)
+	// AttachTUI shows the TUI on the running ftm c talks to. Nil means the
+	// TUI only runs on a core of its own.
+	AttachTUI func(c *client.Client) error
 	// Open runs the core in this process. background starts the periodic
 	// work (stats, update checks) that only a long-running command needs.
 	// When another process owns the core it returns *instance.RunningError.
@@ -261,13 +264,13 @@ func newVersionCmd(d *Deps) *cobra.Command {
 	}
 }
 
-// runTUI shows the TUI on a core run here. With another ftm running it
-// points at that one instead, since two managers would fight over the
-// config and the port.
+// runTUI shows the TUI on a core run here. With another ftm running (the
+// desktop app or ftm serve) it attaches to that one instead, since two
+// managers would fight over the config and the port.
 func runTUI(cmd *cobra.Command, d *Deps, port int) error {
 	if d.Attach != nil {
 		if c, err := d.Attach(); err == nil && c != nil {
-			return attachedTUI(cmd, c.URL())
+			return attachedTUI(cmd, d, c)
 		}
 	}
 	if d.Open == nil {
@@ -279,7 +282,7 @@ func runTUI(cmd *cobra.Command, d *Deps, port int) error {
 		if running.Info == nil {
 			return errors.New(i18n.T("already_starting"))
 		}
-		return attachedTUI(cmd, running.Info.URL())
+		return attachedTUI(cmd, d, client.New(running.Info.URL(), running.Info.Token))
 	}
 	if err != nil {
 		return err
@@ -295,8 +298,11 @@ func runTUI(cmd *cobra.Command, d *Deps, port int) error {
 	return c.RunTUI()
 }
 
-func attachedTUI(cmd *cobra.Command, url string) error {
-	_ = println(cmd, i18n.TF("already_running", url))
+func attachedTUI(cmd *cobra.Command, d *Deps, c *client.Client) error {
+	if d.AttachTUI != nil {
+		return d.AttachTUI(c)
+	}
+	_ = println(cmd, i18n.TF("already_running", c.URL()))
 	_ = println(cmd, i18n.T("already_running_tui"))
 	return exitCode(1)
 }

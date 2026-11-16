@@ -16,6 +16,7 @@ import (
 	"github.com/sthbryan/ftm/internal/platform/open"
 	"github.com/sthbryan/ftm/internal/service"
 	"github.com/sthbryan/ftm/internal/store"
+	"github.com/sthbryan/ftm/internal/ui/tui"
 	"github.com/sthbryan/ftm/internal/updater"
 )
 
@@ -35,6 +36,15 @@ func deps() cli.Deps {
 		},
 		Peek:   peekConfig,
 		Attach: func() (*client.Client, error) { return client.Find(dirs.Runtime) },
+		AttachTUI: func(c *client.Client) error {
+			if file := redirectLog(); file != nil {
+				defer file.Close()
+			}
+			_, err := tui.Run(tui.NewRemote(c, dirs.Config, func() (*client.Client, error) {
+				return client.Find(dirs.Runtime)
+			}))
+			return err
+		},
 		Open: func(background bool) (cli.Core, error) {
 			if !background {
 				// A quick command's output is its own; the core's log goes
