@@ -33,11 +33,19 @@
 @import "@zovaris/sephiro/css/segmented-control.css";
 @import "@zovaris/sephiro/css/command-palette.css";
 @import "@zovaris/sephiro/css/toast.css";
+@import "@zovaris/sephiro/css/tooltip.css";
 
 :root {
   /* ftm ships Inter and JetBrains Mono; Sephiro's sheets ask for Geist. */
   --sph-font-sans: var(--font-sans);
   --sph-font-mono: var(--font-mono);
+
+  /* One radius scale. Controls (buttons, inputs, segmented, tooltips) are 8px,
+   * surfaces (cards, dialogs, the session strip) 12px. Anything nested inside a
+   * surface uses the outer radius minus its padding, or none when it sits flush.
+   * xs stays for the few chips smaller than a control. */
+  --sph-radius-sm: 8px;
+  --sph-radius-md: 12px;
 }
 
 /* The app contract: every colour the UI uses, derived from the active theme so
@@ -126,10 +134,35 @@
   padding-inline-start: 2rem;
 }
 
-/* Sephiro's surfaces are flat; the dashboard still wants the URL well to read as
- * inset. Same tokens, no new colours. */
-.sph-well {
-  border-radius: var(--sph-radius-sm);
-  border: 1px solid var(--app-border-light);
-  background-color: var(--app-url-bg);
+/* Sephiro's button wraps icon and text in an inline-flex label with no gap, so
+ * the gap on .sph-button never reaches them and icons sit flush on the text.
+ * Upstream fix: give .sph-button__label `gap: inherit` in packages/ui. */
+.sph-button__label {
+  gap: inherit;
+}
+
+/* A surface laid flat on its parent: no border, no radius, no own background.
+ * Used for the logs under a session strip, which must not read as a card in a
+ * card. The strip's hairline separates them instead. */
+.ftm-flat.sph-terminal {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ftm-flat .sph-terminal__header {
+  padding-inline: 1rem;
+  border-color: var(--app-border-light);
+}
+
+.ftm-flat .sph-terminal__name {
+  font-family: var(--sph-font-sans);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ftm-flat .sph-terminal__body {
+  padding-inline: 1rem;
+  background: var(--sph-bg);
 }

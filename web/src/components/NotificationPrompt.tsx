@@ -6,7 +6,7 @@ export function NotificationPrompt() {
   if (notificationStatus.value !== 'pending' || notificationsEnabled.value) return null;
 
   return (
-    <aside class="pointer-events-auto fixed right-3 bottom-3 z-50 w-[19rem] max-w-[calc(100vw-1.5rem)] rounded-[var(--sph-radius-panel)] border border-border bg-card p-3 shadow-lg">
+    <aside class="pointer-events-auto fixed right-3 bottom-3 z-50 w-[19rem] max-w-[calc(100vw-1.5rem)] rounded-surface border border-border bg-card p-4 shadow-lg">
       <h3 class="m-0 text-xs font-semibold text-text">{t('enable_notifications_web')}</h3>
       <p class="m-0 mt-1 text-2xs leading-relaxed text-text-muted">{t('notifications_prompt')}</p>
       <div class="mt-2 flex gap-2">
