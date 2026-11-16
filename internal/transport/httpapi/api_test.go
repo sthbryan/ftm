@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -376,14 +379,19 @@ func TestEventsResumeAfterLastEventID(t *testing.T) {
 	}
 	first.resp.Body.Close()
 
-	// Missed while disconnected.
+	// Missed while disconnected. Not TunnelStats: the server skips those while
+	// no dashboard is connected, so whether one lands depends on how fast it
+	// notices the disconnect.
 	s.bus.Publish(events.TunnelDeleted{ID: "b"})
-	s.bus.Publish(events.TunnelStats{ID: "c", Visitors: 2})
+	s.bus.Publish(events.TunnelDeleted{ID: "c"})
 	waitFor(t, func() bool { return s.hub.lastID() >= mustInt(t, a.ID)+2 })
 
 	again := openSSE(t, ts, "/api/events", "Last-Event-ID", a.ID)
 	if e := again.next(eventTunnelDeleted); e.Data["id"] != "b" {
 		t.Fatalf("replayed %v, want b first", e.Data)
+	}
+	if e := again.next(eventTunnelDeleted); e.Data["id"] != "c" {
+		t.Fatalf("replayed %v, want c second", e.Data)
 	}
 	// Live events keep flowing after the replay, in order.
 	s.bus.Publish(events.TunnelDeleted{ID: "d"})
@@ -671,4 +679,32 @@ func mustInt(t *testing.T, s string) int64 {
 		t.Fatal(err)
 	}
 	return n
+}
+
+func TestDetectPortChecksTheAskedPort(t *testing.T) {
+	s := newTestServer(t, nil, worldConfig())
+
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	port := ln.Addr().(*net.TCPAddr).Port
+
+	rec := call(t, s, http.MethodGet, fmt.Sprintf("/api/detect-port?port=%d", port), "")
+	wantStatus(t, rec, http.StatusOK)
+	var out struct {
+		Ports     []int `json:"ports"`
+		Scanned   []int `json:"scanned"`
+		Suggested int   `json:"suggested"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(out.Scanned, port) || !slices.Contains(out.Ports, port) {
+		t.Fatalf("detect-port = %+v, want port %d scanned and busy", out, port)
+	}
+	if out.Suggested == port {
+		t.Fatalf("suggested %d, want one of the usual Foundry ports", out.Suggested)
+	}
 }

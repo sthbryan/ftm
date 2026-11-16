@@ -48,9 +48,14 @@ type okOutput struct {
 
 type detectPortOutput struct {
 	Body struct {
-		Ports     []int `json:"ports" doc:"Usual Foundry ports something listens on"`
+		Ports     []int `json:"ports" doc:"Checked ports something listens on"`
+		Scanned   []int `json:"scanned" doc:"Every port checked: the usual Foundry ports plus the one asked for"`
 		Suggested int   `json:"suggested"`
 	}
+}
+
+type detectPortInput struct {
+	Port int `query:"port" required:"false" minimum:"0" maximum:"65535" doc:"Also check this port, e.g. a connection's own"`
 }
 
 type pipInput struct {
@@ -130,9 +135,9 @@ func (s *Server) registerApp(api huma.API) {
 		Path:        "/api/detect-port",
 		Summary:     "Find a running Foundry on its usual ports",
 		Tags:        []string{tagApp},
-	}, func(ctx context.Context, _ *struct{}) (*detectPortOutput, error) {
+	}, func(ctx context.Context, in *detectPortInput) (*detectPortOutput, error) {
 		out := &detectPortOutput{}
-		out.Body.Ports, out.Body.Suggested = s.svc.DetectFoundryPorts()
+		out.Body.Ports, out.Body.Scanned, out.Body.Suggested = s.svc.DetectFoundryPorts(in.Port)
 		return out, nil
 	})
 

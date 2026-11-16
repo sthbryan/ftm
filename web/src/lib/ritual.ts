@@ -94,9 +94,16 @@ export function expiryLevel(remainingMs: number): ExpiryLevel {
 
 export type FoundryCheck = 'answers' | 'silent' | 'unknown';
 
-/** Whether Foundry answers on a port, from the busy ports detect-port reported. */
-export function foundryCheck(port: number, busy: number[] | null): FoundryCheck {
-  if (!busy || !FOUNDRY_PORTS.includes(port)) return 'unknown';
+/**
+ * Whether Foundry answers on a port, from the busy ports detect-port reported.
+ * `scanned` is every port the server checked; without it, the usual ports.
+ */
+export function foundryCheck(
+  port: number,
+  busy: number[] | null,
+  scanned: readonly number[] = FOUNDRY_PORTS,
+): FoundryCheck {
+  if (!busy || !scanned.includes(port)) return 'unknown';
   return busy.includes(port) ? 'answers' : 'silent';
 }
 

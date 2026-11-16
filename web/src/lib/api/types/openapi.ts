@@ -351,8 +351,10 @@ export interface components {
             deleted: number;
         };
         DetectPortOutputBody: {
-            /** @description Usual Foundry ports something listens on */
+            /** @description Checked ports something listens on */
             ports: number[] | null;
+            /** @description Every port checked: the usual Foundry ports plus the one asked for */
+            scanned: number[] | null;
             /** Format: int64 */
             suggested: number;
         };
@@ -610,7 +612,10 @@ export type $defs = Record<string, never>;
 export interface operations {
     "detect-port": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Also check this port, e.g. a connection's own */
+                port?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;

@@ -109,6 +109,10 @@ describe('foundryCheck', () => {
     expect(foundryCheck(8080, [30000])).toBe('unknown');
     expect(foundryCheck(30000, null)).toBe('unknown');
   });
+  it('checks a custom port when the server scanned it', () => {
+    expect(foundryCheck(8080, [8080], [30000, 8080])).toBe('answers');
+    expect(foundryCheck(8080, [], [30000, 8080])).toBe('silent');
+  });
 });
 
 describe('inviteMessage', () => {

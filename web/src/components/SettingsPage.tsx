@@ -317,14 +317,16 @@ export function SettingsPage() {
 function providerDescription(provider: InstalledProvider): string {
   const parts: string[] = [];
   if (provider.installed) {
-    parts.push(t('provider_version', { 0: provider.version || '?' }));
+    // ssh-based providers report no version; say nothing rather than "?".
+    if (provider.version) parts.push(t('provider_version', { 0: provider.version }));
     if (provider.hasUpdate && provider.latest)
       parts.push(t('provider_latest', { 0: provider.latest }));
   } else {
     parts.push(t('provider_not_installed'));
   }
   if (provider.source !== 'none') parts.push(t(`providers_source_${provider.source}`));
-  return parts.join(' · ');
+  const text = parts.join(' · ');
+  return text.charAt(0).toLocaleUpperCase() + text.slice(1);
 }
 
 function InstalledProviders({ providers }: { providers: InstalledProvider[] }) {

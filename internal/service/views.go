@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"net"
+	"slices"
 
 	"github.com/sthbryan/ftm/internal/core"
 )
@@ -100,11 +101,18 @@ func (s *Service) Logs(tunnelID string) []string {
 // foundryPorts are the ports Foundry VTT usually listens on.
 var foundryPorts = []int{30000, 30001, 30002, 30003, 30004, 30005, 30006, 30007, 30008, 30009}
 
-// DetectFoundryPorts reports which of the usual Foundry ports are taken, and
-// the one to suggest for a new connection.
-func (s *Service) DetectFoundryPorts() (inUse []int, suggested int) {
+// DetectFoundryPorts reports which of the usual Foundry ports, plus any extra
+// ports asked for, are taken, and the one to suggest for a new connection.
+// scanned lists every port it checked.
+func (s *Service) DetectFoundryPorts(extra ...int) (inUse, scanned []int, suggested int) {
 	inUse = []int{}
-	for _, port := range foundryPorts {
+	scanned = append([]int{}, foundryPorts...)
+	for _, port := range extra {
+		if port > 0 && port <= 65535 && !slices.Contains(scanned, port) {
+			scanned = append(scanned, port)
+		}
+	}
+	for _, port := range scanned {
 		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 		if err != nil {
 			inUse = append(inUse, port)
@@ -114,8 +122,11 @@ func (s *Service) DetectFoundryPorts() (inUse []int, suggested int) {
 	}
 
 	suggested = foundryPorts[0]
-	if len(inUse) > 0 {
-		suggested = inUse[0]
+	for _, port := range inUse {
+		if slices.Contains(foundryPorts, port) {
+			suggested = port
+			break
+		}
 	}
-	return inUse, suggested
+	return inUse, scanned, suggested
 }

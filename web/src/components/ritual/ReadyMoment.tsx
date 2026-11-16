@@ -4,7 +4,7 @@ import { IconAction } from '@/components/IconAction';
 import { ArrowClockwise, DoorOpen, PencilSimple, Plus } from '@phosphor-icons/react';
 import { foundryCheck } from '@/lib/ritual';
 import { unlockSound } from '@/lib/sound';
-import { busyPorts, checkFoundry, checkingPorts } from '@/lib/stores/foundry';
+import { busyPorts, checkFoundry, checkingPorts, scannedPorts } from '@/lib/stores/foundry';
 import { t } from '@/lib/stores/i18n';
 import { providerLabel } from '@/lib/stores/providers';
 import { startTunnel } from '@/lib/stores/tunnels';
@@ -28,8 +28,8 @@ export function ReadyMoment({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void checkFoundry();
-  }, [tunnel?.id]);
+    void checkFoundry(tunnel?.port);
+  }, [tunnel?.id, tunnel?.port]);
 
   if (!tunnel) {
     return (
@@ -49,7 +49,7 @@ export function ReadyMoment({
     );
   }
 
-  const check = foundryCheck(tunnel.port, busyPorts.value);
+  const check = foundryCheck(tunnel.port, busyPorts.value, scannedPorts.value);
 
   async function open() {
     if (!tunnel) return;
@@ -76,7 +76,7 @@ export function ReadyMoment({
               size="sm"
               loading={checkingPorts.value}
               icon={<ArrowClockwise size={14} />}
-              onClick={() => void checkFoundry()}
+              onClick={() => void checkFoundry(tunnel.port)}
             />
           )}
           <span class="inline-flex items-center gap-2 whitespace-nowrap">
