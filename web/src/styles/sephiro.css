@@ -40,9 +40,11 @@
 @import "@zovaris/sephiro/css/terminal.css";
 @import "@zovaris/sephiro/css/progress.css";
 @import "@zovaris/sephiro/css/segmented-control.css";
+@import "@zovaris/sephiro/css/radio-group.css";
 @import "@zovaris/sephiro/css/command-palette.css";
 @import "@zovaris/sephiro/css/toast.css";
 @import "@zovaris/sephiro/css/tooltip.css";
+@import "./theme-picker.css";
 
 :root {
   /* ftm ships Inter and JetBrains Mono; Sephiro's sheets ask for Geist. */
