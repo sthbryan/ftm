@@ -98,7 +98,6 @@ export function CommandPalette({
         const haystack = `${String(item.label ?? '')} ${item.keywords ?? ''}`.toLowerCase();
         return haystack.includes(query.toLowerCase());
       }}
-      className="sph-command-palette"
     />
   );
 }

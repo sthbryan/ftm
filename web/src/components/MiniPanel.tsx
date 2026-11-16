@@ -101,10 +101,11 @@ export function MiniPanel() {
           </dl>
 
           {tunnel.publicUrl && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={copy}
-              class="flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-control border-0 bg-url-bg px-3 py-2 text-start transition-colors hover:bg-hover"
+              className="ftm-mini-url w-full shrink-0 justify-start"
             >
               <span class="min-w-0 flex-1 truncate font-mono text-2xs text-url-text">
                 {tunnel.publicUrl}
@@ -114,7 +115,7 @@ export function MiniPanel() {
               ) : (
                 <Copy size={12} className="shrink-0 text-text-muted" />
               )}
-            </button>
+            </Button>
           )}
 
           {tunnel.errorMessage && (
