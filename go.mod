@@ -8,7 +8,6 @@ require (
 	charm.land/lipgloss/v2 v2.0.5
 	github.com/charmbracelet/x/ansi v0.11.7
 	github.com/danielgtaylor/huma/v2 v2.40.0
-	github.com/gorilla/websocket v1.5.3
 	github.com/mattn/go-runewidth v0.0.31
 	github.com/wailsapp/wails/v3 v3.0.0-beta.3
 	golang.org/x/sys v0.49.0

@@ -113,3 +113,30 @@ jobs:
 
       - name: Test
         run: cd web && bun run test
+
+  api-types:
+    name: Generated API types are current
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Stub embedded assets
+        run: |
+          mkdir -p internal/transport/httpapi/static
+          touch internal/transport/httpapi/static/index.html
+
+      - name: Install
+        run: cd web && bun install
+
+      # Fails when the API changed without `cd web && bun run gen:api`.
+      - name: Check web/src/lib/api/types/openapi.ts
+        run: cd web && bun run check:api

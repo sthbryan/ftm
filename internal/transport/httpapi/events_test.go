@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -12,41 +11,41 @@ import (
 	"github.com/sthbryan/ftm/internal/service"
 )
 
-func attachClient(s *Server) *wsClient {
-	c := &wsClient{
-		send:             make(chan []byte, 64),
-		done:             make(chan struct{}),
-		logSubscriptions: map[string]context.CancelFunc{},
-	}
-	s.hub.addWS(c)
+func attachClient(t *testing.T, s *Server) *sseClient {
+	t.Helper()
+	c, _, _ := s.hub.subscribe(0, false)
+	t.Cleanup(func() { s.hub.unsubscribe(c) })
 	return c
 }
 
-func readMessage(t *testing.T, c *wsClient, wantType string) map[string]any {
+func readMessage(t *testing.T, c *sseClient, wantType string) map[string]any {
 	t.Helper()
 	deadline := time.After(2 * time.Second)
 	for {
 		select {
-		case raw := <-c.send:
+		case f := <-c.ch:
 			var msg map[string]any
-			if err := json.Unmarshal(raw, &msg); err != nil {
-				t.Fatalf("bad message %s: %v", raw, err)
+			if err := json.Unmarshal(f.Data, &msg); err != nil {
+				t.Fatalf("bad event %s: %v", f.Data, err)
 			}
-			if msg["type"] == wantType {
+			if msg["type"] != f.Event {
+				t.Fatalf("event %q carries type %v", f.Event, msg["type"])
+			}
+			if f.Event == wantType {
 				return msg
 			}
 		case <-deadline:
-			t.Fatalf("no %q message broadcast", wantType)
+			t.Fatalf("no %q event broadcast", wantType)
 		}
 	}
 }
 
 // A change made outside the web (the TUI, the desktop shell) reaches the
-// WebSocket through the bus, in the shapes the web already parses.
-func TestChangesFromAnySurfaceReachTheWebSocket(t *testing.T) {
+// event stream through the bus, in the shapes the web parses.
+func TestChangesFromAnySurfaceReachTheEventStream(t *testing.T) {
 	s := newTestServer(t, process.NewManager(), config.DefaultConfig())
 	s.listenEvents()
-	client := attachClient(s)
+	client := attachClient(t, s)
 
 	tunnel, err := s.svc.CreateTunnel(service.TunnelInput{Name: "World", Provider: config.ProviderBore, LocalPort: 30000})
 	if err != nil {
@@ -95,19 +94,31 @@ func TestChangesFromAnySurfaceReachTheWebSocket(t *testing.T) {
 	}
 }
 
-// A WebSocket log subscription follows the tunnel's output from the bus.
-func TestWebSocketLogSubscriptionFollowsTheBus(t *testing.T) {
+// Following a tunnel's logs yields only that tunnel's lines from the bus.
+func TestFollowLogsYieldsOnlyThatTunnel(t *testing.T) {
 	s := newTestServer(t, nil, config.DefaultConfig())
-	client := attachClient(s)
 
-	if err := s.subscribeLogs(client, "world"); err != nil {
-		t.Fatalf("subscribeLogs: %v", err)
-	}
-	// The bus subscription is live once subscribeLogs returns.
+	lines, stop := s.followLogs("world")
+	defer stop()
+	// The bus subscription is live once followLogs returns.
 	s.bus.Publish(events.LogLine{TunnelID: "other", Line: "not mine"})
 	s.bus.Publish(events.LogLine{TunnelID: "world", Line: "hello"})
 
-	if msg := readMessage(t, client, "log"); msg["id"] != "world" || msg["line"] != "hello" {
-		t.Fatalf("log = %v", msg)
+	select {
+	case line := <-lines:
+		if line != "hello" {
+			t.Fatalf("line = %q, want hello", line)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("no log line")
+	}
+}
+
+// The WebSocket is gone: /ws/events is no API route.
+func TestWebSocketRouteIsGone(t *testing.T) {
+	s := newTestServer(t, nil, config.DefaultConfig())
+	rec := call(t, s, "GET", "/ws/events", "", "Upgrade", "websocket", "Connection", "Upgrade")
+	if rec.Code == 101 || rec.Code == 400 {
+		t.Fatalf("/ws/events answered %d, want the dashboard fallback", rec.Code)
 	}
 }

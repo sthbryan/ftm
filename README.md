@@ -251,7 +251,7 @@ make version ARGS="0.11.0 --dry-run"
 
 - **One process, three surfaces** — TUI, embedded web, and Wails share the same tunnel manager and config.
 - **Providers as plugins** — each tunnel backend implements a small interface; installers download only what you use.
-- **Live status** — the dashboard tracks process state over WebSockets so start/stop/errors show up without refresh.
+- **Live status** — the dashboard tracks process state over Server-Sent Events so start/stop/errors show up without refresh.
 - **Local by default** — the web UI is meant for localhost; treat exposing it beyond your machine as out of scope.
 
 ---

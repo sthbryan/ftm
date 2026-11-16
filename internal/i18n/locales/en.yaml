@@ -185,7 +185,6 @@ detail_visitors: "Visits, last 5 min"
 detail_logs: "Logs"
 detail_logs_idle: "Logs show up once the connection starts"
 no_logs: "Nothing logged yet"
-error_loading_logs: "Couldn't load the logs"
 
 # Provider error hints
 error_hint_binary: "The tunnel program isn't downloaded yet. Start the connection again to get it."

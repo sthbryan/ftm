@@ -22,8 +22,8 @@ type frame struct {
 	Data  []byte
 }
 
-// hub fans every broadcast out to the WebSocket and SSE clients and keeps the
-// recent ones so an SSE client that reconnects resumes where it left off.
+// hub fans every broadcast out to the SSE clients of /api/events and keeps
+// the recent ones so an SSE client that reconnects resumes where it left off.
 //
 // Event ids start at the server's start time in microseconds and grow by one
 // per event, so an id from before a restart is always older than any id after
@@ -32,17 +32,12 @@ type hub struct {
 	mu   sync.Mutex
 	last int64
 	ring []frame
-	ws   map[*wsClient]struct{}
 	sse  map[*sseClient]struct{}
-
-	// dropWS removes a WebSocket client that could not keep up.
-	dropWS func(*wsClient)
 }
 
 func newHub() *hub {
 	return &hub{
 		last: time.Now().UnixMicro(),
-		ws:   make(map[*wsClient]struct{}),
 		sse:  make(map[*sseClient]struct{}),
 	}
 }
@@ -55,8 +50,6 @@ func (h *hub) publish(event string, v any) {
 		log.Printf("httpapi: could not encode a %T update: %v", v, err)
 		return
 	}
-
-	var slowWS []*wsClient
 
 	// Delivery happens under the lock so every client sees frames in id
 	// order; each send is non-blocking.
@@ -73,18 +66,7 @@ func (h *hub) publish(event string, v any) {
 			c.close()
 		}
 	}
-	for c := range h.ws {
-		if !c.enqueue(data) {
-			slowWS = append(slowWS, c)
-		}
-	}
 	h.mu.Unlock()
-
-	if h.dropWS != nil {
-		for _, c := range slowWS {
-			h.dropWS(c)
-		}
-	}
 }
 
 // subscribe registers an SSE client. When resume is set, replay holds the
@@ -132,23 +114,11 @@ func (h *hub) unsubscribe(c *sseClient) {
 	c.close()
 }
 
-func (h *hub) addWS(c *wsClient) {
-	h.mu.Lock()
-	h.ws[c] = struct{}{}
-	h.mu.Unlock()
-}
-
-func (h *hub) removeWS(c *wsClient) {
-	h.mu.Lock()
-	delete(h.ws, c)
-	h.mu.Unlock()
-}
-
-// clients counts the open WebSocket and SSE connections.
+// clients counts the open /api/events streams.
 func (h *hub) clients() int {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	return len(h.ws) + len(h.sse)
+	return len(h.sse)
 }
 
 // sseClient is one open /api/events stream.

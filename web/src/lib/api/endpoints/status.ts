@@ -1,10 +1,6 @@
 import { api } from '../client';
+import type { StatusResponse } from '../types';
 
-export interface StatusResponse {
-  port: number;
-  version: string;
-  nativePip?: boolean;
-}
 
 export const statusApi = {
   get: (): Promise<StatusResponse> => api.get('status').json(),

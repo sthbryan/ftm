@@ -185,7 +185,6 @@ detail_visitors: "Visitas, últimos 5 min"
 detail_logs: "Registros"
 detail_logs_idle: "Os registros aparecem quando a conexão começa"
 no_logs: "Nada registrado ainda"
-error_loading_logs: "Não deu para carregar os registros"
 
 # Dicas de erro do provedor
 error_hint_binary: "O programa do túnel ainda não foi baixado. Inicie a conexão de novo para baixar."

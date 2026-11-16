@@ -1,7 +1,7 @@
 import { signal } from '@preact/signals';
 import { HTTPError } from 'ky';
 import { api, extractErrorMessage } from '@/lib/api/client';
-import { subscribeWsMessages } from '@/lib/api/ws';
+import { subscribeEvents } from '@/lib/api/events';
 import { t } from './i18n';
 import { toast } from './toast';
 
@@ -78,10 +78,9 @@ export function applyProviderUpdated(event: ProviderUpdatedEvent): void {
 
 function listen(): void {
   if (unsubscribe) return;
-  unsubscribe = subscribeWsMessages((message) => {
-    const msg = message as { type?: string } | null;
-    if (msg?.type === 'provider_updated') applyProviderUpdated(msg as ProviderUpdatedEvent);
-    if (msg?.type === 'provider_update_available') void loadInstalledProviders();
+  unsubscribe = subscribeEvents((event) => {
+    if (event.type === 'provider_updated') applyProviderUpdated(event as ProviderUpdatedEvent);
+    if (event.type === 'provider_update_available' || event.type === 'resync') void loadInstalledProviders();
   });
 }
 
