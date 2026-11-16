@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Button } from '@zovaris/sephiro/button';
 import { Tooltip } from '@zovaris/sephiro/tooltip';
-import { ArrowRight, ChatText, Copy, Stop } from '@phosphor-icons/react';
+import { ArrowRight, ArrowSquareOut, ChatText, Copy, Stop } from '@phosphor-icons/react';
 import { now, useClock } from '@/lib/stores/clock';
 import { t } from '@/lib/stores/i18n';
+import { toast } from '@/lib/stores/toast';
 import { markInvited } from '@/lib/stores/ritual';
 import { stopTunnel } from '@/lib/stores/tunnels';
 import { expiryLevel } from '@/lib/ritual';
@@ -12,7 +13,7 @@ import type { Tunnel } from '@/lib/types';
 import { NotificationNudge } from '../NotificationNudge';
 import { QrImage } from '../QrImage';
 import { DecodeText } from '../DecodeText';
-import { attempt, copyInvite, copyLink, copyQr, displayUrl } from './shared';
+import { copyInvite, copyLink, copyQr, displayUrl, openLink } from './shared';
 import { Ticket } from './Ticket';
 import { AsciiDie } from './AsciiDie';
 
@@ -30,9 +31,23 @@ export function InviteMoment({ tunnel }: { tunnel: Tunnel }) {
   const remaining = tunnel.expiresAt ? tunnel.expiresAt - now.value : 0;
   const expiry = expiryLevel(remaining);
 
+  // Closing tears the ticket first: the stub comes off along the perforation
+  // and falls, then the table closes. Reduced motion skips straight to it.
+  const [tearing, setTearing] = useState(false);
+
   async function stop() {
     setBusy(true);
-    await attempt(() => stopTunnel(tunnel.id));
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setTearing(true);
+      await new Promise((resolve) => setTimeout(resolve, 620));
+    }
+    try {
+      await stopTunnel(tunnel.id);
+    } catch (error) {
+      // The table is still open: put the ticket back together.
+      setTearing(false);
+      toast.error((error as Error).message);
+    }
     setBusy(false);
   }
 
@@ -40,7 +55,7 @@ export function InviteMoment({ tunnel }: { tunnel: Tunnel }) {
     <section class="ftm-moment" aria-labelledby="invite-title">
       <Ticket
         label={tunnel.name}
-        state="open"
+        state={tearing ? 'tearing' : 'open'}
         stub={
           !landed ? (
             <AsciiDie mode="twenty" onSettled={() => setTimeout(() => setLanded(true), 260)} />
@@ -79,6 +94,10 @@ export function InviteMoment({ tunnel }: { tunnel: Tunnel }) {
           <Button variant="secondary" onClick={() => void copyInvite(tunnel)}>
             <ChatText size={16} />
             {t('copy_invite')}
+          </Button>
+          <Button variant="quiet" onClick={() => void openLink(tunnel)}>
+            <ArrowSquareOut size={16} />
+            {t('open_link')}
           </Button>
         </div>
       </Ticket>

@@ -4,6 +4,8 @@ import QRCode from 'qrcode';
 import { copyImage, copyText } from '@/lib/utils/clipboard';
 import { inviteMessage } from '@/lib/ritual';
 import type { Tunnel } from '@/lib/types';
+import { tunnelsApi } from '@/lib/api';
+import { isDesktop } from '@/lib/desktop';
 
 export async function copyWithToast(text: string, doneKey: string): Promise<boolean> {
   if (!(await copyText(text))) {
@@ -45,4 +47,22 @@ export async function copyQr(url: string): Promise<boolean> {
   if (ok) toast.success(t('qr_copied'));
   else toast.error(t('qr_copy_failed'));
   return ok;
+}
+
+/**
+ * Opens the table's link the way a player sees it. In a browser that is a new
+ * tab; the desktop window cannot open tabs, so the server opens the system
+ * browser instead.
+ */
+export async function openLink(tunnel: Tunnel): Promise<void> {
+  if (!tunnel.publicUrl) return;
+  if (!isDesktop) {
+    window.open(tunnel.publicUrl, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  try {
+    await tunnelsApi.openLink(tunnel.id);
+  } catch {
+    toast.error(t('open_link_failed'));
+  }
 }

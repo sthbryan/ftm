@@ -234,6 +234,51 @@ input[type="number"]::-webkit-inner-spin-button {
   animation: ftm-beacon-ring 900ms var(--sph-ease-exit) 120ms both;
 }
 
+/* The beacon's tooltip, as a small card. */
+.ftm-beacon-tip {
+  display: flex;
+  min-width: 13rem;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding-block: 0.125rem;
+  text-align: start;
+}
+
+.ftm-beacon-tip__world {
+  font-family: var(--font-serif);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.ftm-beacon-tip__meta {
+  color: var(--sph-text-muted);
+  font-size: 11px;
+}
+
+.ftm-beacon-tip__rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  margin-block: 0.5rem 0.375rem;
+  padding-block: 0.5rem;
+  border-block: 1px solid var(--color-border-light);
+  font-size: 12px;
+}
+
+.ftm-beacon-tip__rows > :nth-child(odd) {
+  color: var(--sph-text-muted);
+}
+
+.ftm-beacon-tip__rows > :nth-child(even) {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.ftm-beacon-tip__hint {
+  color: var(--sph-text-muted);
+  font-size: 11px;
+}
+
 .ftm-beacon__users {
   display: inline-flex;
   align-items: center;
@@ -301,6 +346,34 @@ input[type="number"]::-webkit-inner-spin-button {
 @keyframes fade-in {
   from {
     opacity: 0;
+  }
+}
+
+/* A theme change grows the new colours as a circle from where it was picked
+ * (lib/themeReveal.ts). The old picture stays put underneath. */
+:root[data-reveal="theme"]::view-transition-old(root) {
+  animation: none;
+}
+
+:root[data-reveal="theme"]::view-transition-new(root) {
+  animation: ftm-reveal 560ms var(--sph-ease-emphasis) both;
+}
+
+:root[data-reveal="theme"]::view-transition-old(ftm-header) {
+  display: block;
+  animation: none;
+}
+
+:root[data-reveal="theme"]::view-transition-new(ftm-header) {
+  animation: ftm-reveal 560ms var(--sph-ease-emphasis) both;
+}
+
+@keyframes ftm-reveal {
+  from {
+    clip-path: circle(0 at var(--ftm-reveal-x) var(--ftm-reveal-y));
+  }
+  to {
+    clip-path: circle(var(--ftm-reveal-r) at var(--ftm-reveal-x) var(--ftm-reveal-y));
   }
 }
 
@@ -678,6 +751,67 @@ input[type="number"]::-webkit-inner-spin-button {
   color: color-mix(in srgb, var(--sph-danger) 80%, var(--sph-text-muted));
 }
 
+/* Closing tears the ticket: the stub drops away along the perforation with a
+ * slight turn, the body settles and fades a beat later. */
+.ftm-ticket.sph-surface[data-state="tearing"] {
+  overflow: visible;
+  border-color: transparent;
+  background: transparent;
+}
+
+.ftm-ticket[data-state="tearing"] .ftm-ticket__stub {
+  border-radius: 0 18px 18px 0;
+  background: var(--sph-surface);
+  box-shadow: inset 0 0 0 1px var(--sph-border);
+  animation: ftm-tear-stub 620ms cubic-bezier(0.55, 0, 0.75, 0.2) both;
+  transform-origin: 0% 0%;
+}
+
+.ftm-ticket[data-state="tearing"] .ftm-ticket__main {
+  border-radius: 18px 0 0 18px;
+  background: var(--sph-surface);
+  box-shadow: inset 0 0 0 1px var(--sph-border);
+  animation: ftm-tear-body 620ms var(--sph-ease-exit) 120ms both;
+}
+
+@keyframes ftm-tear-stub {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  18% {
+    transform: translate(6px, -2px) rotate(2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(28px, 120px) rotate(14deg);
+  }
+}
+
+@keyframes ftm-tear-body {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+/* The first download of a provider, in braille dots (BrailleBar.tsx). */
+.ftm-braille {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: pre;
+}
+
+.ftm-braille__done {
+  color: var(--sph-accent);
+}
+
+.ftm-braille__rest {
+  color: var(--sph-border-strong);
+}
+
 @keyframes ftm-ticket-in {
   from {
     opacity: 0;
@@ -862,6 +996,41 @@ input[type="number"]::-webkit-inner-spin-button {
   padding: 0.625rem 0.75rem 0.625rem 1rem;
 }
 
+/* Several tables open: each strip picks what the round table shows. The
+ * picked one sits a step lighter with a firmer hairline; the others go quiet
+ * until hovered. No colour: the table in the middle already says which. */
+.ftm-strip[data-selectable] .ftm-strip__row {
+  cursor: pointer;
+}
+
+.ftm-strip.sph-surface[data-selectable] {
+  transition:
+    background-color var(--sph-motion-normal) var(--sph-ease-standard),
+    border-color var(--sph-motion-normal) var(--sph-ease-standard),
+    opacity var(--sph-motion-normal) var(--sph-ease-standard);
+}
+
+.ftm-strip.sph-surface[data-selectable]:not([data-selected]) {
+  opacity: 0.62;
+}
+
+.ftm-strip.sph-surface[data-selectable]:not([data-selected]):hover {
+  opacity: 1;
+}
+
+.ftm-strip.sph-surface[data-selected] {
+  border-color: var(--sph-border-strong);
+  background: var(--sph-surface-elevated);
+}
+
+.ftm-strip__pick.sph-button {
+  max-width: 18rem;
+  padding-inline: 0.375rem;
+  color: var(--sph-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
 .ftm-strip__logs {
   border-top: 1px solid var(--color-border-light);
   animation: ftm-unfold var(--sph-motion-normal) var(--sph-ease-emphasis) both;
@@ -871,9 +1040,90 @@ input[type="number"]::-webkit-inner-spin-button {
   max-height: 22rem;
 }
 
+/* Logs read like a terminal that is still printing: each new line types in
+ * from the left, the newest carries a blinking cursor, and lines further back
+ * fade so the eye lands on what just happened. Only lines that mount animate,
+ * so opening the logs types just the last few. */
+.ftm-strip__logs .sph-terminal__line:nth-last-child(-n + 3) {
+  animation: ftm-type 420ms steps(28, end) both;
+}
+
+.ftm-strip__logs .sph-terminal__line:nth-last-child(n + 9) {
+  opacity: 0.55;
+  transition: opacity var(--sph-motion-slow) var(--sph-ease-standard);
+}
+
+.ftm-strip__logs .sph-terminal__line:last-child .sph-terminal__text::after {
+  margin-inline-start: 2px;
+  color: var(--sph-accent-strong);
+  content: "▍";
+  animation: ftm-blink 1s steps(1) infinite;
+}
+
+@keyframes ftm-type {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes ftm-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 .ftm-seats {
   display: inline-flex;
   gap: 4px;
+}
+
+/* A player taking a seat: the seat lands with a small spring and throws a
+ * spark of characters above it, once. */
+.ftm-seat,
+.ftm-mini__seat[data-taken] {
+  position: relative;
+}
+
+.ftm-seat {
+  animation: ftm-beacon-land var(--sph-motion-slow) var(--sph-ease-spring) both;
+}
+
+.ftm-seat::after,
+.ftm-mini__seat[data-taken]::after {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  color: var(--sph-accent-strong);
+  content: "· ✦ ·";
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  pointer-events: none;
+  white-space: pre;
+  animation: ftm-spark 900ms var(--sph-ease-exit) 80ms both;
+}
+
+@keyframes ftm-spark {
+  0% {
+    opacity: 0;
+    letter-spacing: -2px;
+    transform: translate(-50%, 6px) scale(0.6);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    letter-spacing: 3px;
+    transform: translate(-50%, -6px) scale(1.15);
+  }
+}
+
+.ftm-count {
+  font-variant-numeric: tabular-nums;
 }
 
 .ftm-seat {
@@ -885,6 +1135,135 @@ input[type="number"]::-webkit-inner-spin-button {
   border-radius: 999px;
   background: var(--sph-accent-soft);
   color: var(--sph-accent-strong);
+}
+
+/* ── In session: the table ───────────────────────────────────────────────
+ * A round table in the middle of the page. Seats sit on a ring around it,
+ * placed by angle (--angle) at the ring's radius; the GM's chair is at the
+ * bottom. Taken seats fill with the accent and spark when they fill. */
+.ftm-table {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  padding-block: 2.5rem;
+}
+
+.ftm-table__ring {
+  --ring: clamp(9rem, 22vw, 12rem);
+  position: relative;
+  display: grid;
+  width: calc(var(--ring) * 2 + 3rem);
+  aspect-ratio: 1;
+  place-items: center;
+}
+
+.ftm-table__top {
+  display: flex;
+  width: calc(var(--ring) * 1.55);
+  aspect-ratio: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--sph-surface-elevated) 70%, transparent), transparent 70%),
+    var(--sph-surface);
+  box-shadow:
+    inset 0 0 0 1px var(--sph-border),
+    inset 0 0 0 10px color-mix(in srgb, var(--sph-bg) 55%, var(--sph-surface)),
+    inset 0 0 0 11px var(--sph-border);
+  text-align: center;
+  animation: ftm-ticket-in var(--sph-motion-slow) var(--sph-ease-settle) both;
+}
+
+.ftm-table__world {
+  max-width: 80%;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-serif);
+  font-size: clamp(1.25rem, 2.4vw, 1.625rem);
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.ftm-table__clock {
+  margin: 0.25rem 0 0;
+  color: var(--sph-text);
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ftm-table__count {
+  margin: 0;
+  color: var(--sph-text-muted);
+  font-size: var(--text-xs);
+}
+
+.ftm-table__seat {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: -1.125rem 0 0 -1.125rem;
+  place-items: center;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--sph-border);
+  color: var(--sph-text-muted);
+  transform: rotate(var(--angle)) translateX(calc(var(--ring) + 0.25rem)) rotate(calc(var(--angle) * -1));
+  transition:
+    background-color var(--sph-motion-normal) var(--sph-ease-standard),
+    color var(--sph-motion-normal) var(--sph-ease-standard);
+}
+
+.ftm-table__seat[data-taken] {
+  background: color-mix(in srgb, var(--sph-accent) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sph-accent) 55%, transparent);
+  color: var(--sph-accent-strong);
+  animation: ftm-seat-take var(--sph-motion-slow) var(--sph-ease-spring) both;
+}
+
+.ftm-table__seat[data-taken]::after {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  color: var(--sph-accent-strong);
+  content: "· ✦ ·";
+  font-family: var(--font-mono);
+  font-size: 10px;
+  pointer-events: none;
+  white-space: pre;
+  animation: ftm-spark 900ms var(--sph-ease-exit) 80ms both;
+}
+
+/* A full table: smaller seats so they keep their spacing on the ring, and
+ * the last one counts whoever didn't fit. */
+.ftm-table__ring[data-crowded] .ftm-table__seat {
+  width: 1.875rem;
+  height: 1.875rem;
+  margin: -0.9375rem 0 0 -0.9375rem;
+}
+
+.ftm-table__seat[data-more] {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ftm-table__gm {
+  background: var(--sph-accent);
+  box-shadow: none;
+  color: var(--sph-on-accent);
+}
+
+/* A taken seat keeps its place on the ring while it lands. */
+@keyframes ftm-seat-take {
+  from {
+    transform: rotate(var(--angle)) translateX(calc(var(--ring) + 0.25rem)) rotate(calc(var(--angle) * -1)) scale(0.4);
+  }
 }
 
 .ftm-session-footer {

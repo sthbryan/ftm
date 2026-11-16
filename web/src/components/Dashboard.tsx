@@ -1,4 +1,4 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { Button } from '@zovaris/sephiro/button';
 import { EmptyState } from '@zovaris/sephiro/empty-state';
 import { Reveal } from '@zovaris/sephiro/reveal';
@@ -16,6 +16,7 @@ import { InviteMoment } from './ritual/InviteMoment';
 import { FailedMoment } from './ritual/FailedMoment';
 import { SessionStrip } from './ritual/SessionStrip';
 import { PresetChips } from './ritual/PresetChips';
+import { SessionTable } from './ritual/SessionTable';
 import { NotificationNudge } from './NotificationNudge';
 import { useLeaving } from '@/lib/hooks/useLeaving';
 import { UpdateBanner } from './UpdateBanner';
@@ -43,6 +44,10 @@ export function Dashboard() {
 
   useEffect(() => watchSession(), []);
   const strips = useLeaving(view.strips, (tunnel) => tunnel.id, 320);
+  // With several tables open, the round table shows the one picked in its strip.
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const focused = view.strips.find((tunnel) => tunnel.id === focusId) ?? view.strips[0];
+  const several = view.strips.length > 1;
 
   useEffect(() => {
     const id = selectIntent.value;
@@ -116,7 +121,11 @@ export function Dashboard() {
               inert={leaving}
             >
               <div class="min-h-0">
-                <SessionStrip tunnel={tunnel} />
+                <SessionStrip
+                  tunnel={tunnel}
+                  selected={several && tunnel.id === focused?.id}
+                  onSelect={several && !leaving ? () => setFocusId(tunnel.id) : undefined}
+                />
               </div>
             </div>
           ))}
@@ -141,6 +150,8 @@ export function Dashboard() {
           {choosing && chips && <div class="mt-8">{chips}</div>}
         </Reveal>
       ) : (
+        <>
+          {focused && <SessionTable key={focused.id} tunnel={focused} />}
         <footer class="ftm-session-footer">
           <NotificationNudge fallback={t('session_watch_note')} />
           {view.presets.length > 0 ? (
@@ -158,6 +169,7 @@ export function Dashboard() {
             </Button>
           )}
         </footer>
+        </>
       )}
     </div>
   );

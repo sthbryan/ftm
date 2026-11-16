@@ -20,6 +20,7 @@ export type FoundryWorld = {
   world?: string;
   system?: string;
   users: number;
+  uptimeMs?: number;
 };
 
 export const foundryWorlds = signal<FoundryWorld[]>([]);

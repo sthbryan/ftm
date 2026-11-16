@@ -2,6 +2,7 @@ import { CommandPalette as Palette, type CommandItem } from '@zovaris/sephiro/co
 import { Gear, Palette as PaletteIcon, Play, Plus, Stop, Plugs } from '@phosphor-icons/react';
 import { startTunnel, stopTunnel, tunnels } from '@/lib/stores/tunnels';
 import { cycleTheme } from '@/lib/stores/theme';
+import { revealTheme } from '@/lib/themeReveal';
 import { providerLabel } from '@/lib/stores/providers';
 import { toast } from '@/lib/stores/toast';
 import { t } from '@/lib/stores/i18n';
@@ -67,7 +68,7 @@ export function CommandPalette({
     }
 
     if (item.id === 'theme') {
-      cycleTheme();
+      revealTheme(cycleTheme);
       return;
     }
 

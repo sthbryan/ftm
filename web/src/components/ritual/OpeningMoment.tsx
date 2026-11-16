@@ -8,6 +8,7 @@ import { isInstallingState } from '@/lib/utils/status';
 import type { Tunnel } from '@/lib/types';
 import { attempt } from './shared';
 import { AsciiDie } from './AsciiDie';
+import { BrailleBar } from './BrailleBar';
 import { ProviderIcon } from './ProviderIcon';
 import { Ticket } from './Ticket';
 
@@ -40,7 +41,11 @@ export function OpeningMoment({ tunnel }: { tunnel: Tunnel }) {
           {tunnel.name}
         </h1>
         <div class="w-full max-w-96" aria-live="polite">
-          <Progress value={percent} label={t(tunnel.state)} size="sm" />
+          {percent !== undefined ? (
+            <BrailleBar percent={percent} label={t(tunnel.state)} />
+          ) : (
+            <Progress label={t(tunnel.state)} size="sm" />
+          )}
           <div class="mt-2.5 flex items-baseline gap-3 text-xs text-text-muted">
             <p class="m-0 min-w-0 flex-1 truncate">
               {installing

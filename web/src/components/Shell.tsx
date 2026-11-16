@@ -7,6 +7,7 @@ import { IconAction } from '@/components/IconAction';
 import { ArrowLeft, GearSix } from '@phosphor-icons/react';
 import { t } from '@/lib/stores/i18n';
 import { cycleTheme } from '@/lib/stores/theme';
+import { revealTheme } from '@/lib/themeReveal';
 import { navigate, route } from '@/router';
 import { CommandPalette } from '@/components/CommandPalette';
 import { Mark } from '@/components/Mark';
@@ -30,7 +31,7 @@ export function Shell({ children }: { children: ComponentChildren }) {
       }
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 't') {
         event.preventDefault();
-        cycleTheme();
+        revealTheme(cycleTheme);
       }
     };
 

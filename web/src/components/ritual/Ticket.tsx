@@ -17,7 +17,7 @@ export function Ticket({
   label: string;
   stub: ComponentChildren;
   children: ComponentChildren;
-  state?: 'ready' | 'opening' | 'open' | 'failed';
+  state?: 'ready' | 'opening' | 'open' | 'tearing' | 'failed';
 }) {
   return (
     <Surface padding="none" className="ftm-ticket" role="group" aria-label={label} data-state={state}>

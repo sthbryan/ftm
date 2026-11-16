@@ -12,6 +12,7 @@ import {
   type Scheme,
 } from '@/lib/stores/theme';
 import { t } from '@/lib/stores/i18n';
+import { rememberRevealOrigin, revealTheme } from '@/lib/themeReveal';
 
 /**
  * A family drawn as a tiny ftm window: title bar dots, the ticket with its
@@ -45,17 +46,19 @@ function Thumb({ family, scheme }: { family: Family; scheme: Scheme }) {
 /** Auto follows the OS; Dark and Light force a variant of every family. */
 export function ThemeModeControl() {
   return (
-    <SegmentedControl
-      ariaLabel={t('theme_mode')}
-      size="sm"
-      options={[
-        { value: 'system', label: t('theme_auto') },
-        { value: 'dark', label: t('theme_dark') },
-        { value: 'light', label: t('theme_light') },
-      ]}
-      value={themeMode.value}
-      onValueChange={setThemeMode}
-    />
+    <div onPointerDown={rememberRevealOrigin}>
+      <SegmentedControl
+        ariaLabel={t('theme_mode')}
+        size="sm"
+        options={[
+          { value: 'system', label: t('theme_auto') },
+          { value: 'dark', label: t('theme_dark') },
+          { value: 'light', label: t('theme_light') },
+        ]}
+        value={themeMode.value}
+        onValueChange={(mode: string) => revealTheme(() => setThemeMode(mode))}
+      />
+    </div>
   );
 }
 
@@ -80,15 +83,17 @@ export function ThemeGrid() {
   }));
 
   return (
-    <RadioGroup
-      name="theme-family"
-      label={t('theme_family')}
-      size="sm"
-      orientation="horizontal"
-      className="ftm-theme-families"
-      options={families}
-      value={themeFamily.value}
-      onValueChange={setThemeFamily}
-    />
+    <div onPointerDown={rememberRevealOrigin}>
+      <RadioGroup
+        name="theme-family"
+        label={t('theme_family')}
+        size="sm"
+        orientation="horizontal"
+        className="ftm-theme-families"
+        options={families}
+        value={themeFamily.value}
+        onValueChange={(family: string) => revealTheme(() => setThemeFamily(family))}
+      />
+    </div>
   );
 }

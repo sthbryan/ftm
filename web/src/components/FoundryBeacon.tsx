@@ -10,6 +10,8 @@ import {
   worldTitle,
 } from '@/lib/stores/foundry';
 import { t } from '@/lib/stores/i18n';
+import { formatDuration } from '@/lib/utils/duration';
+import type { FoundryWorld } from '@/lib/stores/foundry';
 
 /**
  * A quiet line in the header that says whether Foundry is running on this
@@ -48,7 +50,7 @@ export function FoundryBeacon() {
   }
 
   return (
-    <Tooltip content={tip} side="bottom">
+    <Tooltip content={status && (world || status.version) ? <BeaconTip status={status} world={world} /> : tip} side="bottom">
       <Button
         variant="quiet"
         size="sm"
@@ -70,5 +72,43 @@ export function FoundryBeacon() {
         )}
       </Button>
     </Tooltip>
+  );
+}
+
+/**
+ * What Foundry says about itself, as a small card: the world and its system,
+ * then port, who is connected and how long the world has been open, and how
+ * to check again. The button's aria-label carries the same in one sentence.
+ */
+function BeaconTip({ status, world }: { status: FoundryWorld; world: string }) {
+  const players = Math.max(0, status.users - 1);
+  return (
+    <span class="ftm-beacon-tip">
+      <span class="ftm-beacon-tip__world">{world || t('beacon_setup')}</span>
+      <span class="ftm-beacon-tip__meta">
+        {[status.system, status.version && `Foundry ${status.version}`].filter(Boolean).join(' · ')}
+      </span>
+      <span class="ftm-beacon-tip__rows">
+        <span>{t('beacon_tip_port')}</span>
+        <span>{status.port}</span>
+        {world && (
+          <>
+            <span>{t('beacon_tip_connected')}</span>
+            <span>
+              {players === 0
+                ? t('beacon_tip_only_you')
+                : t('beacon_tip_you_and', { count: players })}
+            </span>
+            {status.uptimeMs !== undefined && status.uptimeMs > 0 && (
+              <>
+                <span>{t('beacon_tip_open_for')}</span>
+                <span>{formatDuration(status.uptimeMs)}</span>
+              </>
+            )}
+          </>
+        )}
+      </span>
+      <span class="ftm-beacon-tip__hint">{t('beacon_tip_recheck')}</span>
+    </span>
   );
 }

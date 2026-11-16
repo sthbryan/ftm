@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Button } from '@zovaris/sephiro/button';
 import { Surface } from '@zovaris/sephiro/surface';
+import { AnimatedNumber } from '@zovaris/sephiro/animated-number';
 import { IconAction } from '@/components/IconAction';
 import { Copy, PictureInPicture, QrCode, Stop, Terminal, User } from '@phosphor-icons/react';
 import { pipApi, statusApi } from '@/lib/api';
@@ -30,17 +31,21 @@ function nativePip(): Promise<boolean> {
 /** Seats drawn before the rest collapse into the count. */
 const MAX_SEATS = 5;
 
-export function playersLabel(count: number): string {
-  if (count === 0) return t('session_waiting');
-  return count === 1 ? t('session_players_one') : t('session_players', { count });
-}
-
 /**
  * Moment four. One slim strip per running table: who is in, how long it has
  * run, when it closes, and the few things the GM reaches for mid-session.
  * Logs open under the strip on demand, on the page, not in a box inside it.
  */
-export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
+export function SessionStrip({
+  tunnel,
+  selected = false,
+  onSelect,
+}: {
+  tunnel: Tunnel;
+  /** With several tables open: this one is the one shown at the table. */
+  selected?: boolean;
+  onSelect?: () => void;
+}) {
   useEffect(() => useClock(), []);
   const [logsOpen, setLogsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -82,13 +87,35 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
         aria-label={tunnel.name}
         aria-busy={tunnel.state === 'stopping' || undefined}
         data-closing={tunnel.state === 'stopping' ? '' : undefined}
+        data-selected={selected ? '' : undefined}
+        data-selectable={onSelect ? '' : undefined}
       >
-        <div class="ftm-strip__row">
+        <div
+          class="ftm-strip__row"
+          onClick={(event) => {
+            // A click on empty space picks the table; controls keep their own.
+            if (!onSelect || (event.target as Element).closest('button, a, [role="button"]')) return;
+            onSelect();
+          }}
+        >
         <div class="flex min-w-0 items-center gap-2.5">
           <StatusMarkDot state={tunnel.state} label={t(tunnel.state)} size="sm" />
-          <p class="m-0 truncate text-sm font-medium text-text" title={tunnel.publicUrl}>
-            {tunnel.name}
-          </p>
+          {onSelect ? (
+            <Button
+              variant="quiet"
+              size="sm"
+              className="ftm-strip__pick"
+              aria-pressed={selected}
+              title={t('strip_show_at_table')}
+              onClick={onSelect}
+            >
+              <span class="truncate">{tunnel.name}</span>
+            </Button>
+          ) : (
+            <p class="m-0 truncate text-sm font-medium text-text" title={tunnel.publicUrl}>
+              {tunnel.name}
+            </p>
+          )}
         </div>
 
         <div class="flex items-center gap-3 text-xs text-text-muted">
@@ -105,7 +132,16 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
                   ))}
                 </span>
               )}
-              <span class="whitespace-nowrap">{playersLabel(players)}</span>
+              <span class="whitespace-nowrap">
+                {players === 0 ? (
+                  t('session_waiting')
+                ) : (
+                  <>
+                    <AnimatedNumber value={players} className="ftm-count" />{' '}
+                    {players === 1 ? t('pip_player') : t('pip_players')}
+                  </>
+                )}
+              </span>
             </>
           ) : (
             <span>{t(tunnel.state)}</span>
