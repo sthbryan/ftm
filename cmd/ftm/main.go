@@ -1,141 +1,55 @@
+// Command ftm is Foundry Tunnel Manager's command line and terminal view. It
+// wires the store, the supervisor and the bus into a core and hands it to
+// internal/cli, which runs the command.
 package main
 
 import (
-	"errors"
-	"flag"
-	"fmt"
+	"context"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/sthbryan/ftm/internal/cli"
+	"github.com/sthbryan/ftm/internal/client"
 	"github.com/sthbryan/ftm/internal/core"
-	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/platform/instance"
+	"github.com/sthbryan/ftm/internal/events"
+	"github.com/sthbryan/ftm/internal/platform/autostart"
+	"github.com/sthbryan/ftm/internal/platform/clipboard"
 	"github.com/sthbryan/ftm/internal/platform/open"
+	"github.com/sthbryan/ftm/internal/service"
 	"github.com/sthbryan/ftm/internal/store"
-	"github.com/sthbryan/ftm/internal/supervisor"
 	"github.com/sthbryan/ftm/internal/updater"
-	"github.com/sthbryan/ftm/internal/version"
 )
 
 func main() {
-	if err := cli.Init(peekConfig); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
+	os.Exit(cli.Execute(context.Background(), os.Args[1:], deps()))
+}
 
-	if len(os.Args) > 1 && os.Args[1] == "providers" {
-		if err := cli.Providers(supervisor.NewManager(), os.Args[2:]); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
-		}
-		os.Exit(0)
-	}
-
-	var (
-		webOnly     = flag.Bool("web", false, "Start web dashboard and open browser")
-		server      = flag.Bool("server", false, "Start web dashboard only (no browser)")
-		port        = flag.Int("port", 0, "Web server port (auto-detect if not specified)")
-		showVersion = flag.Bool("version", false, "Show version")
-		uninstall   = flag.Bool("uninstall", false, "Uninstall ftm")
-		update      = flag.Bool("update", false, "Update ftm to the latest release")
-		checkOnly   = flag.Bool("check", false, "Check for updates without installing")
-	)
-	flag.Parse()
-
-	if *showVersion {
-		fmt.Println(i18n.TF("version_output", version.Version))
-		os.Exit(0)
-	}
-
-	if *uninstall {
-		if err := cli.Uninstall(); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
-		}
-		os.Exit(0)
-	}
-
-	if *checkOnly {
-		if err := cli.Update(true); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
-		}
-		os.Exit(0)
-	}
-
-	if *update {
-		if err := cli.Update(false); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
-		}
-		os.Exit(0)
-	}
-
-	application, err := newApp()
-	if err != nil {
-		var running *instance.RunningError
-		if errors.As(err, &running) {
-			os.Exit(attach(running.Info, *webOnly, *server))
-		}
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-
-	if *port > 0 {
-		if err := application.SetWebPort(*port); err != nil {
-			fmt.Fprintf(os.Stderr, "Could not save the web port: %v\n", err)
-		}
-	}
-
-	if err := application.StartWebServer(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error starting web server: %v\n", err)
-		os.Exit(1)
-	}
-
-	url := application.WebServer.URL()
-	fmt.Printf("🎲 Foundry Tunnel Manager v%s\n", version.Version)
-	fmt.Print(i18n.TF("dashboard_url", url))
-
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-
-	if *webOnly || *server {
-		fmt.Print(i18n.T("press_ctrl_c"))
-		if *webOnly {
-			if err := application.OpenDashboard(); err != nil {
-				fmt.Fprintf(os.Stderr, "Could not open the dashboard: %v\n", err)
+func deps() cli.Deps {
+	dirs := store.DefaultDirs()
+	return cli.Deps{
+		Dirs: cli.Dirs{
+			Config:     dirs.Config,
+			ConfigFile: dirs.ConfigFile(),
+			Bin:        dirs.Bin,
+			Runtime:    dirs.Runtime,
+			LogFile:    dirs.LogFile(),
+		},
+		Peek:   peekConfig,
+		Attach: func() (*client.Client, error) { return client.Find(dirs.Runtime) },
+		Open: func(background bool) (cli.Core, error) {
+			if !background {
+				// A quick command's output is its own; the core's log goes
+				// to the log file.
+				redirectLog()
 			}
-		}
-
-		select {
-		case <-stop:
-			application.Shutdown()
-		case <-application.RestartRequested():
-			application.Shutdown()
-			if err := updater.Relaunch(); err != nil {
-				fmt.Fprintf(os.Stderr, "Could not restart after the update: %v\n", err)
-				os.Exit(1)
+			app, err := newApp(background)
+			if err != nil {
+				return nil, err
 			}
-		}
-		return
-	}
-
-	go func() {
-		<-stop
-		application.Shutdown()
-		os.Exit(130)
-	}()
-
-	fmt.Print(i18n.T("tui_hint"))
-
-	err = application.Run()
-	application.Shutdown()
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+			return appCore{app}, nil
+		},
+		Autostart: autostart.New(),
+		OpenURL:   open.URL,
+		Copy:      clipboard.Write,
 	}
 }
 
@@ -145,27 +59,24 @@ func peekConfig() (core.Config, error) {
 	return store.Peek(store.DefaultDirs())
 }
 
-// attach runs when another ftm or ftm-desktop already owns the tunnels: it
-// points at that process's dashboard instead of starting a second manager that
-// would fight it over the config and the port. It returns the exit code.
-func attach(info *instance.Info, openBrowser, headless bool) int {
-	if info == nil {
-		fmt.Fprintln(os.Stderr, i18n.T("already_starting"))
-		return 1
-	}
+// appCore is the App as the command tree sees it.
+type appCore struct{ app *App }
 
-	fmt.Println(i18n.TF("already_running", info.URL()))
+func (c appCore) Service() *service.Service { return c.app.Service }
+func (c appCore) Bus() *events.Bus          { return c.app.Bus }
+func (c appCore) RunTUI() error             { return c.app.Run() }
+func (c appCore) Restart() <-chan struct{}  { return c.app.RestartRequested() }
+func (c appCore) Relaunch() error           { return updater.Relaunch() }
+func (c appCore) Shutdown()                 { c.app.Shutdown() }
 
-	if openBrowser {
-		if err := open.URL(info.URL()); err != nil {
-			fmt.Fprintf(os.Stderr, "Could not open the dashboard: %v\n", err)
-			return 1
+func (c appCore) ServeWeb(port int) (string, error) {
+	if port > 0 {
+		if err := c.app.SetWebPort(port); err != nil {
+			return "", err
 		}
-		return 0
 	}
-
-	if !headless {
-		fmt.Println(i18n.T("already_running_tui"))
+	if err := c.app.StartWebServer(); err != nil {
+		return "", err
 	}
-	return 1
+	return c.app.WebServer.URL(), nil
 }

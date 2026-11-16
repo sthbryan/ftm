@@ -63,9 +63,9 @@ Full-screen terminal UI. Navigate connections, open logs, copy the public URL, j
 Dashboard at `http://localhost:40500` (port auto-detects if busy). Themes, live status, manage tunnels from the browser.
 
 ```bash
-ftm --web          # dashboard + open browser
-ftm --server       # dashboard only
-ftm --port 8080    # force a port
+ftm serve --open          # dashboard + open browser
+ftm serve                 # dashboard only
+ftm serve --port 8080     # force a port
 ```
 
 **Desktop** — release assets `ftm-desktop-*`  
@@ -162,10 +162,31 @@ chmod +x ftm-desktop-linux
 xattr -d com.apple.quarantine ftm-desktop-macos.app
 ```
 
-### Flags
+### Commands
 
-| Flag | Effect |
-|------|--------|
+Every command talks to the ftm that is already running (the desktop app, `ftm serve` or the TUI) when there is one, and runs the core itself otherwise. Run `ftm <command> --help` for the details.
+
+| Command | Effect |
+|---------|--------|
+| *(none)* | TUI + web server |
+| `ftm up [name…] [--all]` | Open connections and print their links |
+| `ftm down [name…]` | Close connections (all open ones when none is named) |
+| `ftm share [name] [--port N]` | Open a connection, copy the link, print an invite |
+| `ftm ls [--json]` | List connections and their state |
+| `ftm add [name] [--provider P] [--port N]` | Save a connection (asks on a terminal) |
+| `ftm edit <name>` / `ftm rm <name…>` | Change / remove connections |
+| `ftm logs <name> [-f]` | Print or follow a connection's output |
+| `ftm providers [ls\|install\|update]` | Tunnel programs: versions, download, update |
+| `ftm doctor` | Check providers, ssh key, Foundry port, config folder, start at login |
+| `ftm serve [--open] [--port N]` | Web only, no TUI |
+| `ftm config [path\|get\|set\|edit]` | Read and change settings |
+| `ftm self-update [--check]` | Update to the latest release |
+| `ftm uninstall` · `ftm version` | Remove ftm · print the version |
+| `ftm completion <shell>` · `ftm man` | Shell completions · man page |
+
+The old flags (`-web`, `-server`, `-port`, `-update`, `-check`, `-uninstall`, `-version`) still work.
+
+------|--------|
 | *(none)* | TUI + web server |
 | `--web` | Web only, open browser |
 | `--server` | Web only, no browser |
@@ -188,7 +209,7 @@ ftm                  # TUI; dashboard at http://localhost:40500
 Web-only session:
 
 ```bash
-ftm --web
+ftm serve --open
 ```
 
 ---

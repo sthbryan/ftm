@@ -5,45 +5,74 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"text/tabwriter"
 
+	"github.com/spf13/cobra"
+
 	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/provider"
 )
 
-// Binaries reports and replaces provider binaries. cmd/ftm passes the
-// supervisor.
-type Binaries interface {
-	CheckLatest(ctx context.Context, force bool)
-	ProviderBinaries(ctx context.Context) []core.ProviderBinary
-	ProviderBinary(ctx context.Context, id core.Provider) core.ProviderBinary
-	UpdateProvider(ctx context.Context, id core.Provider, progress chan<- provider.DownloadProgress) (*core.UpdateResult, error)
-}
-
-// Providers runs `ftm providers [update [id]]`.
-func Providers(manager Binaries, args []string) error {
-	ctx := context.Background()
-
-	switch {
-	case len(args) == 0 || args[0] == "list":
-		return listProviders(ctx, os.Stdout, manager)
-	case args[0] == "update" && len(args) <= 2:
-		var id string
-		if len(args) == 2 {
-			id = args[1]
-		}
-		return updateProviders(ctx, os.Stdout, manager, id)
-	default:
-		return errors.New(i18n.T("providers_usage"))
+func newProvidersCmd(d *Deps) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "providers",
+		Short: "List, download and update the tunnel providers",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return withBackend(d, func(b Backend) error { return listProviders(cmd.Context(), cmd.OutOrStdout(), b) })
+		},
 	}
+
+	ls := &cobra.Command{
+		Use:     "ls",
+		Aliases: []string{"list"},
+		Short:   "List each provider's version and where it comes from",
+		Args:    cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return withBackend(d, func(b Backend) error { return listProviders(cmd.Context(), cmd.OutOrStdout(), b) })
+		},
+	}
+	install := &cobra.Command{
+		Use:               "install [provider...]",
+		Short:             "Download providers ftm doesn't have yet",
+		Long:              "Download the named providers, or every one ftm can download and doesn't have yet.",
+		ValidArgsFunction: completeProviders,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return withBackend(d, func(b Backend) error { return installProviders(cmd.Context(), cmd.OutOrStdout(), b, args) })
+		},
+	}
+	update := &cobra.Command{
+		Use:               "update [provider]",
+		Short:             "Update ftm's copy of a provider, or every one that is behind",
+		Args:              cobra.MaximumNArgs(1),
+		ValidArgsFunction: completeProviders,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			id := ""
+			if len(args) == 1 {
+				id = args[0]
+			}
+			return withBackend(d, func(b Backend) error { return updateProviders(cmd.Context(), cmd.OutOrStdout(), b, id) })
+		},
+	}
+	cmd.AddCommand(ls, install, update)
+	return cmd
 }
 
-func listProviders(ctx context.Context, out io.Writer, manager Binaries) error {
-	manager.CheckLatest(ctx, true)
-	report := manager.ProviderBinaries(ctx)
+func withBackend(d *Deps, fn func(Backend) error) error {
+	s, err := d.connect(false)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	return fn(s)
+}
+
+func listProviders(ctx context.Context, out io.Writer, b Backend) error {
+	report, err := b.Providers(ctx, true)
+	if err != nil {
+		return err
+	}
 
 	tw := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
 	fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n",
@@ -52,22 +81,21 @@ func listProviders(ctx context.Context, out io.Writer, manager Binaries) error {
 		i18n.T("providers_col_latest"),
 		i18n.T("providers_col_source"))
 
-	var outdated, external []string
-	var failures []string
-	for _, b := range report {
+	var outdated, external, failures []string
+	for _, p := range report {
 		marker := ""
-		if b.HasUpdate {
+		if p.HasUpdate {
 			marker = " ↑"
-			if b.Updatable {
-				outdated = append(outdated, string(b.ID))
+			if p.Updatable {
+				outdated = append(outdated, p.ID)
 			} else {
-				external = append(external, i18n.TF("providers_external_hint", b.ID, b.Path))
+				external = append(external, i18n.TF("providers_external_hint", p.ID, p.Path))
 			}
 		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", b.ID, dash(b.Version)+marker, dash(b.Latest), sourceLabel(b.Source))
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", p.ID, dash(p.Version)+marker, dash(p.Latest), sourceLabel(p.Source))
 
-		if b.Error != "" && b.Source != core.SourceSystem {
-			failures = append(failures, i18n.TF("providers_check_failed", b.ID, b.Error))
+		if p.Error != "" && p.Source != string(core.SourceSystem) {
+			failures = append(failures, i18n.TF("providers_check_failed", p.ID, p.Error))
 		}
 	}
 	if err := tw.Flush(); err != nil {
@@ -89,29 +117,78 @@ func listProviders(ctx context.Context, out io.Writer, manager Binaries) error {
 	return nil
 }
 
+// installProviders downloads the named providers, or every downloadable one
+// that is missing.
+func installProviders(ctx context.Context, out io.Writer, b Backend, ids []string) error {
+	report, err := b.Providers(ctx, false)
+	if err != nil {
+		return err
+	}
+	byID := map[string]ProviderBinary{}
+	for _, p := range report {
+		byID[p.ID] = p
+	}
+
+	var targets []string
+	if len(ids) == 0 {
+		for _, p := range report {
+			if !p.Installed && p.Source == string(core.SourceNone) {
+				targets = append(targets, p.ID)
+			}
+		}
+		if len(targets) == 0 {
+			fmt.Fprintln(out, i18n.T("cli_providers_all_installed"))
+			return nil
+		}
+	}
+	for _, raw := range ids {
+		id, err := checkProvider(raw)
+		if err != nil {
+			return err
+		}
+		if p := byID[id]; p.Installed {
+			fmt.Fprintln(out, i18n.TF("cli_provider_installed", id, dash(p.Version)))
+			continue
+		}
+		targets = append(targets, id)
+	}
+	return runProviderUpdates(ctx, out, b, targets)
+}
+
 // updateProviders updates one provider, or every bundled one that is behind
 // when id is empty.
-func updateProviders(ctx context.Context, out io.Writer, manager Binaries, id string) error {
-	var targets []core.Provider
+func updateProviders(ctx context.Context, out io.Writer, b Backend, id string) error {
+	var targets []string
 
 	if id != "" {
-		provider := core.Provider(strings.ToLower(id))
-		if !isKnownProvider(provider) {
+		id = strings.ToLower(id)
+		if !isKnownProvider(core.Provider(id)) {
 			return errors.New(i18n.TF("providers_unknown", id))
 		}
-		info := manager.ProviderBinary(ctx, provider)
-		switch info.Source {
-		case core.SourceSystem:
-			return errors.New(i18n.TF("providers_not_updatable", provider))
-		case core.SourcePath:
-			return errors.New(i18n.TF("providers_external", provider, info.Path))
+		report, err := b.Providers(ctx, false)
+		if err != nil {
+			return err
 		}
-		targets = append(targets, provider)
+		for _, p := range report {
+			if p.ID != id {
+				continue
+			}
+			switch core.BinarySource(p.Source) {
+			case core.SourceSystem:
+				return errors.New(i18n.TF("providers_not_updatable", id))
+			case core.SourcePath:
+				return errors.New(i18n.TF("providers_external", id, p.Path))
+			}
+		}
+		targets = append(targets, id)
 	} else {
-		manager.CheckLatest(ctx, true)
-		for _, b := range manager.ProviderBinaries(ctx) {
-			if b.HasUpdate && b.Updatable {
-				targets = append(targets, b.ID)
+		report, err := b.Providers(ctx, true)
+		if err != nil {
+			return err
+		}
+		for _, p := range report {
+			if p.HasUpdate && p.Updatable {
+				targets = append(targets, p.ID)
 			}
 		}
 		if len(targets) == 0 {
@@ -119,24 +196,39 @@ func updateProviders(ctx context.Context, out io.Writer, manager Binaries, id st
 			return nil
 		}
 	}
+	return runProviderUpdates(ctx, out, b, targets)
+}
 
+func runProviderUpdates(ctx context.Context, out io.Writer, b Backend, targets []string) error {
 	var failures []error
-	for _, provider := range targets {
-		fmt.Fprintln(out, i18n.TF("providers_updating", provider))
+	for _, id := range targets {
+		fmt.Fprintln(out, i18n.TF("providers_updating", id))
 
 		progress, done := printProgress(out)
-		result, err := manager.UpdateProvider(ctx, provider, progress)
+		version, err := b.UpdateProvider(ctx, id, func(p float64) { progress <- p })
 		close(progress)
 		<-done
 
 		if err != nil {
-			failures = append(failures, errors.New(i18n.TF("providers_update_failed", provider, err)))
+			failures = append(failures, providerFailure(id, err))
 			continue
 		}
-		fmt.Fprintln(out, i18n.TF("providers_updated", provider, dash(result.Version)))
+		fmt.Fprintln(out, i18n.TF("providers_updated", id, dash(version)))
 	}
-
 	return errors.Join(failures...)
+}
+
+// providerFailure explains why a provider could not be updated.
+func providerFailure(id string, err error) error {
+	switch {
+	case errors.Is(err, core.ErrNotUpdatable):
+		return errors.New(i18n.TF("providers_not_updatable", id))
+	case errors.Is(err, core.ErrExternalBinary):
+		return errors.New(i18n.TF("providers_external_hint", id, err))
+	case errors.Is(err, core.ErrUnknownProvider):
+		return errors.New(i18n.TF("providers_unknown", id))
+	}
+	return errors.New(i18n.TF("providers_update_failed", id, err))
 }
 
 func isKnownProvider(p core.Provider) bool {
@@ -150,8 +242,8 @@ func isKnownProvider(p core.Provider) bool {
 
 // printProgress draws a single updating percentage line until the channel is
 // closed.
-func printProgress(out io.Writer) (chan provider.DownloadProgress, <-chan struct{}) {
-	ch := make(chan provider.DownloadProgress, 16)
+func printProgress(out io.Writer) (chan float64, <-chan struct{}) {
+	ch := make(chan float64, 16)
 	done := make(chan struct{})
 
 	go func() {
@@ -159,7 +251,7 @@ func printProgress(out io.Writer) (chan provider.DownloadProgress, <-chan struct
 		last := -1
 		drew := false
 		for p := range ch {
-			pct := int(p.Percent)
+			pct := int(p)
 			if pct == last {
 				continue
 			}
@@ -175,8 +267,8 @@ func printProgress(out io.Writer) (chan provider.DownloadProgress, <-chan struct
 	return ch, done
 }
 
-func sourceLabel(s core.BinarySource) string {
-	switch s {
+func sourceLabel(s string) string {
+	switch core.BinarySource(s) {
 	case core.SourceBundled:
 		return i18n.T("providers_source_bundled")
 	case core.SourcePath:
@@ -186,11 +278,4 @@ func sourceLabel(s core.BinarySource) string {
 	default:
 		return i18n.T("providers_source_none")
 	}
-}
-
-func dash(s string) string {
-	if s == "" {
-		return "-"
-	}
-	return s
 }
