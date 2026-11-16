@@ -4,7 +4,11 @@
 // down the process manager or a download.
 package events
 
-import "github.com/sthbryan/ftm/internal/config"
+import (
+	"time"
+
+	"github.com/sthbryan/ftm/internal/config"
+)
 
 // Kind names an event type, for filtering and logs.
 type Kind string
@@ -18,6 +22,9 @@ const (
 	KindLogLine         Kind = "log_line"
 	KindSettingsChanged Kind = "settings_changed"
 	KindUpdateAvailable Kind = "update_available"
+
+	KindProviderUpdatesAvailable Kind = "provider_updates_available"
+	KindProviderUpdated          Kind = "provider_updated"
 )
 
 // Event is one change. The set is closed: only the types in this package
@@ -83,6 +90,42 @@ type UpdateAvailable struct {
 	Method     string
 }
 
+// ProviderBinary describes the installed binary of one provider: where it
+// comes from, its version and whether ftm can update it.
+type ProviderBinary struct {
+	ID         string
+	Name       string
+	Installed  bool
+	Version    string
+	Latest     string
+	Source     string
+	Path       string
+	HasUpdate  bool
+	Updatable  bool
+	Updating   bool
+	ReleaseURL string
+	CheckedAt  time.Time
+	Error      string
+}
+
+// ProviderUpdatesAvailable is published once per provider and release when a
+// newer provider binary is found.
+type ProviderUpdatesAvailable struct {
+	Providers []ProviderBinary
+}
+
+// ProviderUpdated is published once when a provider binary update finishes,
+// whether it worked or not. Restarted lists the tunnels started again after
+// the swap.
+type ProviderUpdated struct {
+	Provider  string
+	OK        bool
+	Version   string
+	Error     string
+	Restarted []string
+	Binary    ProviderBinary
+}
+
 func (TunnelSaved) Kind() Kind     { return KindTunnelSaved }
 func (TunnelDeleted) Kind() Kind   { return KindTunnelDeleted }
 func (TunnelStatus) Kind() Kind    { return KindTunnelStatus }
@@ -91,3 +134,7 @@ func (InstallProgress) Kind() Kind { return KindInstallProgress }
 func (LogLine) Kind() Kind         { return KindLogLine }
 func (SettingsChanged) Kind() Kind { return KindSettingsChanged }
 func (UpdateAvailable) Kind() Kind { return KindUpdateAvailable }
+func (ProviderUpdatesAvailable) Kind() Kind {
+	return KindProviderUpdatesAvailable
+}
+func (ProviderUpdated) Kind() Kind { return KindProviderUpdated }
