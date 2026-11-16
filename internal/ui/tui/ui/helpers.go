@@ -3,7 +3,6 @@ package ui
 import (
 	"strings"
 
-	"charm.land/lipgloss/v2"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -32,12 +31,4 @@ func Truncate(s string, width int) string {
 		return runewidth.Truncate(s, width, "")
 	}
 	return runewidth.Truncate(s, width, "…")
-}
-
-func Center(s string, width int) string {
-	pad := (width - lipgloss.Width(s)) / 2
-	if pad < 0 {
-		pad = 0
-	}
-	return strings.Repeat(" ", pad) + s
 }

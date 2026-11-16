@@ -23,10 +23,6 @@ type DetailPanel struct {
 	Height         int
 }
 
-func NewDetailPanel() *DetailPanel {
-	return &DetailPanel{}
-}
-
 const minLogTail = 2
 
 func (d *DetailPanel) Render() string {

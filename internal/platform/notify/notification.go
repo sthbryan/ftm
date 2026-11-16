@@ -115,10 +115,6 @@ func Notify(title, body string) error {
 	return nil
 }
 
-func Notifyf(title, format string, args ...interface{}) error {
-	return Notify(title, fmt.Sprintf(format, args...))
-}
-
 func PlaySound(t SoundType) error {
 	mu.RLock()
 	enabled := soundEnabled
@@ -139,10 +135,6 @@ func PlaySound(t SoundType) error {
 	}()
 
 	return nil
-}
-
-func IsAvailable() bool {
-	return available
 }
 
 func NotifyTunnelOnline(name, url string) {
@@ -182,9 +174,4 @@ func NotifyTunnelExpiring(name string, minutes int) {
 func NotifyTunnelExpired(name string) {
 	_ = Notify("Tunnel Expired", fmt.Sprintf("%s session has ended", name))
 	_ = PlaySound(SoundError)
-}
-
-func NotifyWelcome() {
-	_ = Notify("Welcome!", "Foundry Tunnel Manager started")
-	_ = PlaySound(SoundStartup)
 }

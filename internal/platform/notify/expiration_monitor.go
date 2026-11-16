@@ -12,19 +12,6 @@ type ExpirationConfig struct {
 	ProviderExpirationMinutes map[string]int
 }
 
-func DefaultExpirationConfig() ExpirationConfig {
-	return ExpirationConfig{
-		Thresholds: []int{30, 15, 10, 5, 1},
-		ProviderExpirationMinutes: map[string]int{
-			"pinggy":       60,
-			"serveo":       0,
-			"cloudflared":  0,
-			"tunnelmole":   0,
-			"localhostrun": 0,
-		},
-	}
-}
-
 type ExpirationMonitor struct {
 	mu       sync.RWMutex
 	timers   map[string]*time.Timer
@@ -128,18 +115,6 @@ func (m *ExpirationMonitor) StopAll() {
 	m.timers = make(map[string]*time.Timer)
 }
 
-func (m *ExpirationMonitor) UpdateConfig(config ExpirationConfig) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.config = config
-}
-
 func (m *ExpirationMonitor) timerKey(tunnelID string, threshold int) string {
 	return fmt.Sprintf("%s-%d", tunnelID, threshold)
-}
-
-func (m *ExpirationMonitor) ActiveTimers() int {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return len(m.timers)
 }

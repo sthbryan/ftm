@@ -40,10 +40,6 @@ func FitMetaColumn(rowWidth int, metas []string) int {
 	return widest
 }
 
-func NewTunnelItem() *TunnelItem {
-	return &TunnelItem{}
-}
-
 const (
 	minNameWidth      = 8
 	horizontalPadding = 1
