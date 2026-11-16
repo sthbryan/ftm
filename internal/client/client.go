@@ -111,6 +111,7 @@ type Settings struct {
 	NotificationSound    bool   `json:"notification_sound"`
 	Language             string `json:"language"`
 	LanguageResolved     string `json:"language_resolved"`
+	Onboarded            bool   `json:"onboarded"`
 	AutostartSupported   bool   `json:"autostart_supported"`
 	AutostartEnabled     bool   `json:"autostart_enabled"`
 }
@@ -152,6 +153,11 @@ func (c *Client) DeleteTunnel(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/tunnels/"+url.PathEscape(id), nil, nil)
 }
 
+// ClearTunnels stops and removes every saved connection.
+func (c *Client) ClearTunnels(ctx context.Context) error {
+	return c.do(ctx, http.MethodDelete, "/api/tunnels", nil, nil)
+}
+
 // StartTunnel starts a connection. Later states arrive on Events.
 func (c *Client) StartTunnel(ctx context.Context, id string) (Tunnel, error) {
 	var out Tunnel
@@ -190,6 +196,29 @@ func (c *Client) Providers(ctx context.Context, refresh bool) ([]ProviderBinary,
 // result arrive on Events.
 func (c *Client) UpdateProvider(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodPost, "/api/providers/"+url.PathEscape(id)+"/update", nil, nil)
+}
+
+// UpdateInfo is what the instance's last ftm update check found.
+type UpdateInfo struct {
+	Current    string `json:"current"`
+	Latest     string `json:"latest"`
+	Tag        string `json:"tag"`
+	AssetName  string `json:"assetName"`
+	ReleaseURL string `json:"releaseUrl"`
+	HasUpdate  bool   `json:"hasUpdate"`
+	Method     string `json:"method"`
+}
+
+// Update reads the instance's last ftm update check.
+func (c *Client) Update(ctx context.Context) (UpdateInfo, error) {
+	var out UpdateInfo
+	return out, c.do(ctx, http.MethodGet, "/api/update", nil, &out)
+}
+
+// ApplyUpdate installs the update the instance found. The instance then
+// shuts down and starts the new version, which ends every open stream.
+func (c *Client) ApplyUpdate(ctx context.Context) error {
+	return c.do(ctx, http.MethodPost, "/api/update", nil, nil)
 }
 
 // Settings reads the preferences.
