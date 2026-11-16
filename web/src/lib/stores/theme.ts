@@ -4,8 +4,8 @@ import { syncFavicon } from '@/lib/mark';
 /**
  * A theme is a family with a dark and a light variant. <html> carries
  * `data-sephiro-theme="<family>"` and `data-theme="dark|light"`, the contract
- * Sephiro's own presets use, so a family is pure CSS (styles/themes/ and the
- * Sephiro preset sheets). The mode picks the variant: Auto follows the OS,
+ * Sephiro's own presets use, so a family is pure CSS: one Sephiro preset sheet
+ * per family, imported in styles/sephiro.css. The mode picks the variant: Auto follows the OS,
  * Dark and Light force it. Switching mode keeps the family.
  */
 export const FAMILIES = [

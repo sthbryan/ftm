@@ -2,8 +2,8 @@
  *
  * A theme is a family with a dark and a light variant, written against the
  * Sephiro token contract: `data-sephiro-theme="<family>"` plus
- * `data-theme="dark|light"` on <html>. Sephiro's presets come from the package
- * below, ftm's own families from ./ftm.css. The app maps those `--sph-*`
+ * `data-theme="dark|light"` on <html>. Every family is a Sephiro preset, imported
+ * below. The app maps those `--sph-*`
  * tokens onto the Tailwind colour names once (themes.css), so a theme swap
  * repaints the utilities and the components together.
  *
@@ -21,7 +21,9 @@
 @import "@zovaris/sephiro/css/theme-curie.css";
 @import "@zovaris/sephiro/css/theme-fizza.css";
 @import "@zovaris/sephiro/css/theme-pulso.css";
-@import "./ftm.css";
+@import "@zovaris/sephiro/css/theme-tinta.css";
+@import "@zovaris/sephiro/css/theme-flexoki.css";
+@import "@zovaris/sephiro/css/theme-pizarra.css";
 
 @import "@zovaris/sephiro/css/spinner.css";
 @import "@zovaris/sephiro/css/button.css";

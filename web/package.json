@@ -15,7 +15,7 @@
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
     "@preact/signals": "^2.5.0",
-    "@zovaris/sephiro": "1.0.0",
+    "@zovaris/sephiro": "1.2.0",
     "clsx": "^2.1.1",
     "cuelume": "0.2.8",
     "ky": "^2.0.2",
