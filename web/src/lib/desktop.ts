@@ -72,3 +72,7 @@ export function dragRegion() {
     },
   };
 }
+
+/** The modifier for shortcuts as this OS writes it: ⌘ on Apple, Ctrl elsewhere. */
+export const shortcutModifier =
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘' : 'Ctrl';

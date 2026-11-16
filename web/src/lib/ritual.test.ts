@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { arrange, expiryLevel, foundryCheck, inviteMessage, momentOf, playersJoined } from './ritual';
+import { arrange, expiryLevel, foundryCheck, inviteMessage, momentOf, playersAt, playersJoined } from './ritual';
 import type { Tunnel } from './types';
 
 function tunnel(id: string, state: string, extra: Partial<Tunnel> = {}): Tunnel {
@@ -133,5 +133,35 @@ describe('playersJoined', () => {
     expect(playersJoined(before, { a: 2, b: 0 })).toBe(1);
     expect(playersJoined(before, { a: 0, b: 0 })).toBe(0);
     expect(playersJoined(before, { a: 1, b: 0, c: 3 })).toBe(0);
+  });
+});
+
+describe('playersAt', () => {
+  const world = (users: number, active = true) => ({ port: 30000, active, users });
+  const on = (id: string, activeSessions = 0) => ({ ...tunnel(id, 'online', { activeSessions }), port: 30000 });
+
+  it("takes Foundry's count without the GM", () => {
+    const table = on('a', 1);
+    expect(playersAt(table, [table], [world(4)])).toBe(3);
+    expect(playersAt(table, [table], [world(1)])).toBe(0);
+    expect(playersAt(table, [table], [world(0)])).toBe(0);
+  });
+
+  it('falls back to the link count without a launched world', () => {
+    const table = on('a', 2);
+    expect(playersAt(table, [table], [])).toBe(2);
+    expect(playersAt(table, [table], [world(5, false)])).toBe(2);
+  });
+
+  it('uses the link count when connections share the port', () => {
+    const a = on('a', 1);
+    const b = on('b', 2);
+    expect(playersAt(a, [a, b], [world(4)])).toBe(1);
+    expect(playersAt(b, [a, b], [world(4)])).toBe(2);
+  });
+
+  it('is zero for a connection that is not online', () => {
+    const closed = { ...tunnel('a', 'stopped'), port: 30000 };
+    expect(playersAt(closed, [closed], [world(4)])).toBe(0);
   });
 });

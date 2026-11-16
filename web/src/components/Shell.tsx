@@ -12,7 +12,7 @@ import { navigate, route } from '@/router';
 import { CommandPalette } from '@/components/CommandPalette';
 import { Mark } from '@/components/Mark';
 import { FoundryBeacon } from '@/components/FoundryBeacon';
-import { dragRegion } from '@/lib/desktop';
+import { dragRegion, shortcutModifier } from '@/lib/desktop';
 
 /**
  * One page, one header. The header stays put and only the page under it
@@ -76,7 +76,7 @@ export function Shell({ children }: { children: ComponentChildren }) {
               aria-label={t('command_palette_placeholder')}
               onClick={() => setPaletteOpen(true)}
             >
-              <Kbd keys={['⌘', 'K']} variant="ghost" />
+              <Kbd keys={[shortcutModifier, 'K']} variant="ghost" />
             </Button>
           </div>
 

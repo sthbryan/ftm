@@ -7,6 +7,7 @@ import { ArrowsClockwise, Plugs } from '@phosphor-icons/react';
 import { retryTunnels, tunnels, tunnelsError, tunnelsLoading } from '@/lib/stores/tunnels';
 import { selectIntent } from '@/lib/stores/ui';
 import { arrange } from '@/lib/ritual';
+import { playersOf } from '@/lib/stores/players';
 import { invited, selectedPreset, watchSession } from '@/lib/stores/ritual';
 import { t } from '@/lib/stores/i18n';
 import { connectionPath, navigate } from '@/router';
@@ -39,7 +40,7 @@ function selectPreset(id: string) {
  */
 export function Dashboard() {
   const list = tunnels.value;
-  const view = arrange(list, selectedPreset.value, invited.value);
+  const view = arrange(list, selectedPreset.value, invited.value, playersOf);
   const stage = view.stage;
 
   useEffect(() => watchSession(), []);

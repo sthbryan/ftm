@@ -19,10 +19,14 @@ export const EXPIRY_WARNING_MS = 10 * 60_000;
  * A connection is in the invite moment until a player joins or the GM moves on;
  * after that it lives as a strip.
  */
-export function momentOf(tunnel: Tunnel, invited: ReadonlySet<string>): Moment {
+export function momentOf(
+  tunnel: Tunnel,
+  invited: ReadonlySet<string>,
+  players: number = tunnel.activeSessions ?? 0,
+): Moment {
   if (tunnel.state === 'error' || tunnel.state === 'timeout') return 'failed';
   if (tunnel.state === 'online') {
-    return (tunnel.activeSessions ?? 0) > 0 || invited.has(tunnel.id) ? 'session' : 'invite';
+    return players > 0 || invited.has(tunnel.id) ? 'session' : 'invite';
   }
   if (tunnel.state === 'stopping') return 'session';
   if (isRunningState(tunnel.state)) return 'opening';
@@ -50,8 +54,9 @@ export function arrange(
   list: Tunnel[],
   selectedId: string | null,
   invited: ReadonlySet<string>,
+  playersOf: (tunnel: Tunnel) => number = (tunnel) => tunnel.activeSessions ?? 0,
 ): Arrangement {
-  const withMoment = list.map((tunnel) => ({ tunnel, moment: momentOf(tunnel, invited) }));
+  const withMoment = list.map((tunnel) => ({ tunnel, moment: momentOf(tunnel, invited, playersOf(tunnel)) }));
 
   let stage: Stage | null = null;
   for (const moment of STAGE_ORDER) {
@@ -127,4 +132,28 @@ export function playersJoined(
     if (previous !== undefined && count > previous) joined += count - previous;
   }
   return joined;
+}
+
+/** What Foundry says about the world on a port: whether one is launched and who is in. */
+export interface WorldCount {
+  port: number;
+  active: boolean;
+  users: number;
+}
+
+/**
+ * Players at a connection's table. Foundry's own count is the truth: it sees
+ * everyone in the world, whether they came through the link, the local
+ * network or this computer, and it includes the GM, who is left out here.
+ * ftm's proxy count (connections through the link) stands in when Foundry has
+ * no world launched, and when several running connections share the port, as
+ * Foundry's one number can't say which of them a player used.
+ */
+export function playersAt(tunnel: Tunnel, running: Tunnel[], worlds: WorldCount[]): number {
+  if (tunnel.state !== 'online') return 0;
+  const throughLink = tunnel.activeSessions ?? 0;
+  const world = worlds.find((entry) => entry.port === tunnel.port);
+  const sharing = running.filter((other) => other.state === 'online' && other.port === tunnel.port).length;
+  if (!world?.active || sharing > 1) return throughLink;
+  return Math.max(0, world.users - 1);
 }

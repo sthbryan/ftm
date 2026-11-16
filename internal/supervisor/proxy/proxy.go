@@ -42,7 +42,13 @@ func Start(targetPort int, opts Options) (*Proxy, error) {
 
 	c := newCounter(opts.Window)
 	reverse := httputil.NewSingleHostReverseProxy(target)
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.Proxy = nil
+	foundry := &upstream{port: targetPort}
+	transport.DialContext = foundry.dial
+	reverse.Transport = transport
 	reverse.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, _ error) {
+		foundry.forget()
 		w.WriteHeader(http.StatusBadGateway)
 	}
 

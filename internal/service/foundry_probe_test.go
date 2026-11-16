@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 )
 
@@ -77,5 +78,40 @@ func TestFoundryOnReadsARealFoundry14Answer(t *testing.T) {
 	want := FoundryStatus{Port: port, Active: true, Version: "14.368", World: "test", System: "dnd4e", SystemVersion: "0.9.3", Users: 1, UptimeMs: 6742}
 	if len(got) != 1 || got[0] != want {
 		t.Fatalf("FoundryOn = %+v, want %+v", got, want)
+	}
+}
+
+// A Windows port forward can hold 127.0.0.1 on Foundry's port, accept every
+// connection and never answer, while Foundry itself answers on ::1.
+func TestFoundryOnSkipsALoopbackThatNeverAnswers(t *testing.T) {
+	foundry, err := net.Listen("tcp", "[::1]:0")
+	if err != nil {
+		t.Skipf("no IPv6 loopback here: %v", err)
+	}
+	port := foundry.Addr().(*net.TCPAddr).Port
+	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"active":true,"version":"14.368","world":"test","users":2}`))
+	})}
+	go func() { _ = srv.Serve(foundry) }()
+	t.Cleanup(func() { _ = srv.Close() })
+
+	silent, err := net.Listen("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(port)))
+	if err != nil {
+		t.Skipf("can't share the port on 127.0.0.1: %v", err)
+	}
+	t.Cleanup(func() { _ = silent.Close() })
+	go func() {
+		for {
+			conn, err := silent.Accept()
+			if err != nil {
+				return
+			}
+			t.Cleanup(func() { _ = conn.Close() })
+		}
+	}()
+
+	found := (&Service{}).FoundryOn(context.Background(), []int{port})
+	if len(found) != 1 || found[0].World != "test" || found[0].Users != 2 {
+		t.Fatalf("got %+v, want the world on ::1", found)
 	}
 }

@@ -4,6 +4,7 @@ import { Crown, User } from '@phosphor-icons/react';
 import { now, useClock } from '@/lib/stores/clock';
 import { worldOn, worldTitle } from '@/lib/stores/foundry';
 import { t } from '@/lib/stores/i18n';
+import { playersOf } from '@/lib/stores/players';
 import { formatClock } from '@/lib/utils/duration';
 import type { Tunnel } from '@/lib/types';
 
@@ -21,7 +22,7 @@ const MAX_SEATS = 12;
 export function SessionTable({ tunnel }: { tunnel: Tunnel }) {
   useEffect(() => useClock(), []);
 
-  const players = tunnel.state === 'online' ? (tunnel.activeSessions ?? 0) : 0;
+  const players = playersOf(tunnel);
   const seats = Math.min(MAX_SEATS, Math.max(MIN_SEATS, players + 1));
   // When the table is full, the last seat says how many more are in.
   const overflow = players > MAX_SEATS ? players - (MAX_SEATS - 1) : 0;
