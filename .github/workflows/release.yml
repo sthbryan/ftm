@@ -154,7 +154,7 @@ jobs:
           mkdir -p internal/web/static
           cp -r web-assets/* internal/web/static/
           touch internal/web/static/.gitkeep
-          mkdir -p desktop/build/bin
+          mkdir -p cmd/ftm-desktop/build/bin
 
       - name: Build Desktop (Wails v3 / go build)
         shell: bash
@@ -162,24 +162,24 @@ jobs:
           VERSION: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          OUT=desktop/build/bin
+          OUT=cmd/ftm-desktop/build/bin
           VERSION="${VERSION#v}"
           case "${{ matrix.suffix }}" in
             linux)
               CGO_ENABLED=1 go build -tags "production,gtk3" -ldflags "-s -w" \
-                -o "$OUT/ftm-desktop-linux" ./desktop
+                -o "$OUT/ftm-desktop-linux" ./cmd/ftm-desktop
               VERSION="$VERSION" ./scripts/package-appimage.sh "$OUT/ftm-desktop-linux" "$OUT"
               ;;
             windows)
               go run github.com/tc-hib/go-winres@v0.3.3 make \
-                --in desktop/winres/winres.json --out desktop/rsrc --arch amd64 \
+                --in cmd/ftm-desktop/winres/winres.json --out cmd/ftm-desktop/rsrc --arch amd64 \
                 --product-version "$VERSION" --file-version "$VERSION"
               CGO_ENABLED=1 go build -tags production -ldflags "-H windowsgui" \
-                -o "$OUT/ftm-desktop-windows.exe" ./desktop
+                -o "$OUT/ftm-desktop-windows.exe" ./cmd/ftm-desktop
               ;;
             darwin)
               CGO_ENABLED=1 go build -tags production -ldflags "-s -w" \
-                -o "$OUT/ftm-desktop" ./desktop
+                -o "$OUT/ftm-desktop" ./cmd/ftm-desktop
               VERSION="$VERSION" ./scripts/package-macos-app.sh "$OUT/ftm-desktop" "$OUT"
               ;;
           esac
@@ -199,20 +199,20 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($pub)) { $pub = "CN=ftm-ci" }
           Write-Host "MSIX IdentityName=$id Publisher=$pub Version=$ver"
           .\scripts\package-msix.ps1 `
-            -ExePath .\desktop\build\bin\ftm-desktop-windows.exe `
+            -ExePath .\cmd\ftm-desktop\build\bin\ftm-desktop-windows.exe `
             -Version $ver `
             -IdentityName $id `
             -Publisher $pub `
-            -OutputDir .\desktop\build\msix `
+            -OutputDir .\cmd\ftm-desktop\build\msix `
             -OutputName ftm-desktop `
             -ExeName ftm-desktop.exe `
-            -IconPath .\desktop\icon.png
+            -IconPath .\cmd\ftm-desktop\icon.png
 
       - name: Upload desktop binary
         uses: actions/upload-artifact@v4
         with:
           name: ftm-desktop-${{ matrix.suffix }}
-          path: desktop/build/bin
+          path: cmd/ftm-desktop/build/bin
           retention-days: 7
 
       - name: Upload MSIX
@@ -220,7 +220,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: msix-ftm-desktop
-          path: desktop/build/msix/*.msix
+          path: cmd/ftm-desktop/build/msix/*.msix
           retention-days: 14
 
   release:

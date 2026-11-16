@@ -1,4 +1,4 @@
-"""Regenerate desktop/AppIcon.icon/Assets/d20.svg (stdout).
+"""Regenerate cmd/ftm-desktop/AppIcon.icon/Assets/d20.svg (stdout).
 
 Face-first icosahedron projection as a single-colour glyph: each visible facet
 is its own polygon inset by GAP, so facet edges are transparent gaps, and the

@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 WEB_DIR="$ROOT_DIR/web"
-DESKTOP_DIST_DIR="$ROOT_DIR/desktop/frontend/dist"
+DESKTOP_DIST_DIR="$ROOT_DIR/cmd/ftm-desktop/frontend/dist"
 STATIC_DIR="$ROOT_DIR/internal/web/static"
 
 cd "$WEB_DIR"
@@ -19,4 +19,4 @@ mkdir -p "$STATIC_DIR"
 cp -r dist/* "$STATIC_DIR/"
 touch "$STATIC_DIR/.gitkeep"
 
-echo "✅ Web assets synced to desktop/frontend/dist and internal/web/static"
+echo "✅ Web assets synced to cmd/ftm-desktop/frontend/dist and internal/web/static"

@@ -36,7 +36,7 @@ linters:
         path: internal/app/keyhandlers_mouse\.go
         text: SA1019
     paths:
-      - desktop
+      - cmd/ftm-desktop
       - third_party$
       - builtin$
       - examples$
