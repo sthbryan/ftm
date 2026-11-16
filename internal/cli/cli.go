@@ -21,7 +21,7 @@ func Init() error {
 		return nil
 	}
 
-	i18n.InitFromConfig(&cfg)
+	i18n.UseLanguage(cfg.Language)
 
 	return nil
 }

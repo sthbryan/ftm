@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sthbryan/ftm/internal/core"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 )
@@ -126,12 +125,17 @@ func LoadFromYAML(lang string, content []byte) error {
 	return nil
 }
 
-func InitFromConfig(cfg *core.Config) {
-	SetLanguageWithFallback(ResolveLanguage(cfg.Language))
+// LangAuto is the saved language that means "follow the system".
+const LangAuto = "auto"
+
+// UseLanguage switches to the saved language setting, resolving LangAuto (or
+// an empty setting) to the system language.
+func UseLanguage(configured string) {
+	SetLanguageWithFallback(ResolveLanguage(configured))
 }
 
 func ResolveLanguage(configured string) string {
-	if configured == "" || configured == core.LanguageAuto {
+	if configured == "" || configured == LangAuto {
 		return detectSystemLang()
 	}
 	return configured

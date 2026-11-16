@@ -61,7 +61,7 @@ func New() (*App, error) {
 	snapshot := st.Snapshot()
 	cfg := &snapshot
 
-	i18n.InitFromConfig(cfg)
+	i18n.UseLanguage(cfg.Language)
 
 	manager := supervisor.NewManager()
 	bus := events.New()

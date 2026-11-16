@@ -55,7 +55,7 @@ func startCore(port int) (*appCore, error) {
 	}
 
 	cfg := st.Snapshot()
-	i18n.InitFromConfig(&cfg)
+	i18n.UseLanguage(cfg.Language)
 
 	manager := supervisor.NewManager()
 	bus := events.New()

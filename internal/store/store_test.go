@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/sthbryan/ftm/internal/core"
+	"github.com/sthbryan/ftm/internal/i18n"
 )
 
 func testDirs(t *testing.T) Dirs {
@@ -331,5 +332,12 @@ func TestPeekReadsWithoutWriting(t *testing.T) {
 	}
 	if _, err := os.Stat(d.ConfigFile()); !os.IsNotExist(err) {
 		t.Error("Peek migrated the legacy config, want nothing written")
+	}
+}
+
+// i18n cannot import core, so the "auto" language it resolves is pinned here.
+func TestLanguageAutoMatchesI18n(t *testing.T) {
+	if core.LanguageAuto != i18n.LangAuto {
+		t.Fatalf("core.LanguageAuto = %q, i18n.LangAuto = %q", core.LanguageAuto, i18n.LangAuto)
 	}
 }
