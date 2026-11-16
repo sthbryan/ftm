@@ -8,10 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/sthbryan/ftm/internal/app"
 	"github.com/sthbryan/ftm/internal/cli"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/platform/instance"
+	"github.com/sthbryan/ftm/internal/ui/tui"
 	"github.com/sthbryan/ftm/internal/updater"
 	"github.com/sthbryan/ftm/internal/version"
 )
@@ -70,7 +70,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	application, err := app.New()
+	application, err := tui.New()
 	if err != nil {
 		var running *instance.RunningError
 		if errors.As(err, &running) {
@@ -148,7 +148,7 @@ func attach(info *instance.Info, openBrowser, headless bool) int {
 	fmt.Println(i18n.TF("already_running", info.URL()))
 
 	if openBrowser {
-		if err := app.OpenURL(info.URL()); err != nil {
+		if err := tui.OpenURL(info.URL()); err != nil {
 			fmt.Fprintf(os.Stderr, "Could not open the dashboard: %v\n", err)
 			return 1
 		}

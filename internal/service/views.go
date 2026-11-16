@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 )
 
 // statusReader is implemented by a supervisor that knows the live status of
 // the tunnels it runs.
 type statusReader interface {
-	GetStatus(tunnelID string) (config.TunnelStatus, bool)
+	GetStatus(tunnelID string) (core.TunnelStatus, bool)
 }
 
 // logReader is implemented by a supervisor that keeps the recent output of
@@ -21,10 +21,10 @@ type logReader interface {
 
 // TunnelView is a saved connection together with its live status.
 type TunnelView struct {
-	Tunnel config.TunnelConfig
+	Tunnel core.TunnelConfig
 	// Status is the live status. Running is false and Status is zero when the
 	// supervisor has never run the tunnel.
-	Status  config.TunnelStatus
+	Status  core.TunnelStatus
 	Running bool
 	// NeedsInstall is set for a stopped tunnel whose provider has to be
 	// downloaded before it can start.
@@ -32,12 +32,12 @@ type TunnelView struct {
 }
 
 // View merges a saved connection with what the supervisor knows about it.
-func (s *Service) View(t config.TunnelConfig) TunnelView {
+func (s *Service) View(t core.TunnelConfig) TunnelView {
 	v := TunnelView{Tunnel: t}
 	if r, ok := s.sup.(statusReader); ok {
 		v.Status, v.Running = r.GetStatus(t.ID)
 	}
-	if !v.Running || v.Status.State == config.TunnelStateStopped {
+	if !v.Running || v.Status.State == core.TunnelStateStopped {
 		needsInstall, canInstall := s.sup.CheckInstallation(t.Provider)
 		v.NeedsInstall = needsInstall && canInstall
 	}

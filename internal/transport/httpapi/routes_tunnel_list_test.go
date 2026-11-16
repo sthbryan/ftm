@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 )
 
 func TestListTunnelsReturnsAnArrayWhenThereAreNone(t *testing.T) {
-	s := newTestServer(t, nil, &config.Config{})
+	s := newTestServer(t, nil, &core.Config{})
 
 	w := call(t, s, http.MethodGet, "/api/tunnels", "")
 

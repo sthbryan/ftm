@@ -6,26 +6,26 @@ import (
 	"log"
 	"sync"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/notifications"
 	"github.com/sthbryan/ftm/internal/platform/instance"
-	"github.com/sthbryan/ftm/internal/process"
+	"github.com/sthbryan/ftm/internal/platform/notify"
 	"github.com/sthbryan/ftm/internal/service"
 	"github.com/sthbryan/ftm/internal/store"
+	"github.com/sthbryan/ftm/internal/supervisor"
 	"github.com/sthbryan/ftm/internal/transport/httpapi"
 )
 
 // core is the application core this window owns: the store, the supervisor,
 // the event bus, the service and the HTTP server every surface talks to.
 // Only cmd/* wires these together; the desktop never goes through the TUI.
-type core struct {
+type appCore struct {
 	service    *service.Service
 	bus        *events.Bus
-	manager    *process.Manager
+	manager    *supervisor.Manager
 	web        *httpapi.Server
-	expiration *notifications.ExpirationMonitor
+	expiration *notify.ExpirationMonitor
 
 	lock         *instance.Lock
 	stop         context.CancelFunc
@@ -36,7 +36,7 @@ type core struct {
 // dashboard. When another ftm process (the TUI or `ftm serve`) already owns
 // the core it returns that process as an *instance.RunningError and the
 // window attaches to it instead.
-func startCore(port int) (*core, error) {
+func startCore(port int) (*appCore, error) {
 	if err := i18n.Load(); err != nil {
 		return nil, fmt.Errorf("failed to load translations: %w", err)
 	}
@@ -57,12 +57,12 @@ func startCore(port int) (*core, error) {
 	cfg := st.Snapshot()
 	i18n.InitFromConfig(&cfg)
 
-	manager := process.NewManager()
+	manager := supervisor.NewManager()
 	bus := events.New()
 	manager.SetEvents(bus)
 
 	ctx, stop := context.WithCancel(context.Background())
-	c := &core{
+	c := &appCore{
 		service: service.New(st, manager, bus),
 		bus:     bus,
 		manager: manager,
@@ -99,12 +99,12 @@ func startCore(port int) (*core, error) {
 
 // wireNotifications sends OS notifications for tunnel changes while no
 // dashboard is connected; an open window shows its own toasts instead.
-func (c *core) wireNotifications(cfg config.Config) {
-	notifications.Init()
-	notifications.SetSoundEnabled(cfg.NotificationSound)
-	notifications.SetNotificationsEnabled(cfg.NotificationsStatus == config.NotificationGranted)
+func (c *appCore) wireNotifications(cfg core.Config) {
+	notify.Init()
+	notify.SetSoundEnabled(cfg.NotificationSound)
+	notify.SetNotificationsEnabled(cfg.NotificationsStatus == core.NotificationGranted)
 
-	c.expiration = notifications.NewExpirationMonitor(notifications.ExpirationConfig{
+	c.expiration = notify.NewExpirationMonitor(notify.ExpirationConfig{
 		Thresholds:                cfg.ExpirationThresholds,
 		ProviderExpirationMinutes: cfg.ProviderExpirationMinutes,
 	}, func(name string, mins int) {
@@ -112,36 +112,36 @@ func (c *core) wireNotifications(cfg config.Config) {
 			return
 		}
 		if mins == 0 {
-			notifications.NotifyTunnelExpired(name)
+			notify.NotifyTunnelExpired(name)
 		} else {
-			notifications.NotifyTunnelExpiring(name, mins)
+			notify.NotifyTunnelExpiring(name, mins)
 		}
 	})
 
-	c.manager.SetNotificationHandler(func(status config.TunnelStatus) {
+	c.manager.SetNotificationHandler(func(status core.TunnelStatus) {
 		if !c.nativeNotifications() {
 			return
 		}
 		switch status.State {
-		case config.TunnelStateOnline:
-			notifications.NotifyTunnelOnline(status.Name, status.PublicURL)
-		case config.TunnelStateError:
-			notifications.NotifyTunnelError(status.Name, status.ErrorMessage)
-		case config.TunnelStateTimeout:
-			notifications.NotifyTunnelTimeout(status.Name)
-		case config.TunnelStateStopping:
-			notifications.NotifyTunnelStopped(status.Name)
+		case core.TunnelStateOnline:
+			notify.NotifyTunnelOnline(status.Name, status.PublicURL)
+		case core.TunnelStateError:
+			notify.NotifyTunnelError(status.Name, status.ErrorMessage)
+		case core.TunnelStateTimeout:
+			notify.NotifyTunnelTimeout(status.Name)
+		case core.TunnelStateStopping:
+			notify.NotifyTunnelStopped(status.Name)
 		}
 	})
 
-	c.manager.SetVisitorHandler(func(status config.TunnelStatus) {
+	c.manager.SetVisitorHandler(func(status core.TunnelStatus) {
 		if c.web != nil {
 			c.web.BroadcastNewVisitor(status)
 		}
 		if !c.nativeNotifications() {
 			return
 		}
-		notifications.NotifyNewVisitor(status.Name, status.Visitors)
+		notify.NotifyNewVisitor(status.Name, status.Visitors)
 	})
 
 	c.manager.SetExpirationCallbacks(
@@ -150,13 +150,13 @@ func (c *core) wireNotifications(cfg config.Config) {
 	)
 }
 
-func (c *core) nativeNotifications() bool {
+func (c *appCore) nativeNotifications() bool {
 	return c.web == nil || c.web.ClientCount() == 0
 }
 
-func (c *core) url() string { return c.web.URL() }
+func (c *appCore) url() string { return c.web.URL() }
 
-func (c *core) shutdown() {
+func (c *appCore) shutdown() {
 	c.shutdownOnce.Do(func() {
 		c.service.StopAll()
 		if c.web != nil {

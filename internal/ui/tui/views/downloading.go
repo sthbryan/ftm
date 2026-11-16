@@ -1,0 +1,83 @@
+package views
+
+import (
+	"fmt"
+	"strings"
+
+	"charm.land/lipgloss/v2"
+	"github.com/sthbryan/ftm/internal/i18n"
+	"github.com/sthbryan/ftm/internal/ui/tui/ui"
+)
+
+type DownloadingView struct {
+	Width   int
+	Percent float64
+	Name    string
+	Current int64
+	Total   int64
+}
+
+func NewDownloadingView() *DownloadingView {
+	return &DownloadingView{}
+}
+
+func (d *DownloadingView) Render(progressBarView string) string {
+	var b strings.Builder
+
+	gold := ui.ThemeDefault.Gold
+	text := ui.ThemeDefault.Text
+	textDim := ui.ThemeDefault.TextDim
+
+	header := lipgloss.NewStyle().
+		Foreground(gold).
+		Bold(true).
+		Render(i18n.T("installing"))
+
+	b.WriteString(header)
+	b.WriteString("\n\n")
+
+	name := d.Name
+	if name == "" {
+		name = "binary"
+	}
+
+	var step string
+	switch {
+	case d.Percent < 90:
+		step = i18n.TF("downloading", name)
+	case d.Percent < 100:
+		step = i18n.TF("installing", name)
+	default:
+		step = i18n.T("complete")
+	}
+
+	stepStyle := lipgloss.NewStyle().Foreground(text)
+	b.WriteString(stepStyle.Render(step))
+	b.WriteString("\n\n")
+
+	barWidth := ui.Clamp(d.Width-10, 1)
+	padding := ui.Clamp((d.Width-barWidth)/2, 0)
+
+	progressContainer := lipgloss.NewStyle().
+		Width(barWidth).
+		Render("[" + progressBarView + "]")
+
+	b.WriteString(ui.Repeat(" ", padding))
+	b.WriteString(progressContainer)
+	b.WriteString("\n")
+
+	if d.Total > 0 && d.Percent < 50 {
+		sizeStyle := lipgloss.NewStyle().Foreground(textDim)
+		b.WriteString(sizeStyle.Render(fmt.Sprintf("%.1f MB / %.1f MB",
+			float64(d.Current)/(1024*1024),
+			float64(d.Total)/(1024*1024))))
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
+	b.WriteString(lipgloss.NewStyle().
+		Foreground(textDim).
+		Render(i18n.T("esc_cancel")))
+
+	return b.String()
+}

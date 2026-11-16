@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/notifications"
+	"github.com/sthbryan/ftm/internal/platform/notify"
 	"github.com/sthbryan/ftm/internal/store"
 	"github.com/sthbryan/ftm/internal/updater"
 	"github.com/sthbryan/ftm/internal/version"
@@ -31,11 +31,11 @@ var (
 
 // Supervisor is what the service needs from the process manager.
 type Supervisor interface {
-	Start(config.TunnelConfig) error
+	Start(core.TunnelConfig) error
 	Stop(tunnelID string) error
 	StopAll()
-	CheckInstallation(config.Provider) (needsInstall, autoInstall bool)
-	InstallProvider(config.Provider) error
+	CheckInstallation(core.Provider) (needsInstall, autoInstall bool)
+	InstallProvider(core.Provider) error
 }
 
 // statsRunner is implemented by a supervisor that can publish visitor stats.
@@ -56,7 +56,7 @@ type Service struct {
 	bus   events.Publisher
 
 	installMu sync.Mutex
-	installs  map[config.Provider]*install
+	installs  map[core.Provider]*install
 
 	updateMu    sync.RWMutex
 	updateInfo  *updater.Info
@@ -64,7 +64,7 @@ type Service struct {
 	applyUpdate func(*updater.Info) error
 
 	providerMu sync.Mutex
-	announced  map[config.Provider]string
+	announced  map[core.Provider]string
 
 	runMu  sync.Mutex
 	runCtx context.Context
@@ -74,7 +74,7 @@ type Service struct {
 
 	// applySettings pushes saved preferences into the packages that keep
 	// their own copy (language, notifications). Swapped out in tests.
-	applySettings func(config.Config)
+	applySettings func(core.Config)
 }
 
 // New wires a service. bus may be nil, in which case nothing is published.
@@ -83,8 +83,8 @@ func New(st *store.Store, sup Supervisor, bus events.Publisher) *Service {
 		store:     st,
 		sup:       sup,
 		bus:       bus,
-		installs:  make(map[config.Provider]*install),
-		announced: make(map[config.Provider]string),
+		installs:  make(map[core.Provider]*install),
+		announced: make(map[core.Provider]string),
 		restart:   make(chan struct{}),
 		checkUpdate: func() (*updater.Info, error) {
 			return updater.New(updateRepo).Check(version.Version)
@@ -148,42 +148,42 @@ func (s *Service) Run(ctx context.Context) {
 }
 
 // Config returns a copy of the current config.
-func (s *Service) Config() config.Config { return s.store.Snapshot() }
+func (s *Service) Config() core.Config { return s.store.Snapshot() }
 
 // Dirs returns the app directories.
 func (s *Service) Dirs() store.Dirs { return s.store.Dirs() }
 
 // Tunnels returns the saved connections.
-func (s *Service) Tunnels() []config.TunnelConfig { return s.store.Tunnels() }
+func (s *Service) Tunnels() []core.TunnelConfig { return s.store.Tunnels() }
 
 // Tunnel returns the saved connection with id.
-func (s *Service) Tunnel(id string) (config.TunnelConfig, bool) { return s.store.Tunnel(id) }
+func (s *Service) Tunnel(id string) (core.TunnelConfig, bool) { return s.store.Tunnel(id) }
 
 // TunnelInput is a new connection.
 type TunnelInput struct {
 	Name      string
-	Provider  config.Provider
+	Provider  core.Provider
 	LocalPort int
 }
 
 // TunnelPatch changes the fields that are set.
 type TunnelPatch struct {
 	Name      *string
-	Provider  *config.Provider
+	Provider  *core.Provider
 	LocalPort *int
 }
 
 func validPort(p int) bool { return p >= 1 && p <= 65535 }
 
 // CreateTunnel saves a new connection and publishes events.TunnelSaved.
-func (s *Service) CreateTunnel(in TunnelInput) (config.TunnelConfig, error) {
+func (s *Service) CreateTunnel(in TunnelInput) (core.TunnelConfig, error) {
 	if in.Name == "" || in.Provider == "" || !validPort(in.LocalPort) {
-		return config.TunnelConfig{}, ErrInvalidTunnel
+		return core.TunnelConfig{}, ErrInvalidTunnel
 	}
 
-	var tunnel config.TunnelConfig
-	err := s.store.Update(func(c *config.Config) error {
-		tunnel = config.TunnelConfig{
+	var tunnel core.TunnelConfig
+	err := s.store.Update(func(c *core.Config) error {
+		tunnel = core.TunnelConfig{
 			ID:        c.NewTunnelID(in.Name),
 			Name:      in.Name,
 			Provider:  in.Provider,
@@ -193,7 +193,7 @@ func (s *Service) CreateTunnel(in TunnelInput) (config.TunnelConfig, error) {
 		return nil
 	})
 	if err != nil {
-		return config.TunnelConfig{}, err
+		return core.TunnelConfig{}, err
 	}
 
 	s.publish(events.TunnelSaved{Tunnel: tunnel, Created: true})
@@ -202,15 +202,15 @@ func (s *Service) CreateTunnel(in TunnelInput) (config.TunnelConfig, error) {
 
 // UpdateTunnel edits a saved connection and publishes events.TunnelSaved.
 // A running tunnel keeps its old settings until it is restarted.
-func (s *Service) UpdateTunnel(id string, patch TunnelPatch) (config.TunnelConfig, error) {
+func (s *Service) UpdateTunnel(id string, patch TunnelPatch) (core.TunnelConfig, error) {
 	if patch.Name != nil && *patch.Name == "" ||
 		patch.Provider != nil && *patch.Provider == "" ||
 		patch.LocalPort != nil && !validPort(*patch.LocalPort) {
-		return config.TunnelConfig{}, ErrInvalidTunnel
+		return core.TunnelConfig{}, ErrInvalidTunnel
 	}
 
-	var tunnel config.TunnelConfig
-	err := s.store.Update(func(c *config.Config) error {
+	var tunnel core.TunnelConfig
+	err := s.store.Update(func(c *core.Config) error {
 		t := c.GetTunnel(id)
 		if t == nil {
 			return ErrTunnelNotFound
@@ -228,7 +228,7 @@ func (s *Service) UpdateTunnel(id string, patch TunnelPatch) (config.TunnelConfi
 		return nil
 	})
 	if err != nil {
-		return config.TunnelConfig{}, err
+		return core.TunnelConfig{}, err
 	}
 
 	s.publish(events.TunnelSaved{Tunnel: tunnel})
@@ -241,7 +241,7 @@ func (s *Service) DeleteTunnel(id string) error {
 	// Deleting a tunnel that is not running is the common case.
 	_ = s.sup.Stop(id)
 
-	if err := s.store.Update(func(c *config.Config) error {
+	if err := s.store.Update(func(c *core.Config) error {
 		c.RemoveTunnel(id)
 		return nil
 	}); err != nil {
@@ -261,7 +261,7 @@ func (s *Service) ClearTunnels() (int, error) {
 	}
 
 	var deleted int
-	if err := s.store.Update(func(c *config.Config) error {
+	if err := s.store.Update(func(c *core.Config) error {
 		deleted = c.ClearTunnels()
 		return nil
 	}); err != nil {
@@ -286,7 +286,7 @@ func (s *Service) StartTunnel(id string) (installing bool, err error) {
 
 	if needsInstall, canInstall := s.sup.CheckInstallation(tunnel.Provider); needsInstall && canInstall {
 		status := tunnel.Status()
-		status.State = config.TunnelStateInstall
+		status.State = core.TunnelStateInstall
 		s.publish(events.TunnelStatus{Status: status})
 
 		go s.installThenStart(tunnel)
@@ -304,7 +304,7 @@ type install struct {
 
 // ensureInstalled downloads a provider once, however many tunnels ask for it
 // at the same time.
-func (s *Service) ensureInstalled(provider config.Provider) error {
+func (s *Service) ensureInstalled(provider core.Provider) error {
 	s.installMu.Lock()
 	job, running := s.installs[provider]
 	if !running {
@@ -328,7 +328,7 @@ func (s *Service) ensureInstalled(provider config.Provider) error {
 	return job.err
 }
 
-func (s *Service) installThenStart(tunnel config.TunnelConfig) {
+func (s *Service) installThenStart(tunnel core.TunnelConfig) {
 	if err := s.ensureInstalled(tunnel.Provider); err != nil {
 		s.publishFailure(tunnel, i18n.TF("error_install_failed", err.Error()))
 		return
@@ -344,9 +344,9 @@ func (s *Service) installThenStart(tunnel config.TunnelConfig) {
 	}
 }
 
-func (s *Service) publishFailure(tunnel config.TunnelConfig, message string) {
+func (s *Service) publishFailure(tunnel core.TunnelConfig, message string) {
 	status := tunnel.Status()
-	status.State = config.TunnelStateError
+	status.State = core.TunnelStateError
 	status.ErrorMessage = message
 	s.publish(events.TunnelStatus{Status: status})
 }
@@ -370,8 +370,8 @@ type SettingsPatch struct {
 
 // UpdateSettings saves preferences, applies them and publishes
 // events.SettingsChanged.
-func (s *Service) UpdateSettings(patch SettingsPatch) (config.Config, error) {
-	err := s.store.Update(func(c *config.Config) error {
+func (s *Service) UpdateSettings(patch SettingsPatch) (core.Config, error) {
+	err := s.store.Update(func(c *core.Config) error {
 		if patch.NotificationsStatus != nil {
 			c.NotificationsStatus = *patch.NotificationsStatus
 		}
@@ -395,10 +395,10 @@ func (s *Service) UpdateSettings(patch SettingsPatch) (config.Config, error) {
 	return cfg, nil
 }
 
-func applySettings(cfg config.Config) {
+func applySettings(cfg core.Config) {
 	i18n.ChangeLanguage(i18n.ResolveLanguage(cfg.Language))
-	notifications.SetNotificationsEnabled(cfg.NotificationsStatus == config.NotificationGranted)
-	notifications.SetSoundEnabled(cfg.NotificationSound)
+	notify.SetNotificationsEnabled(cfg.NotificationsStatus == core.NotificationGranted)
+	notify.SetSoundEnabled(cfg.NotificationSound)
 }
 
 // SetWebPort makes the web server prefer port the next time it starts.
@@ -406,7 +406,7 @@ func (s *Service) SetWebPort(port int) error {
 	if port != 0 && !validPort(port) {
 		return fmt.Errorf("invalid web port %d", port)
 	}
-	return s.store.Update(func(c *config.Config) error {
+	return s.store.Update(func(c *core.Config) error {
 		c.WebPort = port
 		return nil
 	})

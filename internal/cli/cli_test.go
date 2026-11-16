@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/sthbryan/ftm/internal/config"
 	"github.com/sthbryan/ftm/internal/i18n"
+	"github.com/sthbryan/ftm/internal/store/dirs"
 )
 
 func isolateHome(t *testing.T) string {
@@ -24,7 +24,7 @@ func isolateHome(t *testing.T) string {
 func writeConfig(t *testing.T, home, body string) {
 	t.Helper()
 
-	dir := filepath.Join(home, ".config", config.AppName)
+	dir := filepath.Join(home, ".config", dirs.AppName)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatal(err)
 	}

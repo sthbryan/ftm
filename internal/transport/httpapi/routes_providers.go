@@ -7,7 +7,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/i18n"
 	"github.com/sthbryan/ftm/internal/service"
 )
@@ -52,7 +52,7 @@ func (s *Server) registerProviders(api huma.API) {
 		Summary:     "List the tunnel providers",
 		Tags:        []string{tagProviders},
 	}, func(ctx context.Context, _ *struct{}) (*providerListOutput, error) {
-		all := config.AllProviders()
+		all := core.AllProviders()
 		out := &providerListOutput{Body: make([]ProviderInfo, 0, len(all))}
 		for _, p := range all {
 			out.Body = append(out.Body, ProviderInfo{ID: string(p), Name: i18n.ProviderText(string(p))})
@@ -91,7 +91,7 @@ func (s *Server) registerProviders(api huma.API) {
 		Tags:          []string{tagProviders},
 		DefaultStatus: http.StatusAccepted,
 	}, func(ctx context.Context, in *providerUpdateInput) (*providerUpdateOutput, error) {
-		err := s.svc.UpdateProvider(ctx, config.Provider(in.ID))
+		err := s.svc.UpdateProvider(ctx, core.Provider(in.ID))
 		switch {
 		case errors.Is(err, service.ErrUnknownProvider):
 			return nil, apiError(http.StatusNotFound, "unknown_provider", "unknown provider")

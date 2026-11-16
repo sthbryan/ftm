@@ -33,7 +33,7 @@ linters:
       # handler is being rewritten against the newer API in the TUI pass.
       - linters:
           - staticcheck
-        path: internal/app/keyhandlers_mouse\.go
+        path: internal/ui/tui/keyhandlers_mouse\.go
         text: SA1019
     paths:
       - cmd/ftm-desktop

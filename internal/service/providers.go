@@ -6,10 +6,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
-	"github.com/sthbryan/ftm/internal/process"
-	"github.com/sthbryan/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/provider"
+	"github.com/sthbryan/ftm/internal/supervisor"
 )
 
 // ProviderBinary describes the installed binary of one provider.
@@ -17,34 +17,34 @@ type ProviderBinary = events.ProviderBinary
 
 // Binary sources, as ProviderBinary.Source reports them.
 const (
-	SourceBundled = string(process.SourceBundled)
-	SourcePath    = string(process.SourcePath)
-	SourceSystem  = string(process.SourceSystem)
-	SourceNone    = string(process.SourceNone)
+	SourceBundled = string(supervisor.SourceBundled)
+	SourcePath    = string(supervisor.SourcePath)
+	SourceSystem  = string(supervisor.SourceSystem)
+	SourceNone    = string(supervisor.SourceNone)
 )
 
 var (
 	// ErrUnknownProvider is returned for a provider id ftm does not know.
-	ErrUnknownProvider = process.ErrUnknownProvider
+	ErrUnknownProvider = supervisor.ErrUnknownProvider
 	// ErrNotUpdatable is returned for a provider that runs on a system tool.
-	ErrNotUpdatable = process.ErrNotUpdatable
+	ErrNotUpdatable = supervisor.ErrNotUpdatable
 	// ErrExternalBinary is returned for a binary installed outside ftm.
-	ErrExternalBinary = process.ErrExternalBinary
+	ErrExternalBinary = supervisor.ErrExternalBinary
 	// ErrUpdateInProgress is returned while the same provider is updating.
-	ErrUpdateInProgress = process.ErrUpdateInProgress
+	ErrUpdateInProgress = supervisor.ErrUpdateInProgress
 )
 
 // binaryManager is implemented by a supervisor that can report and replace
 // provider binaries.
 type binaryManager interface {
 	CheckLatest(ctx context.Context, force bool)
-	ProviderBinaries(ctx context.Context) []process.ProviderBinary
-	ProviderBinary(ctx context.Context, id config.Provider) process.ProviderBinary
-	UpdateProvider(ctx context.Context, id config.Provider, progress chan<- providers.DownloadProgress) (*process.UpdateResult, error)
-	IsUpdating(id config.Provider) bool
+	ProviderBinaries(ctx context.Context) []supervisor.ProviderBinary
+	ProviderBinary(ctx context.Context, id core.Provider) supervisor.ProviderBinary
+	UpdateProvider(ctx context.Context, id core.Provider, progress chan<- provider.DownloadProgress) (*supervisor.UpdateResult, error)
+	IsUpdating(id core.Provider) bool
 }
 
-func providerBinaryFrom(b process.ProviderBinary) ProviderBinary {
+func providerBinaryFrom(b supervisor.ProviderBinary) ProviderBinary {
 	return ProviderBinary{
 		ID:         string(b.ID),
 		Name:       b.Name,
@@ -82,7 +82,7 @@ func (s *Service) ProviderBinaries(ctx context.Context, refresh bool) []Provider
 }
 
 // ProviderBinary reports one provider binary.
-func (s *Service) ProviderBinary(ctx context.Context, id config.Provider) (ProviderBinary, error) {
+func (s *Service) ProviderBinary(ctx context.Context, id core.Provider) (ProviderBinary, error) {
 	bm, ok := s.sup.(binaryManager)
 	if !ok || !knownProvider(id) {
 		return ProviderBinary{}, ErrUnknownProvider
@@ -94,7 +94,7 @@ func (s *Service) ProviderBinary(ctx context.Context, id config.Provider) (Provi
 // latest release, or installs it when it is missing. It returns at once:
 // progress is published as events.InstallProgress and the outcome once as
 // events.ProviderUpdated.
-func (s *Service) UpdateProvider(ctx context.Context, id config.Provider) error {
+func (s *Service) UpdateProvider(ctx context.Context, id core.Provider) error {
 	bm, ok := s.sup.(binaryManager)
 	if !ok || !knownProvider(id) {
 		return ErrUnknownProvider
@@ -102,9 +102,9 @@ func (s *Service) UpdateProvider(ctx context.Context, id config.Provider) error 
 
 	info := bm.ProviderBinary(ctx, id)
 	switch {
-	case info.Source == process.SourceSystem:
+	case info.Source == supervisor.SourceSystem:
 		return ErrNotUpdatable
-	case info.Source == process.SourcePath:
+	case info.Source == supervisor.SourcePath:
 		return ErrExternalBinary
 	case info.Updating || bm.IsUpdating(id):
 		return ErrUpdateInProgress
@@ -114,7 +114,7 @@ func (s *Service) UpdateProvider(ctx context.Context, id config.Provider) error 
 	return nil
 }
 
-func (s *Service) runProviderUpdate(bm binaryManager, id config.Provider) {
+func (s *Service) runProviderUpdate(bm binaryManager, id core.Provider) {
 	ctx := s.background()
 
 	result, err := bm.UpdateProvider(ctx, id, nil)
@@ -148,7 +148,7 @@ func (s *Service) announceProviderUpdates(report []ProviderBinary) {
 
 	s.providerMu.Lock()
 	for _, b := range report {
-		id := config.Provider(b.ID)
+		id := core.Provider(b.ID)
 		if !b.HasUpdate {
 			delete(s.announced, id)
 			continue
@@ -169,7 +169,7 @@ func (s *Service) announceProviderUpdates(report []ProviderBinary) {
 
 // forgetProviderUpdate clears the announcement for a provider after it was
 // updated, so a later release is announced again.
-func (s *Service) forgetProviderUpdate(id config.Provider) {
+func (s *Service) forgetProviderUpdate(id core.Provider) {
 	s.providerMu.Lock()
 	delete(s.announced, id)
 	s.providerMu.Unlock()
@@ -184,7 +184,7 @@ func (s *Service) runProviderChecks(ctx context.Context) {
 
 	s.ProviderBinaries(ctx, false)
 
-	t := time.NewTicker(process.LatestCheckInterval)
+	t := time.NewTicker(supervisor.LatestCheckInterval)
 	defer t.Stop()
 	for {
 		select {
@@ -196,8 +196,8 @@ func (s *Service) runProviderChecks(ctx context.Context) {
 	}
 }
 
-func knownProvider(p config.Provider) bool {
-	for _, known := range config.AllProviders() {
+func knownProvider(p core.Provider) bool {
+	for _, known := range core.AllProviders() {
 		if known == p {
 			return true
 		}

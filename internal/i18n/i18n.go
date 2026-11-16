@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 )
@@ -126,12 +126,12 @@ func LoadFromYAML(lang string, content []byte) error {
 	return nil
 }
 
-func InitFromConfig(cfg *config.Config) {
+func InitFromConfig(cfg *core.Config) {
 	SetLanguageWithFallback(ResolveLanguage(cfg.Language))
 }
 
 func ResolveLanguage(configured string) string {
-	if configured == "" || configured == config.LanguageAuto {
+	if configured == "" || configured == core.LanguageAuto {
 		return detectSystemLang()
 	}
 	return configured

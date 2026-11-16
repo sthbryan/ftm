@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/store"
 	"github.com/sthbryan/ftm/internal/updater"
@@ -15,21 +15,21 @@ import (
 
 type fakeSupervisor struct {
 	mu         sync.Mutex
-	installed  map[config.Provider]bool
+	installed  map[core.Provider]bool
 	installErr error
 	installs   int
 	release    chan struct{} // when set, InstallProvider waits on it
-	started    []config.TunnelConfig
+	started    []core.TunnelConfig
 	stopped    []string
 	stopAll    int
 	startErr   error
 }
 
 func newFake() *fakeSupervisor {
-	return &fakeSupervisor{installed: map[config.Provider]bool{}}
+	return &fakeSupervisor{installed: map[core.Provider]bool{}}
 }
 
-func (f *fakeSupervisor) Start(t config.TunnelConfig) error {
+func (f *fakeSupervisor) Start(t core.TunnelConfig) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.startErr != nil {
@@ -52,13 +52,13 @@ func (f *fakeSupervisor) StopAll() {
 	f.mu.Unlock()
 }
 
-func (f *fakeSupervisor) CheckInstallation(p config.Provider) (bool, bool) {
+func (f *fakeSupervisor) CheckInstallation(p core.Provider) (bool, bool) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return !f.installed[p], true
 }
 
-func (f *fakeSupervisor) InstallProvider(p config.Provider) error {
+func (f *fakeSupervisor) InstallProvider(p core.Provider) error {
 	f.mu.Lock()
 	f.installs++
 	release := f.release
@@ -94,10 +94,10 @@ type fixture struct {
 	ch  <-chan events.Event
 }
 
-func newFixture(t *testing.T, cfg *config.Config) fixture {
+func newFixture(t *testing.T, cfg *core.Config) fixture {
 	t.Helper()
 	if cfg == nil {
-		cfg = config.DefaultConfig()
+		cfg = core.DefaultConfig()
 	}
 
 	root := t.TempDir()
@@ -148,8 +148,8 @@ func waitFor(t *testing.T, ch <-chan events.Event, match func(events.Event) bool
 	}
 }
 
-func cfgWith(tunnels ...config.TunnelConfig) *config.Config {
-	cfg := config.DefaultConfig()
+func cfgWith(tunnels ...core.TunnelConfig) *core.Config {
+	cfg := core.DefaultConfig()
 	for _, t := range tunnels {
 		cfg.AddTunnel(t)
 	}
@@ -159,7 +159,7 @@ func cfgWith(tunnels ...config.TunnelConfig) *config.Config {
 func TestCreateTunnelSavesAndPublishes(t *testing.T) {
 	f := newFixture(t, nil)
 
-	tunnel, err := f.svc.CreateTunnel(TunnelInput{Name: "My World", Provider: config.ProviderCloudflared, LocalPort: 30000})
+	tunnel, err := f.svc.CreateTunnel(TunnelInput{Name: "My World", Provider: core.ProviderCloudflared, LocalPort: 30000})
 	if err != nil {
 		t.Fatalf("CreateTunnel: %v", err)
 	}
@@ -185,10 +185,10 @@ func TestCreateTunnelRejectsInvalidInput(t *testing.T) {
 	f := newFixture(t, nil)
 
 	for _, in := range []TunnelInput{
-		{Provider: config.ProviderBore, LocalPort: 30000},
+		{Provider: core.ProviderBore, LocalPort: 30000},
 		{Name: "x", LocalPort: 30000},
-		{Name: "x", Provider: config.ProviderBore, LocalPort: 0},
-		{Name: "x", Provider: config.ProviderBore, LocalPort: 70000},
+		{Name: "x", Provider: core.ProviderBore, LocalPort: 0},
+		{Name: "x", Provider: core.ProviderBore, LocalPort: 70000},
 	} {
 		if _, err := f.svc.CreateTunnel(in); !errors.Is(err, ErrInvalidTunnel) {
 			t.Errorf("CreateTunnel(%+v) err = %v, want ErrInvalidTunnel", in, err)
@@ -200,14 +200,14 @@ func TestCreateTunnelRejectsInvalidInput(t *testing.T) {
 }
 
 func TestUpdateTunnelChangesOnlyPatchedFields(t *testing.T) {
-	f := newFixture(t, cfgWith(config.TunnelConfig{ID: "a", Name: "Old", Provider: config.ProviderBore, LocalPort: 30000}))
+	f := newFixture(t, cfgWith(core.TunnelConfig{ID: "a", Name: "Old", Provider: core.ProviderBore, LocalPort: 30000}))
 
 	name := "New"
 	got, err := f.svc.UpdateTunnel("a", TunnelPatch{Name: &name})
 	if err != nil {
 		t.Fatalf("UpdateTunnel: %v", err)
 	}
-	if got.Name != "New" || got.Provider != config.ProviderBore || got.LocalPort != 30000 {
+	if got.Name != "New" || got.Provider != core.ProviderBore || got.LocalPort != 30000 {
 		t.Fatalf("got %+v", got)
 	}
 
@@ -218,7 +218,7 @@ func TestUpdateTunnelChangesOnlyPatchedFields(t *testing.T) {
 }
 
 func TestUpdateTunnelErrors(t *testing.T) {
-	f := newFixture(t, cfgWith(config.TunnelConfig{ID: "a", Name: "A", Provider: config.ProviderBore, LocalPort: 30000}))
+	f := newFixture(t, cfgWith(core.TunnelConfig{ID: "a", Name: "A", Provider: core.ProviderBore, LocalPort: 30000}))
 
 	name := "x"
 	if _, err := f.svc.UpdateTunnel("missing", TunnelPatch{Name: &name}); !errors.Is(err, ErrTunnelNotFound) {
@@ -231,7 +231,7 @@ func TestUpdateTunnelErrors(t *testing.T) {
 }
 
 func TestDeleteTunnelStopsRemovesAndPublishes(t *testing.T) {
-	f := newFixture(t, cfgWith(config.TunnelConfig{ID: "a", Name: "A", Provider: config.ProviderBore, LocalPort: 30000}))
+	f := newFixture(t, cfgWith(core.TunnelConfig{ID: "a", Name: "A", Provider: core.ProviderBore, LocalPort: 30000}))
 
 	if err := f.svc.DeleteTunnel("a"); err != nil {
 		t.Fatalf("DeleteTunnel: %v", err)
@@ -249,8 +249,8 @@ func TestDeleteTunnelStopsRemovesAndPublishes(t *testing.T) {
 
 func TestClearTunnelsPublishesEachDeletion(t *testing.T) {
 	f := newFixture(t, cfgWith(
-		config.TunnelConfig{ID: "a", Name: "A", Provider: config.ProviderBore, LocalPort: 30000},
-		config.TunnelConfig{ID: "b", Name: "B", Provider: config.ProviderBore, LocalPort: 30001},
+		core.TunnelConfig{ID: "a", Name: "A", Provider: core.ProviderBore, LocalPort: 30000},
+		core.TunnelConfig{ID: "b", Name: "B", Provider: core.ProviderBore, LocalPort: 30001},
 	))
 
 	n, err := f.svc.ClearTunnels()
@@ -267,8 +267,8 @@ func TestClearTunnelsPublishesEachDeletion(t *testing.T) {
 }
 
 func TestStartTunnelWhenInstalledStartsAtOnce(t *testing.T) {
-	f := newFixture(t, cfgWith(config.TunnelConfig{ID: "a", Name: "A", Provider: config.ProviderBore, LocalPort: 30000}))
-	f.sup.installed[config.ProviderBore] = true
+	f := newFixture(t, cfgWith(core.TunnelConfig{ID: "a", Name: "A", Provider: core.ProviderBore, LocalPort: 30000}))
+	f.sup.installed[core.ProviderBore] = true
 
 	installing, err := f.svc.StartTunnel("a")
 	if err != nil || installing {
@@ -287,7 +287,7 @@ func TestStartTunnelUnknownID(t *testing.T) {
 }
 
 func TestStartTunnelInstallsThenStarts(t *testing.T) {
-	f := newFixture(t, cfgWith(config.TunnelConfig{ID: "a", Name: "A", Provider: config.ProviderCloudflared, LocalPort: 30000}))
+	f := newFixture(t, cfgWith(core.TunnelConfig{ID: "a", Name: "A", Provider: core.ProviderCloudflared, LocalPort: 30000}))
 
 	installing, err := f.svc.StartTunnel("a")
 	if err != nil || !installing {
@@ -295,7 +295,7 @@ func TestStartTunnelInstallsThenStarts(t *testing.T) {
 	}
 
 	e := next(t, f.ch).(events.TunnelStatus)
-	if e.Status.ID != "a" || e.Status.State != config.TunnelStateInstall {
+	if e.Status.ID != "a" || e.Status.State != core.TunnelStateInstall {
 		t.Fatalf("first event = %+v, want the installing state", e.Status)
 	}
 
@@ -310,8 +310,8 @@ func TestStartTunnelInstallsThenStarts(t *testing.T) {
 
 func TestConcurrentStartsShareOneInstall(t *testing.T) {
 	f := newFixture(t, cfgWith(
-		config.TunnelConfig{ID: "a", Name: "A", Provider: config.ProviderCloudflared, LocalPort: 30000},
-		config.TunnelConfig{ID: "b", Name: "B", Provider: config.ProviderCloudflared, LocalPort: 30001},
+		core.TunnelConfig{ID: "a", Name: "A", Provider: core.ProviderCloudflared, LocalPort: 30000},
+		core.TunnelConfig{ID: "b", Name: "B", Provider: core.ProviderCloudflared, LocalPort: 30001},
 	))
 	f.sup.release = make(chan struct{})
 
@@ -336,7 +336,7 @@ func TestConcurrentStartsShareOneInstall(t *testing.T) {
 }
 
 func TestStartTunnelPublishesInstallFailure(t *testing.T) {
-	f := newFixture(t, cfgWith(config.TunnelConfig{ID: "a", Name: "A", Provider: config.ProviderCloudflared, LocalPort: 30000}))
+	f := newFixture(t, cfgWith(core.TunnelConfig{ID: "a", Name: "A", Provider: core.ProviderCloudflared, LocalPort: 30000}))
 	f.sup.installErr = errors.New("network down")
 
 	if _, err := f.svc.StartTunnel("a"); err != nil {
@@ -345,7 +345,7 @@ func TestStartTunnelPublishesInstallFailure(t *testing.T) {
 
 	e := waitFor(t, f.ch, func(e events.Event) bool {
 		s, ok := e.(events.TunnelStatus)
-		return ok && s.Status.State == config.TunnelStateError
+		return ok && s.Status.State == core.TunnelStateError
 	}).(events.TunnelStatus)
 	if e.Status.ID != "a" || e.Status.ErrorMessage == "" {
 		t.Fatalf("failure = %+v", e.Status)
@@ -356,7 +356,7 @@ func TestStartTunnelPublishesInstallFailure(t *testing.T) {
 }
 
 func TestStartTunnelPublishesStartFailureAfterInstall(t *testing.T) {
-	f := newFixture(t, cfgWith(config.TunnelConfig{ID: "a", Name: "A", Provider: config.ProviderCloudflared, LocalPort: 30000}))
+	f := newFixture(t, cfgWith(core.TunnelConfig{ID: "a", Name: "A", Provider: core.ProviderCloudflared, LocalPort: 30000}))
 	f.sup.startErr = errors.New("port in use")
 
 	if _, err := f.svc.StartTunnel("a"); err != nil {
@@ -365,7 +365,7 @@ func TestStartTunnelPublishesStartFailureAfterInstall(t *testing.T) {
 
 	e := waitFor(t, f.ch, func(e events.Event) bool {
 		s, ok := e.(events.TunnelStatus)
-		return ok && s.Status.State == config.TunnelStateError
+		return ok && s.Status.State == core.TunnelStateError
 	}).(events.TunnelStatus)
 	if e.Status.ErrorMessage != "port in use" {
 		t.Fatalf("message = %q", e.Status.ErrorMessage)
@@ -383,8 +383,8 @@ func TestStopAndStopAllGoThroughTheSupervisor(t *testing.T) {
 
 func TestUpdateSettingsSavesAppliesAndPublishes(t *testing.T) {
 	f := newFixture(t, nil)
-	var applied config.Config
-	f.svc.applySettings = func(c config.Config) { applied = c }
+	var applied core.Config
+	f.svc.applySettings = func(c core.Config) { applied = c }
 
 	sound := false
 	lang := "es"

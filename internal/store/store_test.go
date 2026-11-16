@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 )
 
 func testDirs(t *testing.T) Dirs {
@@ -43,7 +43,7 @@ func TestOpenCreatesDefaultConfigWhenMissing(t *testing.T) {
 	}
 
 	cfg := s.Snapshot()
-	if cfg.NotificationsStatus != config.NotificationPending || cfg.Language != config.LanguageAuto {
+	if cfg.NotificationsStatus != core.NotificationPending || cfg.Language != core.LanguageAuto {
 		t.Errorf("fresh config = %+v, want the defaults", cfg)
 	}
 	if cfg.Onboarded {
@@ -66,11 +66,11 @@ func TestOpenPersistsMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	reloaded, _, err := config.Parse(data)
+	reloaded, _, err := core.Parse(data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), fmt.Sprintf("version: %d", config.ConfigVersion)) || reloaded.Language != config.LanguageAuto {
+	if !strings.Contains(string(data), fmt.Sprintf("version: %d", core.ConfigVersion)) || reloaded.Language != core.LanguageAuto {
 		t.Errorf("config on disk = %q, want the migration persisted", data)
 	}
 }
@@ -142,11 +142,11 @@ func TestUpdateRoundTripsThroughDisk(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := []config.TunnelConfig{
-		{ID: "a", Name: "Foundry VTT", Provider: config.ProviderCloudflared, LocalPort: 30000},
-		{ID: "b", Name: "Partida de prueba", Provider: config.ProviderPinggy, LocalPort: 30001},
+	want := []core.TunnelConfig{
+		{ID: "a", Name: "Foundry VTT", Provider: core.ProviderCloudflared, LocalPort: 30000},
+		{ID: "b", Name: "Partida de prueba", Provider: core.ProviderPinggy, LocalPort: 30001},
 	}
-	err = s.Update(func(c *config.Config) error {
+	err = s.Update(func(c *core.Config) error {
 		c.WebPort = 40507
 		c.NotificationSound = false
 		c.Tunnels = want
@@ -180,21 +180,21 @@ func TestUpdateRoundTripsThroughDisk(t *testing.T) {
 
 func TestUpdateKeepsTheOldConfigWhenTheSaveFails(t *testing.T) {
 	d := testDirs(t)
-	s := New(d, config.DefaultConfig())
+	s := New(d, core.DefaultConfig())
 
 	// A directory where the config belongs makes the final rename fail.
 	if err := os.MkdirAll(d.ConfigFile(), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
-	err := s.Update(func(c *config.Config) error {
+	err := s.Update(func(c *core.Config) error {
 		c.Language = "es"
 		return nil
 	})
 	if err == nil {
 		t.Fatal("Update succeeded with a directory in the way, want an error")
 	}
-	if got := s.Snapshot().Language; got != config.LanguageAuto {
+	if got := s.Snapshot().Language; got != core.LanguageAuto {
 		t.Errorf("Language = %q after a failed save, want it unchanged", got)
 	}
 
@@ -208,17 +208,17 @@ func TestUpdateKeepsTheOldConfigWhenTheSaveFails(t *testing.T) {
 
 func TestUpdateReturnsTheCallbackErrorAndChangesNothing(t *testing.T) {
 	d := testDirs(t)
-	s := New(d, config.DefaultConfig())
+	s := New(d, core.DefaultConfig())
 	boom := errors.New("boom")
 
-	err := s.Update(func(c *config.Config) error {
+	err := s.Update(func(c *core.Config) error {
 		c.Language = "es"
 		return boom
 	})
 	if !errors.Is(err, boom) {
 		t.Fatalf("Update = %v, want the callback's error", err)
 	}
-	if got := s.Snapshot().Language; got != config.LanguageAuto {
+	if got := s.Snapshot().Language; got != core.LanguageAuto {
 		t.Errorf("Language = %q, want it unchanged", got)
 	}
 	if _, err := os.Stat(d.ConfigFile()); !os.IsNotExist(err) {
@@ -227,9 +227,9 @@ func TestUpdateReturnsTheCallbackErrorAndChangesNothing(t *testing.T) {
 }
 
 func TestSnapshotIsACopy(t *testing.T) {
-	s := New(testDirs(t), config.DefaultConfig())
-	if err := s.Update(func(c *config.Config) error {
-		c.AddTunnel(config.TunnelConfig{ID: "a", Name: "A"})
+	s := New(testDirs(t), core.DefaultConfig())
+	if err := s.Update(func(c *core.Config) error {
+		c.AddTunnel(core.TunnelConfig{ID: "a", Name: "A"})
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -269,8 +269,8 @@ func TestConcurrentWritersAndReaders(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for i := range each {
-				err := s.Update(func(c *config.Config) error {
-					c.AddTunnel(config.TunnelConfig{ID: fmt.Sprintf("w%d-%d", w, i), Name: "Mesa"})
+				err := s.Update(func(c *core.Config) error {
+					c.AddTunnel(core.TunnelConfig{ID: fmt.Sprintf("w%d-%d", w, i), Name: "Mesa"})
 					c.WebPort = 40500 + w
 					return nil
 				})
@@ -314,7 +314,7 @@ func TestPeekReadsWithoutWriting(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Language != config.LanguageAuto {
+	if cfg.Language != core.LanguageAuto {
 		t.Errorf("Language = %q, want the default", cfg.Language)
 	}
 	if _, err := os.Stat(d.Config); !os.IsNotExist(err) {

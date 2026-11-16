@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/sthbryan/ftm/internal/config"
-	"github.com/sthbryan/ftm/internal/process"
+	"github.com/sthbryan/ftm/internal/core"
+	"github.com/sthbryan/ftm/internal/supervisor"
 )
 
 func TestProviderUpdateRejectsWhatFTMDoesNotManage(t *testing.T) {
@@ -15,8 +15,8 @@ func TestProviderUpdateRejectsWhatFTMDoesNotManage(t *testing.T) {
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("APPDATA", filepath.Join(home, "AppData", "Roaming"))
 
-	manager := process.NewManager()
-	srv := newTestServer(t, manager, &config.Config{})
+	manager := supervisor.NewManager()
+	srv := newTestServer(t, manager, &core.Config{})
 
 	tests := []struct {
 		method, path string

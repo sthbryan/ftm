@@ -18,10 +18,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sthbryan/ftm/internal/autostart"
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
 	"github.com/sthbryan/ftm/internal/i18n"
+	"github.com/sthbryan/ftm/internal/platform/autostart"
 	"github.com/sthbryan/ftm/internal/service"
 )
 
@@ -243,12 +243,12 @@ func (s *Server) handleEvent(e events.Event) {
 	}
 }
 
-func (s *Server) broadcastStatus(status config.TunnelStatus) {
-	if status.State == config.TunnelStateInstall {
+func (s *Server) broadcastStatus(status core.TunnelStatus) {
+	if status.State == core.TunnelStateInstall {
 		s.hub.publish(eventTunnelState, tunnelStatePatch{
 			Type:     eventTunnelState,
 			ID:       status.ID,
-			State:    string(config.TunnelStateInstall),
+			State:    string(core.TunnelStateInstall),
 			Provider: string(status.Provider),
 		})
 		s.notify("Installing", "Installing tunnel for "+string(status.Provider)+"...", "info")
@@ -258,15 +258,15 @@ func (s *Server) broadcastStatus(status config.TunnelStatus) {
 	s.hub.publish(eventTunnelState, tunnelStateFromStatus(status))
 
 	switch status.State {
-	case config.TunnelStateOnline:
+	case core.TunnelStateOnline:
 		if status.PublicURL != "" {
 			s.notify("Tunnel Active", status.Name+" - "+status.PublicURL, "success")
 		}
-	case config.TunnelStateError:
+	case core.TunnelStateError:
 		s.notify("Tunnel Error", status.Name+": "+status.ErrorMessage, "error")
-	case config.TunnelStateTimeout:
+	case core.TunnelStateTimeout:
 		s.notify("Tunnel Timeout", status.Name+" could not connect", "error")
-	case config.TunnelStateStopped:
+	case core.TunnelStateStopped:
 		s.notify("Tunnel Stopped", status.Name+" has been stopped", "info")
 	}
 }
@@ -276,7 +276,7 @@ func (s *Server) notify(title, body, kind string) {
 }
 
 // BroadcastNewVisitor tells the dashboards a player joined a tunnel.
-func (s *Server) BroadcastNewVisitor(status config.TunnelStatus) {
+func (s *Server) BroadcastNewVisitor(status core.TunnelStatus) {
 	s.notifyWithSound(
 		i18n.T("notify_visitor_title"),
 		i18n.TF("notify_visitor_body", status.Name, status.Visitors),
@@ -287,7 +287,7 @@ func (s *Server) BroadcastNewVisitor(status config.TunnelStatus) {
 
 func (s *Server) notifyWithSound(title, body, kind string, sound bool) {
 	channel := "toast"
-	if s.svc.Config().NotificationsStatus == config.NotificationGranted {
+	if s.svc.Config().NotificationsStatus == core.NotificationGranted {
 		channel = "os"
 	}
 
