@@ -1,4 +1,5 @@
 import { computed, signal } from '@preact/signals';
+import { syncFavicon } from '@/lib/mark';
 
 /**
  * ftm ships one theme, Tinta, in a dark and a light mode (./styles/ftm.css).
@@ -68,6 +69,7 @@ function saveMode(mode: ThemeMode): void {
 function applyTheme(theme: Theme): void {
   if (typeof document === 'undefined') return;
   document.documentElement.setAttribute('data-sephiro-theme', theme);
+  syncFavicon();
 }
 
 let initialized = false;
