@@ -35,10 +35,12 @@ type App struct {
 	shutdownOnce sync.Once
 }
 
-// New takes the single-instance lock and opens the config. When another ftm
-// process already owns them it returns that process as an
-// *instance.RunningError, and the caller attaches to it instead.
-func newApp() (*App, error) {
+// newApp takes the single-instance lock and opens the config. When another
+// ftm process already owns them it returns that process as an
+// *instance.RunningError, and the caller attaches to it instead. background
+// starts the periodic work (stats, update and provider checks) that only a
+// process that stays up needs.
+func newApp(background bool) (*App, error) {
 
 	if err := i18n.Load(); err != nil {
 		return nil, fmt.Errorf("failed to load translations: %w", err)
@@ -127,7 +129,9 @@ func newApp() (*App, error) {
 		func(id string) { app.ExpirationMonitor.Stop(id) },
 	)
 
-	app.Service.Run(ctx)
+	if background {
+		app.Service.Run(ctx)
+	}
 
 	return app, nil
 }
