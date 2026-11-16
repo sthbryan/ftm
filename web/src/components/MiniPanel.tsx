@@ -17,7 +17,7 @@ import { StatusBadge } from './StatusPill';
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div class="min-w-0 px-2 py-1.5">
+    <div class="min-w-0 px-2 py-2 first:ps-0">
       <dt class="m-0 truncate text-2xs text-text-muted">{label}</dt>
       <dd class="m-0 truncate font-mono text-xs text-text">{value}</dd>
     </div>
@@ -59,7 +59,7 @@ export function MiniPanel() {
   }
 
   return (
-    <div class="flex h-dvh min-h-0 flex-col gap-2.5 bg-bg p-3 text-text">
+    <div class="flex h-dvh min-h-0 flex-col gap-3 bg-bg p-3 text-text">
       {!tunnel ? (
         <div class="flex h-full flex-col items-center justify-center gap-2 text-center text-text-muted">
           <Plugs size={22} />
@@ -82,7 +82,7 @@ export function MiniPanel() {
             </span>
           </div>
 
-          <dl class="m-0 grid shrink-0 grid-cols-3 divide-x divide-border-light overflow-hidden rounded-[var(--sph-radius-sm)] border border-border-light bg-card">
+          <dl class="m-0 grid shrink-0 grid-cols-3 divide-x divide-border-light border-y border-border-light">
             <Stat label={t('detail_uptime')} value={uptime || '—'} />
             <Stat
               label={t('detail_sessions')}
@@ -104,7 +104,7 @@ export function MiniPanel() {
             <button
               type="button"
               onClick={copy}
-              class="flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-[var(--sph-radius-sm)] bg-url-bg px-2.5 py-2 text-start transition-colors hover:bg-hover"
+              class="flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-control border-0 bg-url-bg px-3 py-2 text-start transition-colors hover:bg-hover"
             >
               <span class="min-w-0 flex-1 truncate font-mono text-2xs text-url-text">
                 {tunnel.publicUrl}
@@ -119,7 +119,7 @@ export function MiniPanel() {
 
           {tunnel.errorMessage && (
             <p
-              class="m-0 shrink-0 rounded-[var(--sph-radius-sm)] border border-status-error/40 bg-status-error/10 px-2 py-1 text-2xs break-words text-text-error"
+              class="m-0 shrink-0 text-2xs break-words text-text-error"
               title={tunnel.errorMessage}
             >
               {errorHint ? t(errorHint) : tunnel.errorMessage}
@@ -141,7 +141,7 @@ export function MiniPanel() {
               </>
             ) : (
               <>
-                <div class="flex aspect-square h-full min-h-0 items-center justify-center rounded-[var(--sph-radius-sm)] border border-dashed border-border text-text-muted/50">
+                <div class="flex aspect-square h-full min-h-0 items-center justify-center rounded-control border border-dashed border-border text-text-muted/50">
                   <QrIcon size={32} />
                 </div>
                 <p class="m-0 max-w-[24ch] shrink-0 text-center text-2xs leading-relaxed text-text-muted">
