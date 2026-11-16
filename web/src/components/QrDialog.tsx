@@ -37,7 +37,7 @@ export function QrDialog({
       }
     >
       <div class="flex justify-center">
-        <QrImage value={url} size={220} class="rounded-[var(--sph-radius-sm)]" />
+        <QrImage value={url} size={220} class="rounded-control" />
       </div>
     </Dialog>
   );

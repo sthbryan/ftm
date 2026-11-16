@@ -41,7 +41,7 @@ export function InviteMoment({ tunnel }: { tunnel: Tunnel }) {
       <p class="m-0 mt-2 max-w-[44ch] text-sm text-text-muted">{t('invite_lead')}</p>
 
       {url && (
-        <div class="mt-7 rounded-[14px] bg-white p-3 shadow-sm">
+        <div class="mt-7 rounded-surface bg-white p-3">
           <QrImage
             value={url}
             size={248}

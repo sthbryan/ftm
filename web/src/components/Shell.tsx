@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { Kbd } from '@zovaris/sephiro/kbd';
-import { IconButton } from '@zovaris/sephiro/icon-button';
+import { IconAction } from '@/components/IconAction';
 import { ArrowLeft, GearSix } from '@phosphor-icons/react';
 import { t } from '@/lib/stores/i18n';
 import { cycleTheme } from '@/lib/stores/theme';
@@ -36,8 +36,8 @@ export function Shell({ children }: { children: ComponentChildren }) {
 
   return (
     <div class="min-h-dvh w-full bg-bg text-text">
-      <div class="mx-auto flex w-full max-w-3xl flex-col px-4 pb-12 sm:px-6">
-        <header class="flex items-center gap-3 py-5">
+      <div class="mx-auto flex w-full max-w-app flex-col px-4 pb-16 sm:px-6 lg:px-8">
+        <header class="flex items-center gap-3 py-6">
           <a
             href="/"
             class="flex min-w-0 flex-1 items-center gap-3 text-text no-underline"
@@ -52,7 +52,7 @@ export function Shell({ children }: { children: ComponentChildren }) {
 
           <button
             type="button"
-            class="flex cursor-pointer items-center rounded-[var(--sph-radius-xs)] border-0 bg-transparent p-1 max-sm:hidden"
+            class="flex cursor-pointer items-center rounded-control border-0 bg-transparent p-1 max-sm:hidden"
             aria-label={t('command_palette_placeholder')}
             onClick={() => setPaletteOpen(true)}
           >
@@ -60,14 +60,16 @@ export function Shell({ children }: { children: ComponentChildren }) {
           </button>
 
           {isSettings ? (
-            <IconButton
+            <IconAction
               label={t('go_back')}
+              side="bottom"
               icon={<ArrowLeft size={18} />}
               onClick={() => navigate('/')}
             />
           ) : (
-            <IconButton
+            <IconAction
               label={t('settings')}
+              side="bottom"
               icon={<GearSix size={18} />}
               onClick={() => navigate('/settings')}
             />

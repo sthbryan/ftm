@@ -15,7 +15,16 @@ function toLines(text: string): TerminalLine[] {
     .map((line, index) => ({ id: `${index}-${line.slice(0, 24)}`, text: line }));
 }
 
-export function LogsPanel({ tunnelId, state }: { tunnelId: string; state: string }) {
+export function LogsPanel({
+  tunnelId,
+  state,
+  flat = false,
+}: {
+  tunnelId: string;
+  state: string;
+  /** Lays the log flush on its parent surface instead of in its own box. */
+  flat?: boolean;
+}) {
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const running = isRunningState(state);
 
@@ -35,6 +44,7 @@ export function LogsPanel({ tunnelId, state }: { tunnelId: string; state: string
   return (
     <Terminal
       lines={lines}
+      className={flat ? 'ftm-flat' : undefined}
       label={t('detail_logs')}
       title={t('detail_logs')}
       running={running}

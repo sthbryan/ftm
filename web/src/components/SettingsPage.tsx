@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { Button } from '@zovaris/sephiro/button';
 import { SegmentedControl } from '@zovaris/sephiro/segmented-control';
 import { HoldButton } from '@zovaris/sephiro/hold-button';
-import { IconButton } from '@zovaris/sephiro/icon-button';
+import { IconAction } from '@/components/IconAction';
 import {
   ArrowClockwise,
   Bell,
@@ -10,7 +10,6 @@ import {
   CircleHalf,
   DownloadSimple,
   GlobeHemisphereWest,
-  Package,
   Power,
   SpeakerHigh,
   SpeakerSlash,
@@ -74,7 +73,7 @@ function Row({
   last = false,
   wide = false,
 }: {
-  icon: preact.ComponentChildren;
+  icon?: preact.ComponentChildren;
   title: string;
   description: string;
   children: preact.ComponentChildren;
@@ -84,19 +83,56 @@ function Row({
 }) {
   return (
     <div
-      class={`grid grid-cols-[auto_1fr_auto] items-center gap-3 px-5 py-3.5 ${
-        last ? '' : 'border-b border-border-light'
-      }`}
+      class={`grid min-h-16 items-center gap-x-4 gap-y-3 px-5 py-3 ${
+        icon ? 'grid-cols-[auto_1fr_auto]' : 'grid-cols-[1fr_auto]'
+      } ${last ? '' : 'border-b border-border-light'}`}
     >
-      <span class="flex size-9 shrink-0 items-center justify-center rounded-[var(--sph-radius-sm)] bg-secondary-btn text-text-muted">
-        {icon}
-      </span>
+      {icon && (
+        <span class="flex shrink-0 text-text-muted" aria-hidden="true">
+          {icon}
+        </span>
+      )}
       <div class="min-w-0">
         <p class="m-0 text-sm font-medium text-text">{title}</p>
-        <p class="m-0 truncate text-2xs text-text-muted">{description}</p>
+        <p class="m-0 text-xs text-text-muted">{description}</p>
       </div>
-      {wide ? <div class="max-sm:col-span-3 max-sm:justify-self-end">{children}</div> : children}
+      {wide ? (
+        <div class={icon ? 'max-sm:col-span-3 max-sm:justify-self-end' : 'max-sm:col-span-2'}>
+          {children}
+        </div>
+      ) : (
+        children
+      )}
     </div>
+  );
+}
+
+/**
+ * A settings group: its name and note on the left at desktop width, the rows
+ * on one surface to the right. On a phone the name sits above the surface.
+ */
+function Section({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title: string;
+  description?: string;
+  action?: preact.ComponentChildren;
+  children: preact.ComponentChildren;
+}) {
+  return (
+    <section class="grid gap-3 border-t border-border-light py-8 first:border-t-0 first:pt-0 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-12">
+      <header class="flex items-start justify-between gap-3 lg:flex-col lg:justify-start">
+        <div class="min-w-0">
+          <h2 class="m-0 text-sm font-semibold text-text">{title}</h2>
+          {description && <p class="m-0 mt-1 text-xs text-text-muted">{description}</p>}
+        </div>
+        {action}
+      </header>
+      <div class="sph-card">{children}</div>
+    </section>
   );
 }
 
@@ -180,118 +216,101 @@ export function SettingsPage() {
   const count = tunnels.value.length;
 
   return (
-    <div class="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col">
-      <div class="mb-3 flex shrink-0 items-center justify-between gap-3">
-        <h1 class="m-0 text-xl font-semibold tracking-tight text-text">{t('web_settings_title')}</h1>
+    <div class="flex w-full flex-col">
+      <div class="mb-8 flex items-center justify-between gap-3">
+        <h1 class="m-0 text-2xl font-semibold text-text">{t('web_settings_title')}</h1>
         {saving && <span class="sph-spinner sph-spinner--sm" />}
       </div>
 
-      <div class="min-h-0 flex-1 overflow-y-auto pb-4">
+      <div>
         {!settingsLoaded.value ? (
           <div class="flex justify-center py-10">
             <span class="sph-spinner sph-spinner--md" />
           </div>
         ) : (
-          <div class="flex flex-col gap-3">
-            <section class="sph-card">
-              <header class="px-5 pt-4 pb-2">
-                <h2 class="m-0 text-sm font-semibold text-text">{t('preferences_section')}</h2>
-              </header>
+          <div class="flex flex-col">
+            <Section title={t('preferences_section')}>
+              <Row
+                icon={notificationsEnabled.value ? <Bell size={20} /> : <BellSlash size={20} />}
+                title={t('enable_notifications_web')}
+                description={t('settings_notifications_desc')}
+              >
+                <Switch
+                  checked={notificationsEnabled.value}
+                  disabled={saving}
+                  label={t('enable_notifications_web')}
+                  onChange={toggleNotifications}
+                />
+              </Row>
 
-              <div class="border-t border-border-light">
+              <Row
+                icon={soundEnabled.value ? <SpeakerHigh size={20} /> : <SpeakerSlash size={20} />}
+                title={t('sound_effects')}
+                description={t('settings_sound_desc')}
+              >
+                <Switch
+                  checked={soundEnabled.value}
+                  disabled={saving}
+                  label={t('sound_effects')}
+                  onChange={toggleSound}
+                />
+              </Row>
+
+              {settings.value.autostart_supported && (
                 <Row
-                  icon={notificationsEnabled.value ? <Bell size={17} /> : <BellSlash size={17} />}
-                  title={t('enable_notifications_web')}
-                  description={t('settings_notifications_desc')}
+                  icon={<Power size={20} />}
+                  title={t('autostart_login')}
+                  description={t('settings_autostart_desc')}
                 >
                   <Switch
-                    checked={notificationsEnabled.value}
+                    checked={settings.value.autostart_enabled}
                     disabled={saving}
-                    label={t('enable_notifications_web')}
-                    onChange={toggleNotifications}
+                    label={t('autostart_login')}
+                    onChange={toggleAutostart}
                   />
                 </Row>
+              )}
 
-                <Row
-                  icon={soundEnabled.value ? <SpeakerHigh size={17} /> : <SpeakerSlash size={17} />}
-                  title={t('sound_effects')}
-                  description={t('settings_sound_desc')}
-                >
-                  <Switch
-                    checked={soundEnabled.value}
-                    disabled={saving}
-                    label={t('sound_effects')}
-                    onChange={toggleSound}
-                  />
-                </Row>
+              <Row
+                icon={<GlobeHemisphereWest size={20} />}
+                title={t('language_section')}
+                description={t('settings_language_desc')}
+                last
+                wide
+              >
+                <SegmentedControl
+                  ariaLabel={t('language_section')}
+                  size="sm"
+                  options={languageOptions}
+                  value={settings.value.language}
+                  onValueChange={changeLanguage}
+                />
+              </Row>
+            </Section>
 
-                {settings.value.autostart_supported && (
-                  <Row
-                    icon={<Power size={17} />}
-                    title={t('autostart_login')}
-                    description={t('settings_autostart_desc')}
-                  >
-                    <Switch
-                      checked={settings.value.autostart_enabled}
-                      disabled={saving}
-                      label={t('autostart_login')}
-                      onChange={toggleAutostart}
-                    />
-                  </Row>
-                )}
-
-                <Row
-                  icon={<GlobeHemisphereWest size={17} />}
-                  title={t('language_section')}
-                  description={t('settings_language_desc')}
-                  last
-                  wide
-                >
-                  <SegmentedControl
-                    ariaLabel={t('language_section')}
-                    size="sm"
-                    options={languageOptions}
-                    value={settings.value.language}
-                    onValueChange={changeLanguage}
-                  />
-                </Row>
-              </div>
-            </section>
-
-            <section class="sph-card">
-              <header class="px-5 pt-4 pb-2">
-                <h2 class="m-0 text-sm font-semibold text-text">{t('appearance_section')}</h2>
-              </header>
-              <div class="border-t border-border-light">
-                <Row
-                  icon={<CircleHalf size={17} />}
-                  title={t('theme')}
-                  description={t('match_system')}
-                  last
-                  wide
-                >
-                  <ThemeGrid />
-                </Row>
-              </div>
-            </section>
+            <Section title={t('appearance_section')}>
+              <Row
+                icon={<CircleHalf size={20} />}
+                title={t('theme')}
+                description={t('match_system')}
+                last
+                wide
+              >
+                <ThemeGrid />
+              </Row>
+            </Section>
 
             {installedProviders.value && installedProviders.value.length > 0 && (
               <InstalledProviders providers={installedProviders.value} />
             )}
 
-            <section class="sph-card">
-              <header class="px-5 pt-4 pb-2">
-                <h2 class="m-0 text-sm font-semibold text-text">{t('danger_section')}</h2>
-              </header>
-
-              <div class="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-t border-border-light px-5 py-3.5">
-                <span class="flex size-9 shrink-0 items-center justify-center rounded-[var(--sph-radius-sm)] bg-status-error/15 text-text-error">
-                  <Trash size={17} />
-                </span>
-                <div class="min-w-0">
-                  <p class="m-0 text-sm font-medium text-text">{t('reset_connections')}</p>
-                  <p class="m-0 text-2xs text-text-muted">{t('reset_connections_desc')}</p>
-                </div>
+            <Section title={t('danger_section')}>
+              <Row
+                icon={<Trash size={20} className="text-text-error" />}
+                title={t('reset_connections')}
+                description={t('reset_connections_desc')}
+                last
+              >
                 <HoldButton
                   variant="danger"
                   size="sm"
@@ -307,16 +326,15 @@ export function SettingsPage() {
                 >
                   {t('hold_to_delete')}
                 </HoldButton>
-              </div>
-            </section>
+              </Row>
+            </Section>
 
             {version && (
-              <footer class="px-1 text-end font-mono text-2xs text-text-muted">v{version}</footer>
+              <footer class="pt-2 text-end font-mono text-2xs text-text-muted">v{version}</footer>
             )}
           </div>
         )}
       </div>
-
     </div>
   );
 }
@@ -325,7 +343,8 @@ function providerDescription(provider: InstalledProvider): string {
   const parts: string[] = [];
   if (provider.installed) {
     parts.push(t('provider_version', { 0: provider.version || '?' }));
-    if (provider.hasUpdate && provider.latest) parts.push(t('provider_latest', { 0: provider.latest }));
+    if (provider.hasUpdate && provider.latest)
+      parts.push(t('provider_latest', { 0: provider.latest }));
   } else {
     parts.push(t('provider_not_installed'));
   }
@@ -337,53 +356,56 @@ function InstalledProviders({ providers }: { providers: InstalledProvider[] }) {
   const progress = installProgress.value;
 
   return (
-    <section class="sph-card">
-      <header class="flex items-start justify-between gap-3 px-5 pt-4 pb-2">
-        <div class="min-w-0">
-          <h2 class="m-0 text-sm font-semibold text-text">{t('installed_providers')}</h2>
-          <p class="m-0 mt-0.5 text-2xs text-text-muted">{t('installed_providers_desc')}</p>
-        </div>
-        <IconButton
-          icon={<ArrowClockwise size={14} />}
-          label={t('providers_recheck')}
+    <Section
+      title={t('installed_providers')}
+      description={t('installed_providers_desc')}
+      action={
+        <Button
+          variant="quiet"
           size="sm"
+          className="shrink-0 whitespace-nowrap lg:-ms-3"
           loading={checkingProviders.value}
           onClick={() => void loadInstalledProviders(true)}
-        />
-      </header>
-      <div class="border-t border-border-light">
-        {providers.map((provider, index) => {
-          const percent = progress[provider.id]?.percent;
-          const external = provider.source === 'path';
-          return (
-            <Row
-              key={provider.id}
-              icon={<Package size={17} />}
-              title={provider.name}
-              description={
-                external && provider.hasUpdate
-                  ? `${providerDescription(provider)} · ${t('providers_external_hint', { 0: provider.name, 1: provider.path })}`
-                  : providerDescription(provider)
-              }
-              last={index === providers.length - 1}
-            >
-              {provider.updating ? (
-                <Button variant="secondary" size="sm" loading disabled>
-                  {t('provider_updating')}
-                  {typeof percent === 'number' ? ` ${Math.round(percent)}%` : ''}
-                </Button>
-              ) : canUpdate(provider) ? (
-                <Button variant="secondary" size="sm" onClick={() => void updateProvider(provider.id)}>
-                  <DownloadSimple size={14} />
-                  {provider.source === 'none' ? t('provider_install') : t('provider_update')}
-                </Button>
-              ) : (
-                <span />
-              )}
-            </Row>
-          );
-        })}
-      </div>
-    </section>
+        >
+          <ArrowClockwise size={16} />
+          {t('providers_recheck')}
+        </Button>
+      }
+    >
+      {providers.map((provider, index) => {
+        const percent = progress[provider.id]?.percent;
+        const external = provider.source === 'path';
+        return (
+          <Row
+            key={provider.id}
+            title={provider.name}
+            description={
+              external && provider.hasUpdate
+                ? `${providerDescription(provider)} · ${t('providers_external_hint', { 0: provider.name, 1: provider.path })}`
+                : providerDescription(provider)
+            }
+            last={index === providers.length - 1}
+          >
+            {provider.updating ? (
+              <Button variant="secondary" size="sm" loading disabled>
+                {t('provider_updating')}
+                {typeof percent === 'number' ? ` ${Math.round(percent)}%` : ''}
+              </Button>
+            ) : canUpdate(provider) ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void updateProvider(provider.id)}
+              >
+                <DownloadSimple size={16} />
+                {provider.source === 'none' ? t('provider_install') : t('provider_update')}
+              </Button>
+            ) : (
+              <span />
+            )}
+          </Row>
+        );
+      })}
+    </Section>
   );
 }

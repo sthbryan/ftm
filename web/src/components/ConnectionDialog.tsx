@@ -135,7 +135,7 @@ export function ConnectionDialog({
         </div>
 
         {!isEdit && (
-          <div class="rounded-[var(--sph-radius-sm)] border border-border-light bg-bg/40 p-3 text-2xs leading-relaxed text-text-muted">
+          <div class="border-t border-border-light pt-4 text-2xs leading-relaxed text-text-muted">
             <p class="m-0 mb-1.5 font-semibold text-text">{t('form_tips_title')}</p>
             <ul class="m-0 grid list-none gap-1 p-0">
               <li>{t('form_tips_port')}</li>
