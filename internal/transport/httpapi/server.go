@@ -12,6 +12,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/sthbryan/ftm/internal/platform/open"
 	"log"
 	"net"
 	"net/http"
@@ -53,6 +54,9 @@ type Server struct {
 	mu        sync.RWMutex
 	pipOpener func(tunnelID string) error
 	apiToken  string
+
+	// openURL shows a page in the user's default browser. Tests replace it.
+	openURL func(url string) error
 }
 
 // NewServer builds a server. bus may be nil, in which case nothing is
@@ -63,6 +67,7 @@ func NewServer(svc *service.Service, bus *events.Bus) *Server {
 		bus:       bus,
 		hub:       newHub(),
 		autostart: autostart.New(),
+		openURL:   open.URL,
 	}
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	s.handler = s.routes()

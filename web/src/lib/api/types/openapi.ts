@@ -272,6 +272,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tunnels/{id}/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open a connection's public link in the default browser
+         * @description Only the link of that connection, and only while it has one. The desktop window uses this, since it cannot open new browser windows itself.
+         */
+        post: operations["open-tunnel-link"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tunnels/{id}/start": {
         parameters: {
             query?: never;
@@ -1326,6 +1346,36 @@ export interface operations {
                         retry?: number;
                     };
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "open-tunnel-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tunnel id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

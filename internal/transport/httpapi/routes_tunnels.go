@@ -195,6 +195,28 @@ func (s *Server) registerTunnels(api huma.API) {
 	})
 
 	huma.Register(api, huma.Operation{
+		OperationID:   "open-tunnel-link",
+		Method:        http.MethodPost,
+		Path:          "/api/tunnels/{id}/open",
+		Summary:       "Open a connection's public link in the default browser",
+		Description:   "Only the link of that connection, and only while it has one. The desktop window uses this, since it cannot open new browser windows itself.",
+		Tags:          []string{tagTunnels},
+		DefaultStatus: http.StatusNoContent,
+	}, func(ctx context.Context, in *tunnelIDInput) (*emptyOutput, error) {
+		state, ok := s.tunnelState(in.ID)
+		if !ok {
+			return nil, errTunnelNotFound()
+		}
+		if !strings.HasPrefix(state.PublicURL, "https://") && !strings.HasPrefix(state.PublicURL, "http://") {
+			return nil, apiError(http.StatusConflict, "no_link", "the connection has no public link yet")
+		}
+		if err := s.openURL(state.PublicURL); err != nil {
+			return nil, apiError(http.StatusInternalServerError, "open_failed", err.Error())
+		}
+		return nil, nil
+	})
+
+	huma.Register(api, huma.Operation{
 		OperationID: "start-tunnel",
 		Method:      http.MethodPost,
 		Path:        "/api/tunnels/{id}/start",

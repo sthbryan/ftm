@@ -13,6 +13,11 @@ export const tunnelsApi = {
   update: (id: string, data: UpdateTunnelInput): Promise<Tunnel> =>
     api.put(`tunnels/${id}`, { json: data }).json<Tunnel>(),
 
+  /** Opens the connection's public link in the system browser (desktop window). */
+  openLink: async (id: string): Promise<void> => {
+    await api.post(`tunnels/${id}/open`);
+  },
+
   start: (id: string): Promise<Tunnel> =>
     api.post(`tunnels/${id}/start`).json<Tunnel>(),
 

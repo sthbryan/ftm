@@ -708,3 +708,36 @@ func TestDetectPortChecksTheAskedPort(t *testing.T) {
 		t.Fatalf("suggested %d, want one of the usual Foundry ports", out.Suggested)
 	}
 }
+
+func TestOpenTunnelLinkOpensOnlyThatLink(t *testing.T) {
+	sup := newFakeSupervisor()
+	sup.installed[core.ProviderCloudflared] = true
+	s := newTestServer(t, sup, worldConfig())
+	var opened []string
+	s.openURL = func(url string) error {
+		opened = append(opened, url)
+		return nil
+	}
+
+	rec := call(t, s, http.MethodPost, "/api/tunnels/world/open", "")
+	wantStatus(t, rec, http.StatusConflict)
+
+	sup.mu.Lock()
+	sup.bus = s.bus
+	sup.mu.Unlock()
+	rec = call(t, s, http.MethodPost, "/api/tunnels/world/start", "")
+	wantStatus(t, rec, http.StatusOK)
+	waitFor(t, func() bool {
+		state, _ := s.tunnelState("world")
+		return state.PublicURL != ""
+	})
+
+	rec = call(t, s, http.MethodPost, "/api/tunnels/world/open", "")
+	wantStatus(t, rec, http.StatusNoContent)
+	if !slices.Equal(opened, []string{"https://world.example"}) {
+		t.Fatalf("opened %v, want the tunnel's own link", opened)
+	}
+
+	rec = call(t, s, http.MethodPost, "/api/tunnels/nope/open", "")
+	wantStatus(t, rec, http.StatusNotFound)
+}
