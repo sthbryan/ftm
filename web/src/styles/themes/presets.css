@@ -1,0 +1,29 @@
+/* Sephiro's presets as ftm ships them.
+ *
+ * The preset sheets are imported as they are (sephiro.css). Each already has a
+ * dark and a light variant; the few tokens below miss WCAG AA in ftm's pairs
+ * (ftm.test.ts) and are nudged within the preset's own hue, one variant at a
+ * time so the other stays exactly Sephiro's.
+ */
+
+/* Sephiro dark: white on #b85c79 is 4.33:1. */
+[data-sephiro-theme="dark"][data-theme="dark"] {
+  --sph-accent: #a8506d;
+  --sph-accent-pressed: #934360;
+}
+
+/* Fizza dark: the danger red #d71921 is 3.6:1 on its cards. */
+[data-sephiro-theme="fizza"][data-theme="dark"] {
+  --sph-danger: #ff6b70;
+}
+
+/* Curie dark: danger #c25c4f is 4.37:1 on its cards. */
+[data-sephiro-theme="curie"][data-theme="dark"] {
+  --sph-danger: #d0695b;
+}
+
+/* Curie light: success and warning are 4.2:1 and 3.1:1 on its cards. */
+[data-sephiro-theme="curie"][data-theme="light"] {
+  --sph-success: #4b6a44;
+  --sph-warning: #7a5a1c;
+}

@@ -2,7 +2,7 @@ import { MARK_DIE, MARK_EDGES, MARK_FACE } from '@/lib/mark';
 
 /**
  * The app mark: the faceted d20 on the accent ground. It follows the theme, so
- * it repaints with Tinta dark and light, and the favicon is drawn from the same
+ * it repaints with every family and variant, and the favicon is drawn from the same
  * colours (lib/mark.ts).
  */
 export function Mark({ class: className = '' }: { class?: string }) {
