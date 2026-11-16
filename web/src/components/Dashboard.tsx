@@ -121,8 +121,23 @@ export function Dashboard() {
     </>
   );
 
+  const stage = view.stage;
+  const presetList = showPresets && (
+    <PresetList
+      presets={view.presets}
+      selectedId={stage?.moment === 'ready' ? (stage.tunnel?.id ?? null) : null}
+      mode={stage?.moment === 'ready' ? 'select' : 'start'}
+      onSelect={(id) => {
+        selectedPreset.value = id;
+      }}
+      onCreate={openCreate}
+      onEdit={openEdit}
+      onDelete={setPendingDelete}
+    />
+  );
+
   return (
-    <div class="flex flex-col">
+    <div class="flex flex-col gap-6">
       <UpdateBanner />
 
       {tunnelsLoading.value && list.length === 0 ? (
@@ -144,38 +159,39 @@ export function Dashboard() {
       ) : (
         <>
           {view.strips.length > 0 && (
-            <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-3">
               {view.strips.map((tunnel) => (
                 <SessionStrip key={tunnel.id} tunnel={tunnel} />
               ))}
             </div>
           )}
 
-          {view.stage?.moment === 'ready' && (
-            <ReadyMoment tunnel={view.stage.tunnel} onCreate={openCreate} />
-          )}
-          {view.stage?.moment === 'opening' && view.stage.tunnel && (
-            <OpeningMoment key={view.stage.tunnel.id} tunnel={view.stage.tunnel} />
-          )}
-          {view.stage?.moment === 'invite' && view.stage.tunnel && (
-            <InviteMoment key={view.stage.tunnel.id} tunnel={view.stage.tunnel} />
-          )}
-          {view.stage?.moment === 'failed' && view.stage.tunnel && (
-            <FailedMoment key={view.stage.tunnel.id} tunnel={view.stage.tunnel} onEdit={openEdit} />
-          )}
-
-          {showPresets && (
-            <PresetList
-              presets={view.presets}
-              selectedId={view.stage?.moment === 'ready' ? (view.stage.tunnel?.id ?? null) : null}
-              mode={view.stage?.moment === 'ready' ? 'select' : 'start'}
-              onSelect={(id) => {
-                selectedPreset.value = id;
-              }}
-              onCreate={openCreate}
-              onEdit={openEdit}
-              onDelete={setPendingDelete}
-            />
+          {stage ? (
+            <div
+              class={
+                presetList
+                  ? 'grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-12'
+                  : ''
+              }
+            >
+              <div class="min-w-0">
+                {stage.moment === 'ready' && (
+                  <ReadyMoment tunnel={stage.tunnel} onCreate={openCreate} />
+                )}
+                {stage.moment === 'opening' && stage.tunnel && (
+                  <OpeningMoment key={stage.tunnel.id} tunnel={stage.tunnel} />
+                )}
+                {stage.moment === 'invite' && stage.tunnel && (
+                  <InviteMoment key={stage.tunnel.id} tunnel={stage.tunnel} />
+                )}
+                {stage.moment === 'failed' && stage.tunnel && (
+                  <FailedMoment key={stage.tunnel.id} tunnel={stage.tunnel} onEdit={openEdit} />
+                )}
+              </div>
+              {presetList && <aside class="min-w-0 lg:pt-10">{presetList}</aside>}
+            </div>
+          ) : (
+            presetList
           )}
         </>
       )}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
-import { IconButton } from '@zovaris/sephiro/icon-button';
+import { Button } from '@zovaris/sephiro/button';
+import { IconAction } from '@/components/IconAction';
 import {
   Clock,
   Copy,
@@ -74,15 +75,18 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
 
   return (
     <article
-      class="overflow-hidden rounded-[12px] border border-border bg-card"
+      class="overflow-hidden rounded-surface border border-border bg-card"
       aria-label={tunnel.name}
     >
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-        <div class="flex min-w-0 flex-[1_1_14rem] items-center gap-3">
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-5">
+        <div class="flex min-w-0 flex-[1_1_16rem] items-center gap-3">
           <StatusMarkDot state={tunnel.state} label={t(tunnel.state)} size="sm" />
           <div class="min-w-0 flex-1">
             <p class="m-0 truncate text-sm font-medium text-text">{tunnel.name}</p>
-            <p class="m-0 truncate font-mono text-xs text-text-muted" title={tunnel.publicUrl}>
+            <p
+              class={`m-0 truncate font-mono text-xs ${online && !stale ? 'text-url-text' : 'text-text-muted'}`}
+              title={tunnel.publicUrl}
+            >
               {stale
                 ? t('connection_lost')
                 : online
@@ -92,37 +96,39 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
           </div>
         </div>
 
-        <p class="m-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-text-muted">
+        <p class="m-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted">
           <span class="flex items-center gap-1.5" title={t('overview_players')}>
-            <UsersThree size={15} aria-hidden="true" />
+            <UsersThree size={16} aria-hidden="true" />
             <span class="font-medium text-text tabular-nums">{players}</span>
             <span class="sr-only">{t('overview_players')}</span>
           </span>
           {elapsed > 0 && (
             <span class="flex items-center gap-1.5" title={t('session_time')}>
-              <Clock size={15} aria-hidden="true" />
+              <Clock size={16} aria-hidden="true" />
               <span class="sr-only">{t('session_time')}</span>
-              <span class="font-mono text-xs tabular-nums">{formatDuration(elapsed)}</span>
+              <span class="font-mono tabular-nums">{formatDuration(elapsed)}</span>
             </span>
           )}
           {expiry !== 'none' && (
             <span
-              class={`font-mono text-xs tabular-nums ${expiry === 'soon' ? 'text-status-starting' : ''}`}
+              class={`font-mono tabular-nums ${expiry === 'soon' ? 'text-status-starting' : ''}`}
             >
               {t('card_expires', { 0: formatDuration(remaining) })}
             </span>
           )}
         </p>
 
-        <div class="ms-auto flex items-center gap-0.5">
-          <IconButton
-            label={t('copy_link')}
+        <div class="ms-auto flex items-center gap-1">
+          <Button
+            variant="secondary"
             size="sm"
             disabled={!online}
-            icon={<Copy size={16} />}
             onClick={() => void copyLink(tunnel)}
-          />
-          <IconButton
+          >
+            <Copy size={16} />
+            {t('copy_link')}
+          </Button>
+          <IconAction
             label={t('qr_for_phones')}
             size="sm"
             disabled={!online}
@@ -130,7 +136,7 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
             onClick={() => setQrOpen(true)}
           />
           {pipAvailable && (
-            <IconButton
+            <IconAction
               label={t('pip_open')}
               size="sm"
               disabled={!online}
@@ -138,14 +144,15 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
               onClick={openPip}
             />
           )}
-          <IconButton
+          <IconAction
             label={t('session_logs')}
             size="sm"
             aria-expanded={logsOpen}
             icon={<Terminal size={16} />}
             onClick={() => setLogsOpen((open) => !open)}
           />
-          <IconButton
+          <span class="mx-1 h-5 w-px bg-border-light" aria-hidden="true" />
+          <IconAction
             label={t('stop')}
             size="sm"
             loading={busy}
@@ -157,8 +164,8 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
       </div>
 
       {logsOpen && (
-        <div class="border-t border-border px-4 py-3">
-          <LogsPanel tunnelId={tunnel.id} state={tunnel.state} />
+        <div class="border-t border-border-light">
+          <LogsPanel tunnelId={tunnel.id} state={tunnel.state} flat />
         </div>
       )}
 
