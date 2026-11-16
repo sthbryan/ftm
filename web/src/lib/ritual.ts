@@ -92,19 +92,24 @@ export function expiryLevel(remainingMs: number): ExpiryLevel {
   return remainingMs <= EXPIRY_WARNING_MS ? 'soon' : 'later';
 }
 
-export type FoundryCheck = 'answers' | 'silent' | 'unknown';
+export type FoundryCheck = 'answers' | 'other' | 'silent' | 'unknown';
 
 /**
- * Whether Foundry answers on a port, from the busy ports detect-port reported.
- * `scanned` is every port the server checked; without it, the usual ports.
+ * Whether Foundry answers on a port, from what detect-port reported: `busy`
+ * ports something listens on, `scanned` every port it checked (without it, the
+ * usual ports) and, when known, the `foundry` ports whose page is Foundry's. A
+ * busy port that is not Foundry is 'other'.
  */
 export function foundryCheck(
   port: number,
   busy: number[] | null,
   scanned: readonly number[] = FOUNDRY_PORTS,
+  foundry: number[] | null = null,
 ): FoundryCheck {
   if (!busy || !scanned.includes(port)) return 'unknown';
-  return busy.includes(port) ? 'answers' : 'silent';
+  if (!busy.includes(port)) return 'silent';
+  if (foundry && !foundry.includes(port)) return 'other';
+  return 'answers';
 }
 
 export function inviteMessage(template: string, name: string, url: string): string {

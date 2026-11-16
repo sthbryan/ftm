@@ -10,9 +10,9 @@ import {
 } from './theme';
 
 describe('parsePreference', () => {
-  it('starts on Tinta following the OS when nothing is stored', () => {
-    expect(parsePreference(null)).toEqual({ family: 'tinta', mode: 'system' });
-    expect(DEFAULT_PREFERENCE).toEqual({ family: 'tinta', mode: 'system' });
+  it('starts on Flexoki following the OS when nothing is stored', () => {
+    expect(parsePreference(null)).toEqual({ family: 'flexoki', mode: 'system' });
+    expect(DEFAULT_PREFERENCE).toEqual({ family: 'flexoki', mode: 'system' });
   });
 
   it('reads the current {family, mode} shape', () => {
@@ -24,7 +24,7 @@ describe('parsePreference', () => {
 
   it('keeps the mode when the stored family no longer exists', () => {
     expect(parsePreference('{"family":"nord","mode":"dark"}')).toEqual({
-      family: 'tinta',
+      family: 'flexoki',
       mode: 'dark',
     });
   });
@@ -99,19 +99,21 @@ describe('nextFamily', () => {
     const seen: Family[] = [FAMILIES[0].id];
     for (let i = 1; i < FAMILIES.length; i += 1) seen.push(nextFamily(seen[i - 1]));
     expect(seen).toEqual(FAMILIES.map((family) => family.id));
-    expect(nextFamily(seen[seen.length - 1])).toBe('tinta');
+    expect(nextFamily(seen[seen.length - 1])).toBe('flexoki');
   });
 
-  it('ships Tinta first and the eight agreed families', () => {
+  it('ships Flexoki first and the ten agreed families', () => {
     expect(FAMILIES.map((family) => family.id)).toEqual([
+      'flexoki',
       'tinta',
       'sephiro',
+      'rose-pine',
+      'orquidea',
+      'pizarra',
       'asterism',
       'curie',
       'fizza',
       'pulso',
-      'flexoki',
-      'pizarra',
     ]);
   });
 });

@@ -6,12 +6,19 @@ import { toast } from '@/lib/stores/toast';
 import { copyText } from '@/lib/utils/clipboard';
 import { QrImage } from './QrImage';
 
+/**
+ * The invite for a player across the table: a large code on its own white
+ * plate, the world's name and the link under it, and one action. The long URL
+ * no longer sits in the dialog's description, where it wrapped into a block.
+ */
 export function QrDialog({
   open,
+  name,
   url,
   onClose,
 }: {
   open: boolean;
+  name: string;
   url: string;
   onClose: () => void;
 }) {
@@ -20,24 +27,30 @@ export function QrDialog({
       toast.error(t('copy_failed'));
       return;
     }
-    toast.success(t('qr_copied'));
+    toast.success(t('link_copied'));
   }
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      title={t('qr_for_phones')}
-      description={url}
+      title={name}
+      description={t('qr_scan_hint')}
+      className="ftm-qr-dialog"
       footer={
-        <Button variant="secondary" onClick={copy}>
-          <Copy size={14} />
-          {t('qr_copy')}
+        <Button variant="primary" onClick={copy}>
+          <Copy size={16} />
+          {t('copy_link')}
         </Button>
       }
     >
-      <div class="flex justify-center">
-        <QrImage value={url} size={220} class="rounded-control" />
+      <div class="ftm-qr-dialog__body">
+        <span class="ftm-qr ftm-qr-dialog__plate">
+          <QrImage value={url} size={232} alt={t('qr_for_phones')} />
+        </span>
+        <p class="ftm-qr-dialog__url" title={url}>
+          {url.replace(/^https?:\/\//, '')}
+        </p>
       </div>
     </Dialog>
   );

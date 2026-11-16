@@ -2,15 +2,20 @@ import QRCode from 'qrcode';
 import { Spinner } from '@zovaris/sephiro/spinner';
 import { useEffect, useState } from 'preact/hooks';
 
-/** Renders a QR for a URL with a white quiet zone, sized in CSS pixels. */
+/**
+ * Renders a QR for a URL with a white quiet zone, sized in CSS pixels. With
+ * `fluid`, `size` only sets the resolution and CSS decides the box.
+ */
 export function QrImage({
   value,
   size = 220,
+  fluid = false,
   class: className,
   alt,
 }: {
   value: string;
   size?: number;
+  fluid?: boolean;
   class?: string;
   alt?: string;
 }) {
@@ -46,7 +51,7 @@ export function QrImage({
       width={size}
       height={size}
       class={className}
-      style={{ width: `${size}px`, height: `${size}px` }}
+      style={fluid ? undefined : { width: `${size}px`, height: `${size}px` }}
     />
   );
 }

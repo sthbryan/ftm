@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { Button } from '@zovaris/sephiro/button';
 import { Kbd } from '@zovaris/sephiro/kbd';
 import { Link } from '@zovaris/sephiro/link';
@@ -10,10 +10,14 @@ import { cycleTheme } from '@/lib/stores/theme';
 import { navigate, route } from '@/router';
 import { CommandPalette } from '@/components/CommandPalette';
 import { Mark } from '@/components/Mark';
+import { FoundryBeacon } from '@/components/FoundryBeacon';
+import { dragRegion } from '@/lib/desktop';
 
 /**
- * One page, one header. ftm has a dashboard and a settings page, so the chrome
- * is the mark, the name, the command palette hint and a way to settings.
+ * One page, one header. The header stays put and only the page under it
+ * scrolls; a hairline appears under the header once the page has moved. In the
+ * desktop window the header is also the title bar: empty space drags the
+ * window, and on macOS it leaves room for the traffic lights.
  */
 export function Shell({ children }: { children: ComponentChildren }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -35,11 +39,18 @@ export function Shell({ children }: { children: ComponentChildren }) {
   }, []);
 
   const isHome = route.value === '/';
+  const scroller = useRef<HTMLElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    scroller.current?.scrollTo({ top: 0 });
+    setScrolled(false);
+  }, [route.value]);
 
   return (
-    <div class="min-h-dvh w-full bg-bg text-text">
-      <div class="mx-auto flex min-h-dvh w-full max-w-app flex-col px-4 pb-8 sm:px-6 lg:px-8">
-        <header class="ftm-header flex items-center gap-2 py-4 sm:py-5">
+    <div class="ftm-shell bg-bg text-text">
+      <header class="ftm-header" data-scrolled={scrolled ? '' : undefined} {...dragRegion()}>
+        <div class="ftm-header__inner">
           <div class="flex min-w-0 flex-1">
             <Link
               href="/"
@@ -50,10 +61,12 @@ export function Shell({ children }: { children: ComponentChildren }) {
                 navigate('/');
               }}
             >
-              <Mark class="size-7 shrink-0" />
+              <Mark class="ftm-brand__mark shrink-0" />
               <span class="truncate text-sm font-medium">{t('app_name')}</span>
             </Link>
           </div>
+
+          <FoundryBeacon />
 
           <div class="max-sm:hidden">
             <Button
@@ -81,10 +94,16 @@ export function Shell({ children }: { children: ComponentChildren }) {
               onClick={() => navigate('/settings')}
             />
           )}
-        </header>
+        </div>
+      </header>
 
-        <main class={`flex min-w-0 flex-1 flex-col ${isHome ? '' : 'pt-2'}`}>{children}</main>
-      </div>
+      <main
+        ref={scroller}
+        class="ftm-scroll"
+        onScroll={(event) => setScrolled((event.currentTarget as HTMLElement).scrollTop > 2)}
+      >
+        <div class={`ftm-content ${isHome ? '' : 'pt-2'}`}>{children}</div>
+      </main>
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </div>

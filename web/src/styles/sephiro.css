@@ -24,6 +24,8 @@
 @import "@zovaris/sephiro/css/theme-tinta.css";
 @import "@zovaris/sephiro/css/theme-flexoki.css";
 @import "@zovaris/sephiro/css/theme-pizarra.css";
+@import "@zovaris/sephiro/css/theme-rose-pine.css";
+@import "@zovaris/sephiro/css/theme-orquidea.css";
 
 @import "@zovaris/sephiro/css/spinner.css";
 @import "@zovaris/sephiro/css/button.css";
@@ -34,6 +36,7 @@
 @import "@zovaris/sephiro/css/field.css";
 @import "@zovaris/sephiro/css/toggle.css";
 @import "@zovaris/sephiro/css/hold-button.css";
+@import "@zovaris/sephiro/css/animated-number.css";
 @import "@zovaris/sephiro/css/dialog.css";
 @import "@zovaris/sephiro/css/empty-state.css";
 @import "@zovaris/sephiro/css/kbd.css";
@@ -52,6 +55,15 @@
 @import "@zovaris/sephiro/css/radio-group.css";
 @import "@zovaris/sephiro/css/field-message.css";
 @import "./theme-picker.css";
+
+
+/* Rosé Pine dawn: muted text on inputs and wells (#6f6a88 on #f2e9e1) is
+ * 4.28:1, which misses AA. One step darker in the same hue clears it. Remove
+ * once Sephiro ships the same value. */
+[data-sephiro-theme="rose-pine"][data-theme="light"],
+[data-theme="light"] [data-sephiro-theme="rose-pine"] {
+  --sph-text-muted: #6a6682;
+}
 
 :root {
   /* ftm ships Inter and JetBrains Mono; Sephiro's sheets ask for Geist. */

@@ -13,6 +13,7 @@ import { ConnectionPage } from '@/components/ConnectionPage';
 import { Spinner } from '@zovaris/sephiro/spinner';
 import { connectionRoute, route } from '@/router';
 
+
 export function App() {
   const [ready, setReady] = useState(i18nReady.value);
 
@@ -39,7 +40,7 @@ export function App() {
       ) : (
         <BootScreen />
       )}
-      <SpringToaster position="bottom-right" />
+      <SpringToaster position="bottom-center" offset={24} />
     </>
   );
 }

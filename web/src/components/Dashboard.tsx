@@ -17,6 +17,7 @@ import { FailedMoment } from './ritual/FailedMoment';
 import { SessionStrip } from './ritual/SessionStrip';
 import { PresetChips } from './ritual/PresetChips';
 import { NotificationNudge } from './NotificationNudge';
+import { useLeaving } from '@/lib/hooks/useLeaving';
 import { UpdateBanner } from './UpdateBanner';
 
 function openCreate() {
@@ -41,6 +42,7 @@ export function Dashboard() {
   const stage = view.stage;
 
   useEffect(() => watchSession(), []);
+  const strips = useLeaving(view.strips, (tunnel) => tunnel.id, 320);
 
   useEffect(() => {
     const id = selectIntent.value;
@@ -104,10 +106,19 @@ export function Dashboard() {
     <div class="flex flex-1 flex-col gap-4">
       <UpdateBanner />
 
-      {view.strips.length > 0 && (
-        <div class="flex flex-col gap-3">
-          {view.strips.map((tunnel) => (
-            <SessionStrip key={tunnel.id} tunnel={tunnel} />
+      {strips.length > 0 && (
+        <div class="flex flex-col">
+          {strips.map(({ item: tunnel, leaving }) => (
+            <div
+              key={tunnel.id}
+              class="ftm-strip-slot"
+              data-leaving={leaving ? '' : undefined}
+              inert={leaving}
+            >
+              <div class="min-h-0">
+                <SessionStrip tunnel={tunnel} />
+              </div>
+            </div>
           ))}
         </div>
       )}

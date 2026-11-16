@@ -9,14 +9,16 @@ import { syncFavicon } from '@/lib/mark';
  * Dark and Light force it. Switching mode keeps the family.
  */
 export const FAMILIES = [
-  { id: 'tinta', name: 'Tinta', source: 'Radix Sand · Indigo' },
+  { id: 'flexoki', name: 'Flexoki', source: 'Flexoki · Steph Ango' },
+  { id: 'tinta', name: 'Tinta', source: 'Radix Sand · Prusia' },
   { id: 'sephiro', name: 'Sephiro', source: 'Sephiro' },
+  { id: 'rose-pine', name: 'Rosé Pine', source: 'Rosé Pine' },
+  { id: 'orquidea', name: 'Orquídea', source: 'Sephiro' },
+  { id: 'pizarra', name: 'Pizarra', source: 'Radix Slate · Teal' },
   { id: 'asterism', name: 'Asterism', source: 'Sephiro' },
   { id: 'curie', name: 'Curie', source: 'Sephiro' },
   { id: 'fizza', name: 'Fizza', source: 'Sephiro' },
   { id: 'pulso', name: 'Pulso', source: 'Sephiro' },
-  { id: 'flexoki', name: 'Flexoki', source: 'Flexoki · Steph Ango' },
-  { id: 'pizarra', name: 'Pizarra', source: 'Radix Slate · Teal' },
 ] as const;
 
 export type Family = (typeof FAMILIES)[number]['id'];
@@ -29,7 +31,7 @@ export type Scheme = 'dark' | 'light';
 
 export type ThemePreference = { family: Family; mode: ThemeMode };
 
-export const DEFAULT_PREFERENCE: ThemePreference = { family: 'tinta', mode: 'system' };
+export const DEFAULT_PREFERENCE: ThemePreference = { family: 'flexoki', mode: 'system' };
 
 const STORAGE_KEY = 'ftm-theme';
 
@@ -64,7 +66,8 @@ function isMode(value: unknown): value is ThemeMode {
 /** Read whatever an earlier build stored under `ftm-theme`. */
 export function parsePreference(raw: string | null): ThemePreference {
   if (!raw) return DEFAULT_PREFERENCE;
-  if (isMode(raw)) return { family: DEFAULT_PREFERENCE.family, mode: raw };
+  // The Tinta-only build stored a bare mode; those users keep the look they had.
+  if (isMode(raw)) return { family: 'tinta', mode: raw };
   if (Object.hasOwn(LEGACY_THEMES, raw)) return LEGACY_THEMES[raw];
 
   let parsed: unknown;
@@ -82,7 +85,7 @@ export function parsePreference(raw: string | null): ThemePreference {
       mode: isMode(stored.mode) ? stored.mode : DEFAULT_PREFERENCE.mode,
     };
   }
-  if (stored.mode === 'system') return DEFAULT_PREFERENCE;
+  if (stored.mode === 'system') return { family: 'tinta', mode: 'system' };
   if (typeof stored.theme === 'string' && Object.hasOwn(LEGACY_THEMES, stored.theme)) {
     return LEGACY_THEMES[stored.theme];
   }

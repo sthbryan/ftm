@@ -7,6 +7,7 @@ import { startTunnel } from '@/lib/stores/tunnels';
 import { providerErrorHint } from '@/lib/utils/providerError';
 import type { Tunnel } from '@/lib/types';
 import { attempt } from './shared';
+import { AsciiDie } from './AsciiDie';
 
 /** When opening fails: what went wrong in plain words, the raw error, and a retry. */
 export function FailedMoment({ tunnel, onEdit }: { tunnel: Tunnel; onEdit: (id: string) => void }) {
@@ -22,6 +23,7 @@ export function FailedMoment({ tunnel, onEdit }: { tunnel: Tunnel; onEdit: (id: 
 
   return (
     <section class="ftm-moment" aria-labelledby="failed-title">
+      <AsciiDie mode="one" />
       <div class="flex max-w-full flex-col items-center">
         <h1 id="failed-title" class="ftm-title">
           {tunnel.name}

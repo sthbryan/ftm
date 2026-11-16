@@ -11,7 +11,6 @@ import {
   ArrowClockwise,
   Bell,
   BellSlash,
-  CircleHalf,
   DownloadSimple,
   GlobeHemisphereWest,
   Power,
@@ -38,7 +37,7 @@ import {
   type InstalledProvider,
 } from '@/lib/stores/installed';
 import { unlockSound } from '@/lib/sound';
-import { ThemeGrid } from './ThemeGrid';
+import { ThemeGrid, ThemeModeControl } from './ThemeGrid';
 
 function Row({
   icon,
@@ -90,11 +89,14 @@ function Section({
   title,
   description,
   action,
+  bare = false,
   children,
 }: {
   title: string;
   description?: string;
   action?: preact.ComponentChildren;
+  /** Lay the content straight on the page, for content that is its own surface. */
+  bare?: boolean;
   children: preact.ComponentChildren;
 }) {
   return (
@@ -106,7 +108,11 @@ function Section({
         </div>
         {action}
       </header>
-      <Card className="ftm-settings-card">{children as Renderable}</Card>
+      {bare ? (
+        <div class="min-w-0">{children}</div>
+      ) : (
+        <Card className="ftm-settings-card">{children as Renderable}</Card>
+      )}
     </section>
   );
 }
@@ -263,16 +269,13 @@ export function SettingsPage() {
               </Row>
             </Section>
 
-            <Section title={t('appearance_section')}>
-              <Row
-                icon={<CircleHalf size={20} />}
-                title={t('theme')}
-                description={t('match_system')}
-                last
-                wide
-              >
-                <ThemeGrid />
-              </Row>
+            <Section
+              title={t('appearance_section')}
+              description={t('match_system')}
+              action={<ThemeModeControl />}
+              bare
+            >
+              <ThemeGrid />
             </Section>
 
             {installedProviders.value && installedProviders.value.length > 0 && (

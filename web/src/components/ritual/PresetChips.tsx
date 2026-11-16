@@ -95,6 +95,7 @@ function PresetChip({
         <ProviderIcon provider={tunnel.provider} />
       )}
       <span class="truncate">{tunnel.name}</span>
+      <span class="ftm-chip__port">{tunnel.port}</span>
     </Button>
   );
 }

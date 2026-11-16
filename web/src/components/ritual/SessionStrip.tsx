@@ -76,7 +76,14 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
 
   return (
     <div class="flex flex-col gap-2">
-      <Surface className="ftm-strip" role="group" aria-label={tunnel.name}>
+      <Surface
+        className="ftm-strip"
+        role="group"
+        aria-label={tunnel.name}
+        aria-busy={tunnel.state === 'stopping' || undefined}
+        data-closing={tunnel.state === 'stopping' ? '' : undefined}
+      >
+        <div class="ftm-strip__row">
         <div class="flex min-w-0 items-center gap-2.5">
           <StatusMarkDot state={tunnel.state} label={t(tunnel.state)} size="sm" />
           <p class="m-0 truncate text-sm font-medium text-text" title={tunnel.publicUrl}>
@@ -162,11 +169,20 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
             onClick={stop}
           />
         </div>
+        </div>
+        {logsOpen && (
+          <div class="ftm-strip__logs">
+            <LogsPanel tunnelId={tunnel.id} state={tunnel.state} flat />
+          </div>
+        )}
       </Surface>
 
-      {logsOpen && <LogsPanel tunnelId={tunnel.id} state={tunnel.state} />}
-
-      <QrDialog open={qrOpen} url={tunnel.publicUrl ?? ''} onClose={() => setQrOpen(false)} />
+      <QrDialog
+        open={qrOpen}
+        name={tunnel.name}
+        url={tunnel.publicUrl ?? ''}
+        onClose={() => setQrOpen(false)}
+      />
     </div>
   );
 }

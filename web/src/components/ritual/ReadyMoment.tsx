@@ -4,12 +4,22 @@ import { IconAction } from '@/components/IconAction';
 import { ArrowClockwise, DoorOpen, PencilSimple, Plus } from '@phosphor-icons/react';
 import { foundryCheck } from '@/lib/ritual';
 import { unlockSound } from '@/lib/sound';
-import { busyPorts, checkFoundry, checkingPorts, scannedPorts } from '@/lib/stores/foundry';
+import {
+  busyPorts,
+  checkFoundry,
+  checkingPorts,
+  foundryPorts,
+  scannedPorts,
+  watchPort,
+  worldOn,
+  worldTitle,
+} from '@/lib/stores/foundry';
 import { t } from '@/lib/stores/i18n';
-import { providerLabel } from '@/lib/stores/providers';
-import { startTunnel } from '@/lib/stores/tunnels';
+import { startTunnel, updateTunnel } from '@/lib/stores/tunnels';
 import type { Tunnel } from '@/lib/types';
-import { Mark } from '../Mark';
+import { ProviderIcon } from './ProviderIcon';
+import { Ticket } from './Ticket';
+import { AsciiDie } from './AsciiDie';
 import { attempt } from './shared';
 
 /**
@@ -28,13 +38,14 @@ export function ReadyMoment({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void checkFoundry(tunnel?.port);
+    watchPort(tunnel?.port);
+    return () => watchPort(undefined);
   }, [tunnel?.id, tunnel?.port]);
 
   if (!tunnel) {
     return (
       <section class="ftm-moment" aria-labelledby="ready-title">
-        <Mark class="size-12" />
+        <AsciiDie mode="idle" />
         <div>
           <h1 id="ready-title" class="ftm-title">
             {t('ready_empty_title')}
@@ -49,7 +60,15 @@ export function ReadyMoment({
     );
   }
 
-  const check = foundryCheck(tunnel.port, busyPorts.value, scannedPorts.value);
+  const check = foundryCheck(tunnel.port, busyPorts.value, scannedPorts.value, foundryPorts.value);
+  // Foundry is up, just not where this connection looks for it.
+  const elsewhere =
+    check !== 'answers' ? foundryPorts.value?.find((port) => port !== tunnel.port) : undefined;
+
+  async function usePort(port: number) {
+    if (!tunnel) return;
+    await attempt(() => updateTunnel(tunnel.id, { localPort: port }));
+  }
 
   async function open() {
     if (!tunnel) return;
@@ -59,18 +78,50 @@ export function ReadyMoment({
     setBusy(false);
   }
 
+  // What Foundry says about itself on this port: the world it runs, or that
+  // it sits on the setup screen with no world launched (players can't join).
+  const status = check === 'answers' ? worldOn(tunnel.port) : undefined;
+  const setupScreen = status?.version !== undefined && !status.active;
+  const foundryLine = elsewhere
+    ? t('foundry_elsewhere', { port: elsewhere, expected: tunnel.port })
+    : status?.active && status.world
+      ? t('foundry_world', { world: worldTitle(status.world), port: tunnel.port })
+      : setupScreen
+        ? t('foundry_setup', { port: tunnel.port })
+        : t(`foundry_${check}`, { port: tunnel.port });
+
   return (
     <section class="ftm-moment" aria-labelledby="ready-title">
-      <div class="flex max-w-full flex-col items-center">
-        <h1 id="ready-title" class="ftm-title">
+      <Ticket
+        label={tunnel.name}
+        state="ready"
+        stub={
+          <>
+            <span class="ftm-ticket__label">{t('port_label')}</span>
+            <span class="ftm-ticket__seat">{tunnel.port}</span>
+            <span class="ftm-ticket__label inline-flex items-center gap-1.5">
+              <span class="ftm-dot" data-check={setupScreen ? 'silent' : check} aria-hidden="true" />
+              Foundry
+            </span>
+          </>
+        }
+      >
+        <p class="ftm-ticket__eyebrow">
+          <ProviderIcon provider={tunnel.provider} />
+          {t(`provider_note_${tunnel.provider}`)}
+        </p>
+        <h1 id="ready-title" class="ftm-ticket__world">
           {tunnel.name}
         </h1>
-        <p class="m-0 mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-text-muted">
-          <span class="ftm-dot" data-check={check} aria-hidden="true" />
-          <span class={check === 'answers' ? 'text-text' : ''} aria-live="polite">
-            {t(`foundry_${check}`, { port: tunnel.port })}
-          </span>
-          {check !== 'answers' && (
+        <p class="ftm-ticket__facts" aria-live="polite">
+          <span class="ftm-dot" data-check={setupScreen ? 'silent' : check} aria-hidden="true" />
+          <span class={check === 'answers' && !setupScreen ? 'text-text' : ''}>{foundryLine}</span>
+          {elsewhere !== undefined && (
+            <Button variant="secondary" size="sm" onClick={() => void usePort(elsewhere)}>
+              {t('foundry_use_port', { port: elsewhere })}
+            </Button>
+          )}
+          {check !== 'answers' && elsewhere === undefined && (
             <IconAction
               label={t('foundry_recheck')}
               size="sm"
@@ -79,30 +130,18 @@ export function ReadyMoment({
               onClick={() => void checkFoundry(tunnel.port)}
             />
           )}
-          <span class="inline-flex items-center gap-2 whitespace-nowrap">
-            <span aria-hidden="true">·</span>
-            <span>{providerLabel(tunnel.provider)}</span>
-            <IconAction
-              label={t('edit_connection')}
-              size="sm"
-              icon={<PencilSimple size={14} />}
-              onClick={() => onEdit(tunnel.id)}
-            />
-          </span>
         </p>
-      </div>
-
-      <Button
-        variant="primary"
-        size="lg"
-        className="ftm-hero-action"
-        loading={busy}
-        onClick={open}
-      >
-        <DoorOpen size={20} />
-        {t('open_table')}
-      </Button>
-
+        <div class="ftm-ticket__actions">
+          <Button variant="primary" size="lg" loading={busy} onClick={open}>
+            <DoorOpen size={18} />
+            {t('open_table')}
+          </Button>
+          <Button variant="quiet" size="lg" onClick={() => onEdit(tunnel.id)}>
+            <PencilSimple size={18} />
+            {t('edit_connection')}
+          </Button>
+        </div>
+      </Ticket>
     </section>
   );
 }

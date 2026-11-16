@@ -113,6 +113,10 @@ describe('foundryCheck', () => {
     expect(foundryCheck(8080, [8080], [30000, 8080])).toBe('answers');
     expect(foundryCheck(8080, [], [30000, 8080])).toBe('silent');
   });
+  it('tells Foundry from another program on the port', () => {
+    expect(foundryCheck(30000, [30000], undefined, [30000])).toBe('answers');
+    expect(foundryCheck(30000, [30000], undefined, [])).toBe('other');
+  });
 });
 
 describe('inviteMessage', () => {
