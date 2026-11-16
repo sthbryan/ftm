@@ -2,12 +2,12 @@
 
 <p align="center">
   <strong>Foundry Tunnel Manager</strong><br />
-  Share your Foundry VTT world without port forwarding.
+  Share your Foundry world with players everywhere.
 </p>
 
 <p align="center">
-  One binary. Several tunnel providers. Three ways in.<br />
-  TUI, web dashboard, or native desktop — same tunnels, same config.
+  Start a connection, copy the link, send it to your table. No port forwarding.<br />
+  Runs in the terminal, in your browser, or as a desktop app.
 </p>
 
 <p align="center">
@@ -24,11 +24,11 @@
 
 ---
 
-You want players in your Foundry world. Your router, ISP, or CGNAT has other plans. Port forwarding is a pain; random free tunnels mean memorizing flags and babysitting processes.
+Your players need a way into your Foundry world, and your router, ISP or CGNAT won't open one. Port forwarding is fiddly, and free tunnel tools mean remembering flags and watching a terminal all night.
 
-**ftm starts and stops tunnels for you.** Pick a provider, point it at Foundry’s port, copy the public URL. When a tunnel dies or is about to expire, you get a notification — not a silent failure mid-session.
+**ftm runs the tunnel for you.** Pick a provider, tell it Foundry's port, copy the link. If a link drops or is about to close, you get a notice before your players notice.
 
-**It is a single static binary.** Providers are downloaded on demand. Config lives under your user directory. The web UI is embedded, so the same binary drives the TUI, the dashboard, and the desktop shell.
+**One program, nothing else to install.** ftm downloads the tunnel program you pick the first time you use it. Settings live in your user folder. The terminal view, the web view and the desktop app all run the same connections.
 
 ---
 
@@ -63,9 +63,9 @@ Full-screen terminal UI. Navigate connections, open logs, copy the public URL, j
 Dashboard at `http://localhost:40500` (port auto-detects if busy). Themes, live status, manage tunnels from the browser.
 
 ```bash
-ftm --web          # dashboard + open browser
-ftm --server       # dashboard only
-ftm --port 8080    # force a port
+ftm serve --open          # dashboard + open browser
+ftm serve                 # dashboard only
+ftm serve --port 8080     # force a port
 ```
 
 **Desktop** — release assets `ftm-desktop-*`  
@@ -162,10 +162,31 @@ chmod +x ftm-desktop-linux
 xattr -d com.apple.quarantine ftm-desktop-macos.app
 ```
 
-### Flags
+### Commands
 
-| Flag | Effect |
-|------|--------|
+Every command talks to the ftm that is already running (the desktop app, `ftm serve` or the TUI) when there is one, and runs the core itself otherwise. Run `ftm <command> --help` for the details.
+
+| Command | Effect |
+|---------|--------|
+| *(none)* | TUI + web server; with ftm already running, the TUI attaches to it and changes show in both right away |
+| `ftm up [name…] [--all]` | Open connections and print their links |
+| `ftm down [name…]` | Close connections (all open ones when none is named) |
+| `ftm share [name] [--port N]` | Open a connection, copy the link, print an invite |
+| `ftm ls [--json]` | List connections and their state |
+| `ftm add [name] [--provider P] [--port N]` | Save a connection (asks on a terminal) |
+| `ftm edit <name>` / `ftm rm <name…>` | Change / remove connections |
+| `ftm logs <name> [-f]` | Print or follow a connection's output |
+| `ftm providers [ls\|install\|update]` | Tunnel programs: versions, download, update |
+| `ftm doctor` | Check providers, ssh key, Foundry port, config folder, start at login |
+| `ftm serve [--open] [--port N]` | Web only, no TUI |
+| `ftm config [path\|get\|set\|edit]` | Read and change settings |
+| `ftm self-update [--check]` | Update to the latest release |
+| `ftm uninstall` · `ftm version` | Remove ftm · print the version |
+| `ftm completion <shell>` · `ftm man` | Shell completions · man page |
+
+The old flags (`-web`, `-server`, `-port`, `-update`, `-check`, `-uninstall`, `-version`) still work.
+
+------|--------|
 | *(none)* | TUI + web server |
 | `--web` | Web only, open browser |
 | `--server` | Web only, no browser |
@@ -188,7 +209,7 @@ ftm                  # TUI; dashboard at http://localhost:40500
 Web-only session:
 
 ```bash
-ftm --web
+ftm serve --open
 ```
 
 ---
@@ -215,7 +236,7 @@ Go 1.25+ and Bun. Desktop uses [Wails v3](https://v3.wails.io) (CGO + platform w
 ```bash
 make build-full   # web assets + bin/ftm with the UI embedded
 make build        # Go only (uses existing embedded static files)
-make web          # Svelte build → internal/web/static (+ desktop dist)
+make web          # Preact build → internal/transport/httpapi/static (+ desktop dist)
 make dev          # web assets, then go run — use this after a frontend change
 make run          # go run only, against the assets already embedded
 make test         # go test ./...
@@ -223,14 +244,14 @@ make test-race    # go test -race ./...
 make vet          # go vet ./...
 make fmt          # gofmt -w, then verify nothing is left unformatted
 make install      # web + binary → $BINDIR (default $(go env GOPATH)/bin)
-make desktop      # Wails v3 desktop shell → desktop/build/bin/ftm-desktop
+make desktop      # Wails v3 desktop shell → cmd/ftm-desktop/build/bin/ftm-desktop
 make help         # full target list
 ```
 
 Hot reload against a running ftm web server:
 
 ```bash
-cd web-svelte && bun run dev
+cd web && bun run dev
 ```
 
 **macOS TUI notifications:** install `alerter` (`brew install alerter`) for native alerts. Desktop/GUI paths use the platform APIs.
@@ -243,7 +264,7 @@ make version ARGS="patch"     # non-interactive bump
 make version ARGS="0.11.0 --dry-run"
 ```
 
-`make version` (alias: `make release`) updates every place that holds the version string (`internal/version/version.go`, `web-svelte/package.json`, `desktop/wails.json` — both `version` and `productVersion`), commits with `chore(release): vX.Y.Z`, creates an annotated tag, and pushes branch + tag to `origin`. Flags: `--dry-run`, `--no-push`, `--allow-dirty`, `--yes`/`-y`. Run `make version ARGS="--help"` for the full reference.
+`make version` (alias: `make release`) updates every place that holds the version string (`internal/version/version.go`, `web/package.json`, `cmd/ftm-desktop/wails.json` — both `version` and `productVersion`), commits with `chore(release): vX.Y.Z`, creates an annotated tag, and pushes branch + tag to `origin`. Flags: `--dry-run`, `--no-push`, `--allow-dirty`, `--yes`/`-y`. Run `make version ARGS="--help"` for the full reference.
 
 ---
 
@@ -251,7 +272,7 @@ make version ARGS="0.11.0 --dry-run"
 
 - **One process, three surfaces** — TUI, embedded web, and Wails share the same tunnel manager and config.
 - **Providers as plugins** — each tunnel backend implements a small interface; installers download only what you use.
-- **Live status** — the dashboard tracks process state over WebSockets so start/stop/errors show up without refresh.
+- **Live status** — the dashboard tracks process state over Server-Sent Events so start/stop/errors show up without refresh.
 - **Local by default** — the web UI is meant for localhost; treat exposing it beyond your machine as out of scope.
 
 ---

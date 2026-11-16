@@ -6,7 +6,7 @@
 BINARY_NAME=ftm
 BUILD_DIR=bin
 PKG=./cmd/ftm
-DESKTOP_DIR=./desktop
+DESKTOP_DIR=./cmd/ftm-desktop
 
 # git describe includes the leading "v" from tags; strip it so callers can print "v$(Version)".
 VERSION=$(shell (git describe --tags --always --dirty 2>/dev/null || echo dev) | sed 's/^v//')
@@ -27,6 +27,8 @@ DESKTOP_OUT := $(DESKTOP_DIR)/build/bin
 DESKTOP_BIN := ftm-desktop
 ifeq ($(OS),Windows_NT)
 DESKTOP_BIN := ftm-desktop.exe
+# A GUI-subsystem binary, so launching the app never opens a console window.
+DESKTOP_LDFLAGS := -H windowsgui
 endif
 UNAME_S := $(shell uname -s)
 DESKTOP_DEV_TAGS_ARG :=
@@ -41,14 +43,14 @@ endif
 ##@ Build
 
 .PHONY: web
-web: ## Build the Svelte UI into internal/web/static (+ desktop dist)
+web: ## Build the Preact UI into internal/transport/httpapi/static (+ desktop dist)
 	@echo "Building web UI..."
 	./scripts/build-web-assets.sh
 	mkdir -p $(DESKTOP_DIR)/build
 	cp $(DESKTOP_DIR)/icon.png $(DESKTOP_DIR)/build/appicon.png
 
 .PHONY: build
-build: ## Build the CLI with whatever is already embedded in internal/web/static
+build: ## Build the CLI with whatever is already embedded in internal/transport/httpapi/static
 	@echo "Building $(BINARY_NAME) for current platform... ($(VERSION))"
 	@mkdir -p $(BUILD_DIR)
 	CGO_ENABLED=$(CGO_ENABLED) go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(PKG)
@@ -74,16 +76,16 @@ uninstall: ## Remove the installed binary from $BINDIR
 desktop: web ## Build the Wails v3 desktop shell for the host OS
 	@echo "Building desktop (production tags)..."
 	@mkdir -p $(DESKTOP_OUT)
-	CGO_ENABLED=1 go build $(if $(DESKTOP_PROD_TAGS_ARG),-tags $(DESKTOP_PROD_TAGS_ARG),) -ldflags "-s -w" -o $(DESKTOP_OUT)/$(DESKTOP_BIN) ./desktop
+	CGO_ENABLED=1 go build $(if $(DESKTOP_PROD_TAGS_ARG),-tags $(DESKTOP_PROD_TAGS_ARG),) -ldflags "-s -w $(DESKTOP_LDFLAGS)" -o $(DESKTOP_OUT)/$(DESKTOP_BIN) ./cmd/ftm-desktop
 
 .PHONY: desktop-dev
 desktop-dev: web ## Build the desktop shell without production tags
 	@echo "Building desktop (dev)..."
 	@mkdir -p $(DESKTOP_OUT)
-	CGO_ENABLED=1 go build $(if $(DESKTOP_DEV_TAGS_ARG),-tags $(DESKTOP_DEV_TAGS_ARG),) -o $(DESKTOP_OUT)/$(DESKTOP_BIN) ./desktop
+	CGO_ENABLED=1 go build $(if $(DESKTOP_DEV_TAGS_ARG),-tags $(DESKTOP_DEV_TAGS_ARG),) -ldflags "$(DESKTOP_LDFLAGS)" -o $(DESKTOP_OUT)/$(DESKTOP_BIN) ./cmd/ftm-desktop
 
 .PHONY: desktop-winres
-desktop-winres: ## Regenerate the Windows icon/manifest resources after changing desktop/icon.png
+desktop-winres: ## Regenerate the Windows icon/manifest resources after changing cmd/ftm-desktop/icon.png
 	@echo "Generating Windows resources (icon, manifest, version info)..."
 	go run github.com/tc-hib/go-winres@v0.3.3 make \
 		--in $(DESKTOP_DIR)/winres/winres.json \
@@ -142,7 +144,7 @@ release: version ## Alias of version
 ##@ Housekeeping
 
 .PHONY: clean
-clean: ## Remove build artifacts (leaves internal/web/static, which build embeds)
+clean: ## Remove build artifacts (leaves internal/transport/httpapi/static, which build embeds)
 	@echo "Cleaning build artifacts..."
 	rm -rf $(BUILD_DIR)
 	rm -f $(BINARY_NAME) ftm-*

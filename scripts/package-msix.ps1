@@ -20,9 +20,9 @@
   - For local install (sideload), pass -Sign and install the cert once.
 
 .EXAMPLE
-  # After: wails build -s -nopackage  (from desktop/)
+  # After: wails build -s -nopackage  (from cmd/ftm-desktop/)
   .\scripts\package-msix.ps1 `
-    -ExePath .\desktop\build\bin\ftm-desktop.exe `
+    -ExePath .\cmd\ftm-desktop\build\bin\ftm-desktop.exe `
     -Version 0.10.0.0 `
     -IdentityName "YourPublisher.ftm" `
     -Publisher "CN=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
@@ -51,7 +51,7 @@ param(
 
     [string] $DisplayName = "Foundry Tunnel Manager",
     [string] $PublisherDisplayName = "sthbryan",
-    [string] $Description = "Share your Foundry VTT world without port forwarding.",
+    [string] $Description = "Share your Foundry VTT world with your players. No port forwarding.",
     [string] $ExeName = "ftm-desktop.exe",
 
     # Architecture inside the package (Wails release builds are typically x64).
@@ -298,8 +298,8 @@ Write-Host "Staged binary: $destExe"
 # Icons
 if (-not $IconPath) {
     $candidates = @(
-        (Join-Path $PSScriptRoot "..\desktop\icon.png"),
-        (Join-Path $PSScriptRoot "..\desktop\build\appicon.png"),
+        (Join-Path $PSScriptRoot "..\cmd\ftm-desktop\icon.png"),
+        (Join-Path $PSScriptRoot "..\cmd\ftm-desktop\build\appicon.png"),
         (Join-Path (Split-Path $ExePath) "icon.png")
     )
     foreach ($c in $candidates) {

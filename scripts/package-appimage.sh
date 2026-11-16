@@ -37,7 +37,7 @@ cat > "$APPDIR/usr/share/applications/ftm-desktop.desktop" <<DESKTOP
 Type=Application
 Name=Foundry Tunnel Manager
 GenericName=Tunnel Manager
-Comment=Share your Foundry VTT world without port forwarding
+Comment=Share your Foundry VTT world with your players
 Exec=ftm-desktop
 Icon=ftm-desktop
 Categories=Network;Game;
@@ -50,9 +50,9 @@ for size in 64 128 256 512; do
   dir="$APPDIR/usr/share/icons/hicolor/${size}x${size}/apps"
   mkdir -p "$dir"
   if command -v convert >/dev/null 2>&1; then
-    convert desktop/icon.png -resize "${size}x${size}" "$dir/ftm-desktop.png"
+    convert cmd/ftm-desktop/icon.png -resize "${size}x${size}" "$dir/ftm-desktop.png"
   else
-    cp desktop/icon.png "$dir/ftm-desktop.png"
+    cp cmd/ftm-desktop/icon.png "$dir/ftm-desktop.png"
   fi
 done
 

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Foundry Virtual Tabletop</title>
+<style>
+  body { margin: 0; min-height: 100dvh; display: grid; place-items: center; background: #111013; color: #ece8f4;
+    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; text-align: center; }
+  h1 { margin: 0 0 6px; font: 500 32px/1.15 Georgia, serif; }
+  p { margin: 0; color: #9b95a8; }
+  .dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 99px; background: #6fd3a0; }
+  .off { background: #f0bc5e; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="world">…</h1>
+  <p><span class="dot off" id="dot"></span><span id="state">joining…</span></p>
+</main>
+<script>
+  const minor = new Set(['a', 'an', 'and', 'of', 'the', 'in', 'on', 'to', 'de', 'del', 'la', 'el', 'y']);
+  const title = (id) => id.split(/[-_\s]+/).filter(Boolean).map((w, i) => (i > 0 && minor.has(w) ? w : w[0].toUpperCase() + w.slice(1))).join(' ');
+  let joined = false;
+
+  async function refresh() {
+    try {
+      const status = await (await fetch('/api/status', { cache: 'no-store' })).json();
+      document.getElementById('world').textContent = status.active ? title(status.world) : 'No world launched';
+      document.getElementById('state').textContent = !status.active
+        ? 'Foundry v' + status.version + ' (fake)'
+        : joined ? status.users + ' at the table, you included' : 'joining…';
+    } catch {
+      document.getElementById('state').textContent = 'Foundry stopped';
+    }
+  }
+
+  function join() {
+    const socket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/socket.io/?EIO=4&transport=websocket`);
+    socket.onopen = () => { joined = true; document.getElementById('dot').className = 'dot'; refresh(); };
+    socket.onclose = () => { joined = false; document.getElementById('dot').className = 'dot off'; setTimeout(join, 2000); };
+  }
+
+  refresh();
+  setInterval(refresh, 2000);
+  join();
+</script>
+</body>
+</html>

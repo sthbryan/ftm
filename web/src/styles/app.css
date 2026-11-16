@@ -1,0 +1,1745 @@
+@import "tailwindcss";
+@import "./themes.css";
+@import "./fonts.css";
+@import "./sephiro.css";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: "Fraunces", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --text-2xs: 0.75rem;
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
+  --radius-control: var(--sph-radius-sm);
+  --radius-surface: var(--sph-radius-md);
+  --max-width-app: 90rem;
+}
+
+/* The page never scrolls or rubber-bands as a whole: the shell's header holds
+ * still and only .ftm-scroll moves (and the pop-out panel, which fits its window). */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 160ms ease;
+}
+
+*:hover,
+*:focus-within {
+  scrollbar-color: color-mix(in srgb, var(--color-muted) 45%, transparent) transparent;
+}
+
+/* The fallback ring for anything without its own. Zero specificity, so a
+ * Sephiro component that draws its focus its own way (the command palette's
+ * input, fields with a focus border) is never painted over. */
+:where(:focus-visible) {
+  outline: 2px solid var(--sph-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@media (pointer: coarse) {
+  button,
+  a[href],
+  [role="switch"],
+  [role="radio"] {
+    min-height: 44px;
+  }
+
+  button[aria-label]:not(:has(span)),
+  a[href][aria-label]:not(:has(h1)) {
+    min-width: 44px;
+  }
+}
+
+/* Page changes (home, new/edit, settings) cross-fade with a short rise; the
+ * header has its own name so it holds still while the page under it changes. */
+.ftm-header {
+  view-transition-name: ftm-header;
+}
+
+/* ── Shell: fixed header, scrolling page ────────────────────────────────── */
+
+.ftm-shell {
+  display: flex;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ftm-header {
+  --ftm-header-height: 4rem;
+  flex: none;
+  height: var(--ftm-header-height);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--sph-motion-normal) var(--sph-ease-standard);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ftm-header[data-scrolled] {
+  border-bottom-color: var(--color-border-light);
+}
+
+.ftm-header__inner {
+  display: flex;
+  width: 100%;
+  max-width: var(--max-width-app);
+  height: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 40rem) {
+  .ftm-header__inner {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .ftm-header__inner {
+    padding-inline: 2rem;
+  }
+}
+
+.ftm-brand__mark {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.ftm-scroll {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.ftm-content {
+  display: flex;
+  width: 100%;
+  max-width: var(--max-width-app);
+  min-height: 100%;
+  flex: 1 0 auto;
+  flex-direction: column;
+  margin-inline: auto;
+  padding: 0 1rem 2rem;
+}
+
+@media (min-width: 40rem) {
+  .ftm-content {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .ftm-content {
+    padding-inline: 2rem;
+  }
+}
+
+/* In the macOS window the header is the title bar. The traffic lights sit in
+ * its top-left corner (the window uses a hidden, inset title bar), so the row
+ * spans the whole window, starts after them and is as tall as a toolbar. */
+:root[data-shell="mac"] .ftm-header {
+  --ftm-header-height: 3.25rem;
+}
+
+:root[data-shell="mac"] .ftm-header__inner {
+  max-width: none;
+  padding-inline: 5.75rem 1rem;
+}
+
+:root[data-shell="mac"] .ftm-brand__mark {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* ── Foundry beacon in the header ───────────────────────────────────────── */
+
+.ftm-beacon.sph-button {
+  gap: 0.5rem;
+  color: var(--sph-text-muted);
+  font-size: var(--text-2xs);
+  font-weight: 400;
+}
+
+.ftm-beacon[data-live].sph-button {
+  color: var(--sph-text);
+}
+
+.ftm-beacon__dot {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px var(--sph-text-muted);
+}
+
+.ftm-beacon[data-live] .ftm-beacon__dot {
+  background: var(--sph-success);
+  box-shadow: none;
+  animation: ftm-beacon-land var(--sph-motion-slow) var(--sph-ease-spring) both;
+}
+
+/* Foundry is open but on its setup screen: players can't join yet. */
+.ftm-beacon[data-setup] .ftm-beacon__dot {
+  background: var(--sph-warning);
+}
+
+.ftm-beacon[data-setup] .ftm-beacon__dot::after {
+  box-shadow: 0 0 0 1.5px var(--sph-warning);
+}
+
+/* One ring when Foundry shows up, then stillness. */
+.ftm-beacon[data-live] .ftm-beacon__dot::after {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 1.5px var(--sph-success);
+  content: "";
+  opacity: 0;
+  animation: ftm-beacon-ring 900ms var(--sph-ease-exit) 120ms both;
+}
+
+/* The beacon's tooltip, as a small card. */
+.ftm-beacon-tip {
+  display: flex;
+  min-width: 13rem;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding-block: 0.125rem;
+  text-align: start;
+}
+
+.ftm-beacon-tip__world {
+  font-family: var(--font-serif);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.ftm-beacon-tip__meta {
+  color: var(--sph-text-muted);
+  font-size: 11px;
+}
+
+.ftm-beacon-tip__rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  margin-block: 0.5rem 0.375rem;
+  padding-block: 0.5rem;
+  border-block: 1px solid var(--color-border-light);
+  font-size: 12px;
+}
+
+.ftm-beacon-tip__rows > :nth-child(odd) {
+  color: var(--sph-text-muted);
+}
+
+.ftm-beacon-tip__rows > :nth-child(even) {
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.ftm-beacon-tip__hint {
+  color: var(--sph-text-muted);
+  font-size: 11px;
+}
+
+.ftm-beacon__users {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-inline-start: 0.5rem;
+  border-inline-start: 1px solid var(--sph-border);
+  color: var(--sph-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ftm-beacon__label {
+  font-variant-numeric: tabular-nums;
+  animation: fade-in var(--sph-motion-normal) var(--sph-ease-standard) both;
+}
+
+@keyframes ftm-beacon-land {
+  from {
+    transform: scale(0.3);
+  }
+}
+
+@keyframes ftm-beacon-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+
+/* The header swaps at once: no cross-fade, so the settings gear never shows
+ * through the back arrow (or the other way round) while the page changes. */
+::view-transition-group(ftm-header),
+::view-transition-new(ftm-header) {
+  animation: none;
+}
+
+::view-transition-old(ftm-header) {
+  display: none;
+}
+
+::view-transition-old(root) {
+  animation: fade-out var(--sph-motion-fast) var(--sph-ease-standard) both;
+}
+
+::view-transition-new(root) {
+  animation: page-in var(--sph-motion-normal) var(--sph-ease-emphasis) both;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A theme change grows the new colours as a circle from where it was picked
+ * (lib/themeReveal.ts). The old picture stays put underneath. */
+:root[data-reveal="theme"]::view-transition-old(root) {
+  animation: none;
+}
+
+:root[data-reveal="theme"]::view-transition-new(root) {
+  animation: ftm-reveal 560ms var(--sph-ease-emphasis) both;
+}
+
+:root[data-reveal="theme"]::view-transition-old(ftm-header) {
+  display: block;
+  animation: none;
+}
+
+:root[data-reveal="theme"]::view-transition-new(ftm-header) {
+  animation: ftm-reveal 560ms var(--sph-ease-emphasis) both;
+}
+
+@keyframes ftm-reveal {
+  from {
+    clip-path: circle(0 at var(--ftm-reveal-x) var(--ftm-reveal-y));
+  }
+  to {
+    clip-path: circle(var(--ftm-reveal-r) at var(--ftm-reveal-x) var(--ftm-reveal-y));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(*) {
+    animation: none;
+  }
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+@keyframes ftm-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ftm-enter {
+    animation: ftm-enter var(--sph-motion-panel) var(--sph-ease-emphasis) both;
+  }
+  .ftm-enter-delay-1 {
+    animation-delay: var(--sph-motion-stagger);
+  }
+  .ftm-enter-delay-2 {
+    animation-delay: calc(var(--sph-motion-stagger) * 2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+.panel-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-color: var(--color-muted);
+  opacity: 0.055;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.25'%3E%3Cpath d='M28 10 L42 18 L42 34 L28 42 L14 34 L14 18 Z'/%3E%3C/g%3E%3Ccircle cx='28' cy='26' r='1.75' fill='%23000'/%3E%3Ccircle cx='8' cy='8' r='1' fill='%23000'/%3E%3Ccircle cx='48' cy='48' r='1' fill='%23000'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.25'%3E%3Cpath d='M28 10 L42 18 L42 34 L28 42 L14 34 L14 18 Z'/%3E%3C/g%3E%3Ccircle cx='28' cy='26' r='1.75' fill='%23000'/%3E%3Ccircle cx='8' cy='8' r='1' fill='%23000'/%3E%3Ccircle cx='48' cy='48' r='1' fill='%23000'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-size: 56px 56px;
+  mask-size: 56px 56px;
+}
+
+:root [data-sonner-toaster][data-sonner-theme] {
+  --normal-bg: var(--color-card);
+  --normal-border: var(--color-border);
+  --normal-text: var(--color-text);
+  --success-bg: var(--color-card);
+  --success-border: var(--color-border);
+  --success-text: var(--color-text);
+  --error-bg: var(--color-card);
+  --error-border: var(--color-border);
+  --error-text: var(--color-text);
+  --warning-bg: var(--color-card);
+  --warning-border: var(--color-border);
+  --warning-text: var(--color-text);
+  --info-bg: var(--color-card);
+  --info-border: var(--color-border);
+  --info-text: var(--color-text);
+}
+
+:root [data-sonner-toaster] [data-sonner-toast] [data-icon] {
+  height: 20px;
+  width: 20px;
+  border-radius: var(--radius-control);
+  justify-content: center;
+  color: var(--color-btn-text);
+}
+
+:root [data-sonner-toaster] [data-sonner-toast] [data-icon] svg {
+  height: 13px;
+  width: 13px;
+  margin: 0;
+}
+
+:root [data-sonner-toaster] [data-sonner-toast][data-type="success"] [data-icon] {
+  background: var(--color-status-running);
+}
+
+:root [data-sonner-toaster] [data-sonner-toast][data-type="error"] [data-icon] {
+  background: var(--color-status-error);
+}
+
+:root [data-sonner-toaster] [data-sonner-toast][data-type="warning"] [data-icon] {
+  background: var(--color-status-starting);
+}
+
+:root [data-sonner-toaster] [data-sonner-toast][data-type="info"] [data-icon] {
+  background: var(--color-status-installing);
+}
+
+:root [data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  background: var(--color-secondary-btn);
+  border-color: var(--color-border);
+  color: var(--color-secondary-btn-text);
+}
+
+:root [data-sonner-toaster] [data-sonner-toast]:hover [data-close-button]:hover {
+  background: var(--color-hover);
+  border-color: var(--color-border);
+}
+
+/* ── Home: the four moments ─────────────────────────────────────────────── */
+
+/* The stage fills the space under the header and centres its moment, the way
+ * the approved mockup does; strips and the session footer sit around it. */
+.ftm-stage {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  padding-block: 2rem 3rem;
+}
+
+.ftm-moment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  text-align: center;
+}
+
+.ftm-title {
+  margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: var(--font-serif);
+  font-size: clamp(1.75rem, 5vw, 2.25rem);
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--color-text);
+}
+
+.ftm-hero-action.sph-button {
+  height: 3.25rem;
+  padding-inline: 2rem;
+  border-radius: var(--sph-radius-md);
+  font-size: 0.9375rem;
+}
+
+/* Foundry check and failure, as a dot before the sentence. */
+.ftm-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--sph-text-muted);
+}
+
+.ftm-dot[data-check="answers"] {
+  background: var(--sph-success);
+}
+
+.ftm-dot[data-check="silent"] {
+  background: var(--sph-warning);
+}
+
+.ftm-dot[data-check="failed"] {
+  background: var(--sph-danger);
+}
+
+/* Preset chips: Sephiro buttons with a hairline, the picked one filled. */
+.ftm-chip.sph-button {
+  box-shadow: inset 0 0 0 1px var(--sph-border);
+  color: var(--sph-text-muted);
+}
+
+.ftm-chip.sph-button.is-selected {
+  color: var(--sph-text);
+}
+
+/* Each saved table is a small ticket: its port sits on a stub behind a dashed
+ * perforation. */
+.ftm-chip__port {
+  margin-inline-start: 0.25rem;
+  padding-inline-start: 0.625rem;
+  border-inline-start: 1px dashed var(--sph-border);
+  color: var(--sph-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── The ticket: ready, opening and invite share one object ───────────────── */
+
+.ftm-ticket.sph-surface {
+  --ftm-notch: 14px;
+  position: relative;
+  display: grid;
+  width: min(56rem, 100%);
+  grid-template-columns: minmax(0, 1fr) 15.5rem;
+  border: 1px solid var(--sph-border);
+  border-radius: 18px;
+  text-align: start;
+  animation: ftm-ticket-in var(--sph-motion-slow) var(--sph-ease-settle) both;
+}
+
+.ftm-ticket__main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.125rem;
+  padding: 2rem 2.25rem 1.75rem;
+}
+
+.ftm-ticket__stub {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 1.5rem;
+  border-inline-start: 2px dashed var(--sph-border);
+}
+
+/* The two half-moon notches where the stub would tear off. They are the page
+ * colour with the ticket's border, so the ticket reads as cut, not drawn. */
+.ftm-ticket__stub::before,
+.ftm-ticket__stub::after {
+  position: absolute;
+  inset-inline-start: calc(var(--ftm-notch) * -1 - 1px);
+  width: calc(var(--ftm-notch) * 2);
+  height: calc(var(--ftm-notch) * 2);
+  border: 1px solid var(--sph-border);
+  border-radius: 999px;
+  background: var(--color-bg);
+  content: "";
+}
+
+.ftm-ticket__stub::before {
+  top: calc(var(--ftm-notch) * -1 - 1px);
+  clip-path: inset(50% 0 0 0);
+}
+
+.ftm-ticket__stub::after {
+  bottom: calc(var(--ftm-notch) * -1 - 1px);
+  clip-path: inset(0 0 50% 0);
+}
+
+.ftm-ticket__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--sph-text-muted);
+  font-size: var(--text-xs);
+}
+
+.ftm-ticket__world {
+  max-width: 100%;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+
+.ftm-ticket__facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.625rem;
+  margin: 0;
+  color: var(--sph-text-muted);
+  font-size: var(--text-xs);
+}
+
+.ftm-ticket__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.ftm-ticket__label {
+  color: var(--sph-text-muted);
+  font-size: var(--text-2xs);
+}
+
+/* The port, printed like a seat number. */
+.ftm-ticket__seat {
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The QR is also the "copy QR" button: a white plate that lifts a little
+ * under the pointer and presses in on click. */
+.ftm-ticket__qr.sph-button {
+  display: block;
+  width: 11rem;
+  height: auto;
+  aspect-ratio: 1;
+  padding: 10px;
+  border-radius: 10px;
+  background: #fff;
+  cursor: copy;
+  animation: ftm-qr-develop 520ms var(--sph-ease-emphasis) both;
+  transition: transform var(--sph-motion-fast) var(--sph-ease-spring);
+}
+
+.ftm-ticket__qr.sph-button:hover:not(:disabled) {
+  background: #fff;
+  transform: translateY(-2px);
+}
+
+.ftm-ticket__qr.sph-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.ftm-ticket__qr .sph-button__label {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ftm-ticket__qr img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ftm-ticket .ftm-url {
+  max-width: 100%;
+  margin: 0;
+}
+
+/* The d20 in characters (components/ritual/AsciiDie.tsx). Cells are half as
+ * wide as tall, which the renderer assumes: 11px JetBrains Mono on a 13.2px
+ * line. The face that lands is the accent; the stone is a quieter tint of it. */
+.ftm-die {
+  margin: 0;
+  color: color-mix(in srgb, var(--sph-accent-strong) 78%, var(--sph-text-muted));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0;
+  line-height: 13.2px;
+  white-space: pre;
+  user-select: none;
+}
+
+.ftm-die[data-mode="idle"] {
+  color: var(--sph-text-muted);
+  opacity: 0.85;
+}
+
+.ftm-die[data-mode="one"] {
+  color: color-mix(in srgb, var(--sph-danger) 80%, var(--sph-text-muted));
+}
+
+/* Closing tears the ticket: the stub drops away along the perforation with a
+ * slight turn, the body settles and fades a beat later. */
+.ftm-ticket.sph-surface[data-state="tearing"] {
+  overflow: visible;
+  border-color: transparent;
+  background: transparent;
+}
+
+.ftm-ticket[data-state="tearing"] .ftm-ticket__stub {
+  border-radius: 0 18px 18px 0;
+  background: var(--sph-surface);
+  box-shadow: inset 0 0 0 1px var(--sph-border);
+  animation: ftm-tear-stub 620ms cubic-bezier(0.55, 0, 0.75, 0.2) both;
+  transform-origin: 0% 0%;
+}
+
+.ftm-ticket[data-state="tearing"] .ftm-ticket__main {
+  border-radius: 18px 0 0 18px;
+  background: var(--sph-surface);
+  box-shadow: inset 0 0 0 1px var(--sph-border);
+  animation: ftm-tear-body 620ms var(--sph-ease-exit) 120ms both;
+}
+
+@keyframes ftm-tear-stub {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  18% {
+    transform: translate(6px, -2px) rotate(2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(28px, 120px) rotate(14deg);
+  }
+}
+
+@keyframes ftm-tear-body {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+/* The first download of a provider, in braille dots (BrailleBar.tsx). */
+.ftm-braille {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: pre;
+}
+
+.ftm-braille__done {
+  color: var(--sph-accent);
+}
+
+.ftm-braille__rest {
+  color: var(--sph-border-strong);
+}
+
+@keyframes ftm-ticket-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+}
+
+/* The real code arrives like a print developing: from blurred to sharp. */
+@keyframes ftm-qr-develop {
+  from {
+    filter: blur(6px);
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (max-width: 40rem) {
+  .ftm-ticket.sph-surface {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ftm-ticket__main {
+    padding: 1.5rem;
+  }
+
+  .ftm-ticket__stub {
+    border-block-start: 2px dashed var(--sph-border);
+    border-inline-start: 0;
+  }
+
+  .ftm-ticket__stub::before,
+  .ftm-ticket__stub::after {
+    display: none;
+  }
+}
+
+.ftm-invite {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1.5rem;
+  border: 1px solid var(--sph-border);
+}
+
+.ftm-qr {
+  padding: 10px;
+  border-radius: 10px;
+  background: #fff;
+  line-height: 0;
+}
+
+.ftm-qr-dialog__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.ftm-qr-dialog__plate {
+  padding: 12px;
+  border-radius: var(--sph-radius-md);
+  animation: ftm-beacon-land var(--sph-motion-slow) var(--sph-ease-settle) both;
+}
+
+.ftm-qr-dialog__url {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--color-url-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ftm-url {
+  margin: 0.375rem 0 1rem;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  color: var(--color-url-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 40rem) {
+  .ftm-invite {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
+
+  .ftm-invite .ftm-url {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .ftm-invite .flex-wrap {
+    justify-content: center;
+  }
+}
+
+/* Each strip folds open when its table starts and folds shut once it closes,
+ * so the stage below slides instead of jumping. */
+.ftm-strip-slot {
+  display: grid;
+  grid-template-rows: 1fr;
+  padding-bottom: 0.75rem;
+  animation: ftm-unfold var(--sph-motion-slow) var(--sph-ease-emphasis) both;
+}
+
+.ftm-strip-slot[data-leaving] {
+  animation: ftm-fold var(--sph-motion-slow) var(--sph-ease-exit) both;
+  pointer-events: none;
+}
+
+@keyframes ftm-unfold {
+  from {
+    grid-template-rows: 0fr;
+    padding-bottom: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes ftm-fold {
+  to {
+    grid-template-rows: 0fr;
+    padding-bottom: 0;
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+/* Closing: the strip goes quiet and one line runs along its bottom edge until
+ * the provider lets go. */
+.ftm-strip[data-closing] {
+  position: relative;
+  overflow: hidden;
+}
+
+.ftm-strip[data-closing] > * {
+  opacity: 0.55;
+  transition: opacity var(--sph-motion-normal) var(--sph-ease-standard);
+}
+
+.ftm-strip[data-closing]::after {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--sph-text-muted), transparent);
+  content: "";
+  animation: ftm-sweep 1.1s var(--sph-ease-sweep) infinite;
+}
+
+@keyframes ftm-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/* In session: one slim strip, everything on a line that wraps on a phone. The
+ * logs open inside the same card, under a hairline, not as a second card. */
+.ftm-strip {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--sph-border);
+}
+
+.ftm-strip__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 1rem;
+  row-gap: 0.5rem;
+  padding: 0.625rem 0.75rem 0.625rem 1rem;
+}
+
+/* Several tables open: each strip picks what the round table shows. The
+ * picked one sits a step lighter with a firmer hairline; the others go quiet
+ * until hovered. No colour: the table in the middle already says which. */
+.ftm-strip[data-selectable] .ftm-strip__row {
+  cursor: pointer;
+}
+
+.ftm-strip.sph-surface[data-selectable] {
+  transition:
+    background-color var(--sph-motion-normal) var(--sph-ease-standard),
+    border-color var(--sph-motion-normal) var(--sph-ease-standard),
+    opacity var(--sph-motion-normal) var(--sph-ease-standard);
+}
+
+.ftm-strip.sph-surface[data-selectable]:not([data-selected]) {
+  opacity: 0.62;
+}
+
+.ftm-strip.sph-surface[data-selectable]:not([data-selected]):hover {
+  opacity: 1;
+}
+
+.ftm-strip.sph-surface[data-selected] {
+  border-color: var(--sph-border-strong);
+  background: var(--sph-surface-elevated);
+}
+
+.ftm-strip__pick.sph-button {
+  max-width: 18rem;
+  padding-inline: 0.375rem;
+  color: var(--sph-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.ftm-strip__logs {
+  border-top: 1px solid var(--color-border-light);
+  animation: ftm-unfold var(--sph-motion-normal) var(--sph-ease-emphasis) both;
+}
+
+.ftm-strip__logs .sph-terminal__body {
+  max-height: 22rem;
+}
+
+/* Logs read like a terminal that is still printing: each new line types in
+ * from the left, the newest carries a blinking cursor, and lines further back
+ * fade so the eye lands on what just happened. Only lines that mount animate,
+ * so opening the logs types just the last few. */
+.ftm-strip__logs .sph-terminal__line:nth-last-child(-n + 3) {
+  animation: ftm-type 420ms steps(28, end) both;
+}
+
+.ftm-strip__logs .sph-terminal__line:nth-last-child(n + 9) {
+  opacity: 0.55;
+  transition: opacity var(--sph-motion-slow) var(--sph-ease-standard);
+}
+
+.ftm-strip__logs .sph-terminal__line:last-child .sph-terminal__text::after {
+  margin-inline-start: 2px;
+  color: var(--sph-accent-strong);
+  content: "▍";
+  animation: ftm-blink 1s steps(1) infinite;
+}
+
+@keyframes ftm-type {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes ftm-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.ftm-seats {
+  display: inline-flex;
+  gap: 4px;
+}
+
+/* A player taking a seat: the seat lands with a small spring and throws a
+ * spark of characters above it, once. */
+.ftm-seat,
+.ftm-mini__seat[data-taken] {
+  position: relative;
+}
+
+.ftm-seat {
+  animation: ftm-beacon-land var(--sph-motion-slow) var(--sph-ease-spring) both;
+}
+
+.ftm-seat::after,
+.ftm-mini__seat[data-taken]::after {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  color: var(--sph-accent-strong);
+  content: "· ✦ ·";
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  pointer-events: none;
+  white-space: pre;
+  animation: ftm-spark 900ms var(--sph-ease-exit) 80ms both;
+}
+
+@keyframes ftm-spark {
+  0% {
+    opacity: 0;
+    letter-spacing: -2px;
+    transform: translate(-50%, 6px) scale(0.6);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    letter-spacing: 3px;
+    transform: translate(-50%, -6px) scale(1.15);
+  }
+}
+
+.ftm-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.ftm-seat {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--sph-accent-soft);
+  color: var(--sph-accent-strong);
+}
+
+/* ── In session: the table ───────────────────────────────────────────────
+ * A round table in the middle of the page. Seats sit on a ring around it,
+ * placed by angle (--angle) at the ring's radius; the GM's chair is at the
+ * bottom. Taken seats fill with the accent and spark when they fill. */
+.ftm-table {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  padding-block: 2.5rem;
+}
+
+.ftm-table__ring {
+  --ring: clamp(9rem, 22vw, 12rem);
+  position: relative;
+  display: grid;
+  width: calc(var(--ring) * 2 + 3rem);
+  aspect-ratio: 1;
+  place-items: center;
+}
+
+.ftm-table__top {
+  display: flex;
+  width: calc(var(--ring) * 1.55);
+  aspect-ratio: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--sph-surface-elevated) 70%, transparent), transparent 70%),
+    var(--sph-surface);
+  box-shadow:
+    inset 0 0 0 1px var(--sph-border),
+    inset 0 0 0 10px color-mix(in srgb, var(--sph-bg) 55%, var(--sph-surface)),
+    inset 0 0 0 11px var(--sph-border);
+  text-align: center;
+  animation: ftm-ticket-in var(--sph-motion-slow) var(--sph-ease-settle) both;
+}
+
+.ftm-table__world {
+  max-width: 80%;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-serif);
+  font-size: clamp(1.25rem, 2.4vw, 1.625rem);
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.ftm-table__clock {
+  margin: 0.25rem 0 0;
+  color: var(--sph-text);
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ftm-table__count {
+  margin: 0;
+  color: var(--sph-text-muted);
+  font-size: var(--text-xs);
+}
+
+.ftm-table__seat {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: -1.125rem 0 0 -1.125rem;
+  place-items: center;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--sph-border);
+  color: var(--sph-text-muted);
+  transform: rotate(var(--angle)) translateX(calc(var(--ring) + 0.25rem)) rotate(calc(var(--angle) * -1));
+  transition:
+    background-color var(--sph-motion-normal) var(--sph-ease-standard),
+    color var(--sph-motion-normal) var(--sph-ease-standard);
+}
+
+.ftm-table__seat[data-taken] {
+  background: color-mix(in srgb, var(--sph-accent) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sph-accent) 55%, transparent);
+  color: var(--sph-accent-strong);
+  animation: ftm-seat-take var(--sph-motion-slow) var(--sph-ease-spring) both;
+}
+
+.ftm-table__seat[data-taken]::after {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  color: var(--sph-accent-strong);
+  content: "· ✦ ·";
+  font-family: var(--font-mono);
+  font-size: 10px;
+  pointer-events: none;
+  white-space: pre;
+  animation: ftm-spark 900ms var(--sph-ease-exit) 80ms both;
+}
+
+/* A full table: smaller seats so they keep their spacing on the ring, and
+ * the last one counts whoever didn't fit. */
+.ftm-table__ring[data-crowded] .ftm-table__seat {
+  width: 1.875rem;
+  height: 1.875rem;
+  margin: -0.9375rem 0 0 -0.9375rem;
+}
+
+.ftm-table__seat[data-more] {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ftm-table__gm {
+  background: var(--sph-accent);
+  box-shadow: none;
+  color: var(--sph-on-accent);
+}
+
+/* A taken seat keeps its place on the ring while it lands. */
+@keyframes ftm-seat-take {
+  from {
+    transform: rotate(var(--angle)) translateX(calc(var(--ring) + 0.25rem)) rotate(calc(var(--angle) * -1)) scale(0.4);
+  }
+}
+
+.ftm-session-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  /* Sits at the bottom of the window, as in the mockup, however few strips. */
+  margin-top: auto;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.ftm-brand.sph-link {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--sph-text);
+  text-decoration: none;
+}
+
+/* ── New and edit connection ────────────────────────────────────────────── */
+
+.ftm-page {
+  display: flex;
+  width: 100%;
+  max-width: 70rem;
+  flex: 1;
+  flex-direction: column;
+  gap: 2rem;
+  margin-inline: auto;
+  padding-block: 0.5rem 2rem;
+}
+
+/* The connection as one sentence, its blanks typed in place; the providers
+ * beside it as a comparison you choose a row from. */
+.ftm-compose {
+  display: grid;
+  width: 100%;
+  max-width: 64rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+  align-items: center;
+  gap: 3.5rem;
+  margin: auto;
+}
+
+@media (max-width: 64rem) {
+  .ftm-compose {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.5rem;
+  }
+}
+
+.ftm-compose__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ftm-sentence {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.75;
+  color: var(--sph-text-muted);
+}
+
+.ftm-sentence__provider {
+  color: var(--sph-text);
+  font-weight: 500;
+  border-bottom: 2px solid var(--sph-border);
+}
+
+/* A blank in the sentence: no box, an underline that takes the accent while
+ * you type in it. */
+.ftm-slot.sph-input,
+.ftm-slot .sph-number-input__input {
+  height: auto;
+  padding: 0 0.25rem;
+  border: 0;
+  border-bottom: 2px solid var(--sph-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--sph-text);
+  font: 500 1em/1.3 var(--font-serif);
+  box-shadow: none;
+}
+
+.ftm-slot.sph-input:focus,
+.ftm-slot .sph-number-input__input:focus {
+  border-bottom-color: var(--sph-accent);
+  box-shadow: none;
+}
+
+.ftm-slot.sph-input::placeholder {
+  color: color-mix(in srgb, var(--sph-text-muted) 55%, transparent);
+}
+
+.ftm-slot--name.sph-input {
+  display: inline-block;
+  width: auto;
+  min-width: 8ch;
+  field-sizing: content;
+  max-width: 100%;
+  vertical-align: baseline;
+}
+
+.ftm-slot--port.sph-number-input {
+  font: inherit;
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  vertical-align: baseline;
+  border: 0;
+  background: transparent;
+}
+
+.ftm-slot--port .sph-number-input__input {
+  width: 6ch;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  text-align: center;
+}
+
+.ftm-slot--port .sph-number-input__step {
+  align-self: center;
+  opacity: 0;
+  transition: opacity var(--sph-motion-fast) var(--sph-ease-standard);
+}
+
+.ftm-slot--port:hover .sph-number-input__step,
+.ftm-slot--port:focus-within .sph-number-input__step {
+  opacity: 1;
+}
+
+.ftm-compose__hints {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: var(--sph-text-muted);
+  font-size: var(--text-xs);
+}
+
+.ftm-compose__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Providers as a table: a header row, then one radio row per provider with
+ * its name and three facts in fixed columns. */
+.ftm-compose__providers {
+  overflow: hidden;
+  border: 1px solid var(--sph-border);
+  border-radius: var(--sph-radius-md);
+}
+
+.ftm-prov {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) 4.25rem 4rem 2.5rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ftm-prov--head {
+  padding: 0.625rem 1rem 0.625rem 2.75rem;
+  background: var(--sph-raised);
+  color: var(--sph-text-muted);
+  font-size: var(--text-2xs);
+}
+
+.ftm-prov__name {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.ftm-prov__fact {
+  color: var(--sph-text-muted);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.ftm-prov__fact[data-good] {
+  color: var(--sph-success);
+}
+
+.ftm-provider-table .sph-radio-group__legend,
+.ftm-provider-table > .sph-radio-group__description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ftm-provider-table .sph-radio-group__options {
+  display: grid;
+  gap: 0;
+}
+
+.ftm-provider-table .sph-radio-group__option {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5625rem 1rem;
+  border-top: 1px solid var(--color-border-light);
+  transition: background-color var(--sph-motion-fast) var(--sph-ease-standard);
+}
+
+.ftm-provider-table .sph-radio-group__option:hover {
+  background: var(--sph-raised);
+}
+
+.ftm-provider-table .sph-radio-group__option:has(input:checked) {
+  background: var(--sph-accent-soft);
+}
+
+.ftm-provider-table .sph-radio-group__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ftm-provider-table .sph-radio-group__label {
+  display: block;
+  width: 100%;
+}
+
+.ftm-provider-table .sph-radio-group__option-description {
+  margin-top: 0.125rem;
+  color: var(--sph-text-muted);
+  font-size: var(--text-2xs);
+}
+
+/* ── Pop-out panel ──────────────────────────────────────────────────────── */
+
+.ftm-mini {
+  display: flex;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--sph-bg);
+  color: var(--sph-text);
+}
+
+/* The window has no title bar of its own: this strip moves it. On macOS the
+ * traffic lights sit at its left, so the state reads from the right. */
+.ftm-mini__bar {
+  display: flex;
+  height: 2.5rem;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  padding-inline: 0.875rem;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ftm-mini__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--sph-text-muted);
+  font-size: var(--text-2xs);
+}
+
+.ftm-mini__body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 0.25rem 1rem 1rem;
+}
+
+.ftm-mini__name {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ftm-mini__meta {
+  margin: 0.125rem 0 0;
+  color: var(--sph-text-muted);
+  font-size: var(--text-2xs);
+}
+
+.ftm-mini__stage {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  align-content: center;
+}
+
+.ftm-mini__swap {
+  animation: page-in var(--sph-motion-normal) var(--sph-ease-emphasis) both;
+}
+
+.ftm-mini__figures {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ftm-mini__count {
+  color: var(--sph-text);
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ftm-mini__clock {
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ftm-mini__caption {
+  margin: 0.375rem 0 0;
+  color: var(--sph-text-muted);
+  font-size: var(--text-2xs);
+}
+
+.ftm-mini__seats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 0.875rem;
+}
+
+.ftm-mini__seat {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--sph-border);
+  color: var(--sph-text-muted);
+  transition:
+    background-color var(--sph-motion-normal) var(--sph-ease-standard),
+    color var(--sph-motion-normal) var(--sph-ease-standard),
+    box-shadow var(--sph-motion-normal) var(--sph-ease-standard);
+}
+
+/* A player taking a seat: the seat fills and lands with a small spring. */
+.ftm-mini__seat[data-taken] {
+  background: color-mix(in srgb, var(--sph-accent) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sph-accent) 45%, transparent);
+  color: var(--sph-accent-strong);
+  animation: ftm-beacon-land var(--sph-motion-slow) var(--sph-ease-spring) both;
+}
+
+.ftm-mini__more {
+  margin-inline-start: 0.25rem;
+  color: var(--sph-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+/* The code takes whatever height the panel has left, never more. */
+.ftm-mini__stage:has(.ftm-mini__qr) {
+  display: flex;
+}
+
+.ftm-mini__qr {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  justify-content: center;
+}
+
+.ftm-mini__qr .ftm-qr {
+  display: block;
+  height: 100%;
+  max-height: 11rem;
+  aspect-ratio: 1;
+  padding: 6px;
+}
+
+.ftm-mini__qr .ftm-qr img {
+  width: 100%;
+  height: 100%;
+}
+
+.ftm-mini__note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ftm-mini__link {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.ftm-mini__url.sph-button {
+  min-width: 0;
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.ftm-mini__url .sph-button__label {
+  width: 100%;
+  min-width: 0;
+}
+
+.ftm-mini__empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  color: var(--sph-text-muted);
+  font-size: var(--text-2xs);
+  text-align: center;
+}
+
+.ftm-mini-url.sph-button {
+  background: var(--color-url-bg);
+  box-shadow: none;
+}
+
+.ftm-brand .sph-link__label {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Settings rows sit flush on their card; the rows carry their own padding. */
+.ftm-settings-card > .sph-card__content {
+  padding: 0;
+}
+
+.ftm-banner > .sph-card__content {
+  padding: 0.5rem 0.75rem;
+}
+
+/* The notifications ask: one quiet row, icon and sentence, then the action. */
+.ftm-nudge {
+  display: flex;
+  min-width: 0;
+  max-width: 34rem;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.25rem 0.25rem 0.25rem 0.75rem;
+  border-radius: var(--sph-radius-sm);
+  box-shadow: inset 0 0 0 1px var(--sph-border);
+}
+
+.ftm-nudge > p {
+  flex: 1;
+  text-wrap: pretty;
+}
+
+.ftm-nudge-action.sph-button {
+  color: var(--sph-accent-strong);
+}

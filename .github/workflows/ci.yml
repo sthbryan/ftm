@@ -26,8 +26,8 @@ jobs:
 
       - name: Stub embedded assets
         run: |
-          mkdir -p internal/web/static
-          touch internal/web/static/index.html
+          mkdir -p internal/transport/httpapi/static
+          touch internal/transport/httpapi/static/index.html
 
       - name: Check formatting
         run: |
@@ -39,16 +39,25 @@ jobs:
           fi
 
       - name: Vet
-        run: go vet $(go list ./... | grep -v '/desktop')
+        run: go vet $(go list ./... | grep -v '/cmd/ftm-desktop')
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.12.2
-          args: --timeout=5m ./cmd/... ./internal/...
+          args: --timeout=5m ./cmd/ftm/... ./internal/...
 
       - name: Test
-        run: go test -race -v $(go list ./... | grep -v '/desktop')
+        run: go test -race -v $(go list ./... | grep -v '/cmd/ftm-desktop')
+
+      # The desktop shell needs GTK to compile here, but its import graph does
+      # not: it must reach the core through internal/service, never the TUI.
+      - name: Desktop does not import the TUI
+        run: |
+          if go list -deps ./cmd/ftm-desktop | grep -E "^(github.com/sthbryan/ftm/internal/ui/tui(/|$)|charm.land/bubbletea)"; then
+            echo "cmd/ftm-desktop must not import internal/ui/tui or Bubble Tea"
+            exit 1
+          fi
 
   build-windows:
     name: Build & Vet on Windows
@@ -65,20 +74,25 @@ jobs:
 
       - name: Stub embedded assets
         run: |
-          mkdir -p internal/web/static
-          touch internal/web/static/index.html
+          mkdir -p internal/transport/httpapi/static
+          touch internal/transport/httpapi/static/index.html
 
       # Windows is the primary target and none of this used to be compiled on
       # it. unsafeptr is disabled because the COM vtable glue in
-      # internal/autostart is uintptr by design.
+      # internal/platform/autostart is uintptr by design.
       - name: Vet
-        run: go vet -unsafeptr=false $(go list ./... | grep -v '/desktop')
+        run: go vet -unsafeptr=false $(go list ./... | grep -v '/cmd/ftm-desktop')
 
       - name: Build the CLI
         run: go build -trimpath -o ftm-windows-x64.exe ./cmd/ftm
 
-      - name: Test the platform-independent packages
-        run: go test ./internal/config/ ./internal/i18n/ ./internal/web/
+      - name: Build and test the desktop shell
+        run: |
+          go build -trimpath -ldflags "-H windowsgui" -o ftm-desktop-windows-x64.exe ./cmd/ftm-desktop
+          go test ./cmd/ftm-desktop/
+
+      - name: Test
+        run: go test -race $(go list ./... | grep -v /cmd/ftm-desktop)
 
   lint-frontend:
     name: Lint & Test Frontend
@@ -92,10 +106,37 @@ jobs:
           bun-version: ${{ env.BUN_VERSION }}
 
       - name: Install
-        run: cd web-svelte && bun install
+        run: cd web && bun install
 
       - name: Typecheck
-        run: cd web-svelte && bun run check
+        run: cd web && bun run check
 
       - name: Test
-        run: cd web-svelte && bun run test
+        run: cd web && bun run test
+
+  api-types:
+    name: Generated API types are current
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Stub embedded assets
+        run: |
+          mkdir -p internal/transport/httpapi/static
+          touch internal/transport/httpapi/static/index.html
+
+      - name: Install
+        run: cd web && bun install
+
+      # Fails when the API changed without `cd web && bun run gen:api`.
+      - name: Check web/src/lib/api/types/openapi.ts
+        run: cd web && bun run check:api

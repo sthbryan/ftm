@@ -1,0 +1,39 @@
+{
+  "name": "foundry-tunnel-web",
+  "version": "0.16.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "gen:api": "go run ../tools/openapi | openapi-typescript -o src/lib/api/types/openapi.ts",
+    "check:api": "go run ../tools/openapi | openapi-typescript -o src/lib/api/types/openapi.ts --check"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "2.1.10",
+    "@preact/signals": "^2.5.0",
+    "@zovaris/sephiro": "1.3.0",
+    "clsx": "^2.1.1",
+    "cuelume": "0.2.8",
+    "ky": "^2.0.2",
+    "preact": "^10.29.0",
+    "qrcode": "^1.5.4",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.2",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.1.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "openapi-typescript": "7.13.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
+}

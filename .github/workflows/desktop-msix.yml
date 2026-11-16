@@ -50,22 +50,22 @@ jobs:
       - name: Build web assets
         shell: bash
         run: |
-          cd web-svelte && bun install && bun run build
-          rm -rf ../internal/web/static
-          mkdir -p ../internal/web/static
-          cp -r dist/* ../internal/web/static/
-          touch ../internal/web/static/.gitkeep
+          cd web && bun install && bun run build
+          rm -rf ../internal/transport/httpapi/static
+          mkdir -p ../internal/transport/httpapi/static
+          cp -r dist/* ../internal/transport/httpapi/static/
+          touch ../internal/transport/httpapi/static/.gitkeep
 
       - name: Build desktop
         shell: bash
         run: |
-          mkdir -p desktop/build/bin
-          WINRES_VERSION=$(grep -m1 '"productVersion"' desktop/wails.json | sed -E 's/.*"([0-9.]+)".*/\1/')
+          mkdir -p cmd/ftm-desktop/build/bin
+          WINRES_VERSION=$(grep -m1 '"productVersion"' cmd/ftm-desktop/wails.json | sed -E 's/.*"([0-9.]+)".*/\1/')
           go run github.com/tc-hib/go-winres@v0.3.3 make \
-            --in desktop/winres/winres.json --out desktop/rsrc --arch amd64 \
+            --in cmd/ftm-desktop/winres/winres.json --out cmd/ftm-desktop/rsrc --arch amd64 \
             --product-version "$WINRES_VERSION" --file-version "$WINRES_VERSION"
           CGO_ENABLED=1 go build -tags production -ldflags "-s -w -H windowsgui" \
-            -o desktop/build/bin/ftm-desktop-windows.exe ./desktop
+            -o cmd/ftm-desktop/build/bin/ftm-desktop-windows.exe ./cmd/ftm-desktop
 
       - name: Package MSIX
         shell: pwsh
@@ -89,25 +89,25 @@ jobs:
 
           Write-Host "MSIX IdentityName=$id Publisher=$pub Version=$ver"
           .\scripts\package-msix.ps1 `
-            -ExePath .\desktop\build\bin\ftm-desktop-windows.exe `
+            -ExePath .\cmd\ftm-desktop\build\bin\ftm-desktop-windows.exe `
             -Version $ver `
             -IdentityName $id `
             -Publisher $pub `
-            -OutputDir .\desktop\build\msix `
+            -OutputDir .\cmd\ftm-desktop\build\msix `
             -OutputName ftm-desktop `
             -ExeName ftm-desktop.exe `
-            -IconPath .\desktop\icon.png
+            -IconPath .\cmd\ftm-desktop\icon.png
 
       - name: Upload MSIX
         uses: actions/upload-artifact@v4
         with:
           name: msix-ftm-desktop
-          path: desktop/build/msix/*.msix
+          path: cmd/ftm-desktop/build/msix/*.msix
           retention-days: 14
 
       - name: Upload Windows exe
         uses: actions/upload-artifact@v4
         with:
           name: ftm-desktop-windows-exe
-          path: desktop/build/bin/ftm-desktop-windows.exe
+          path: cmd/ftm-desktop/build/bin/ftm-desktop-windows.exe
           retention-days: 14
