@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,22 +10,23 @@ import (
 	"github.com/sthbryan/ftm/internal/i18n"
 )
 
-func Uninstall() error {
-	binaryPath, err := exec.LookPath("ftm")
+// Uninstall removes this ftm binary.
+func Uninstall(out io.Writer) error {
+	path, err := os.Executable()
 	if err != nil {
-		return fmt.Errorf("%s", i18n.T("uninstall_not_found"))
+		if path, err = exec.LookPath("ftm"); err != nil {
+			return fmt.Errorf("%s", i18n.T("uninstall_not_found"))
+		}
+	}
+	if abs, err := filepath.EvalSymlinks(path); err == nil {
+		path = abs
 	}
 
-	absPath, err := filepath.EvalSymlinks(binaryPath)
-	if err != nil {
-		absPath = binaryPath
-	}
-
-	fmt.Println(i18n.TF("uninstall_removing", absPath))
-	if err := os.Remove(absPath); err != nil {
+	fmt.Fprintln(out, i18n.TF("uninstall_removing", path))
+	if err := removeSelf(path); err != nil {
 		return fmt.Errorf("%s", i18n.TF("uninstall_error", err.Error()))
 	}
 
-	fmt.Println(i18n.T("uninstall_success"))
+	fmt.Fprintln(out, i18n.T("uninstall_success"))
 	return nil
 }

@@ -1,28 +1,21 @@
 import { useEffect, useState } from 'preact/hooks';
 import { Button } from '@zovaris/sephiro/button';
+import { Surface } from '@zovaris/sephiro/surface';
 import { IconAction } from '@/components/IconAction';
-import {
-  Clock,
-  Copy,
-  PictureInPicture,
-  QrCode,
-  Stop,
-  Terminal,
-  UsersThree,
-} from '@phosphor-icons/react';
+import { Copy, PictureInPicture, QrCode, Stop, Terminal, User } from '@phosphor-icons/react';
 import { pipApi, statusApi } from '@/lib/api';
 import { expiryLevel } from '@/lib/ritual';
 import { now, useClock } from '@/lib/stores/clock';
 import { t } from '@/lib/stores/i18n';
 import { toast } from '@/lib/stores/toast';
 import { stopTunnel, tunnelsConnected } from '@/lib/stores/tunnels';
-import { formatDuration } from '@/lib/utils/duration';
+import { formatClock, formatDuration } from '@/lib/utils/duration';
 import { openDocumentPip, supportsDocumentPip } from '@/lib/utils/pip';
 import type { Tunnel } from '@/lib/types';
 import { LogsPanel } from '../LogsPanel';
 import { QrDialog } from '../QrDialog';
 import { StatusMarkDot } from '../StatusPill';
-import { attempt, copyLink, displayUrl } from './shared';
+import { attempt, copyLink } from './shared';
 
 let nativePipCache: Promise<boolean> | null = null;
 
@@ -34,10 +27,18 @@ function nativePip(): Promise<boolean> {
   return nativePipCache;
 }
 
+/** Seats drawn before the rest collapse into the count. */
+const MAX_SEATS = 5;
+
+export function playersLabel(count: number): string {
+  if (count === 0) return t('session_waiting');
+  return count === 1 ? t('session_players_one') : t('session_players', { count });
+}
+
 /**
- * Moment four. A slim strip per running table: status, players connected,
- * session time, expiry, and the few things the GM reaches for mid-session.
- * Logs open under it on demand.
+ * Moment four. One slim strip per running table: who is in, how long it has
+ * run, when it closes, and the few things the GM reaches for mid-session.
+ * Logs open under the strip on demand, on the page, not in a box inside it.
  */
 export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
   useEffect(() => useClock(), []);
@@ -74,49 +75,48 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
   }
 
   return (
-    <article
-      class="overflow-hidden rounded-surface border border-border bg-card"
-      aria-label={tunnel.name}
-    >
-      <div class="flex flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-5">
-        <div class="flex min-w-0 flex-[1_1_16rem] items-center gap-3">
+    <div class="flex flex-col gap-2">
+      <Surface className="ftm-strip" role="group" aria-label={tunnel.name}>
+        <div class="flex min-w-0 items-center gap-2.5">
           <StatusMarkDot state={tunnel.state} label={t(tunnel.state)} size="sm" />
-          <div class="min-w-0 flex-1">
-            <p class="m-0 truncate text-sm font-medium text-text">{tunnel.name}</p>
-            <p
-              class={`m-0 truncate font-mono text-xs ${online && !stale ? 'text-url-text' : 'text-text-muted'}`}
-              title={tunnel.publicUrl}
-            >
-              {stale
-                ? t('connection_lost')
-                : online
-                  ? displayUrl(tunnel.publicUrl)
-                  : t(tunnel.state)}
-            </p>
-          </div>
+          <p class="m-0 truncate text-sm font-medium text-text" title={tunnel.publicUrl}>
+            {tunnel.name}
+          </p>
         </div>
 
-        <p class="m-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted">
-          <span class="flex items-center gap-1.5" title={t('overview_players')}>
-            <UsersThree size={16} aria-hidden="true" />
-            <span class="font-medium text-text tabular-nums">{players}</span>
-            <span class="sr-only">{t('overview_players')}</span>
-          </span>
+        <div class="flex items-center gap-3 text-xs text-text-muted">
+          {stale ? (
+            <span>{t('connection_lost')}</span>
+          ) : online ? (
+            <>
+              {players > 0 && (
+                <span class="ftm-seats" aria-hidden="true">
+                  {Array.from({ length: Math.min(players, MAX_SEATS) }, (_, index) => (
+                    <span key={index} class="ftm-seat">
+                      <User size={14} />
+                    </span>
+                  ))}
+                </span>
+              )}
+              <span class="whitespace-nowrap">{playersLabel(players)}</span>
+            </>
+          ) : (
+            <span>{t(tunnel.state)}</span>
+          )}
           {elapsed > 0 && (
-            <span class="flex items-center gap-1.5" title={t('session_time')}>
-              <Clock size={16} aria-hidden="true" />
-              <span class="sr-only">{t('session_time')}</span>
-              <span class="font-mono tabular-nums">{formatDuration(elapsed)}</span>
+            <span class="font-mono text-2xs tabular-nums" title={t('session_time')}>
+              <span class="sr-only">{t('session_time')} </span>
+              {formatClock(elapsed)}
             </span>
           )}
           {expiry !== 'none' && (
             <span
-              class={`font-mono tabular-nums ${expiry === 'soon' ? 'text-status-starting' : ''}`}
+              class={`font-mono text-2xs whitespace-nowrap tabular-nums ${expiry === 'soon' ? 'text-status-starting' : ''}`}
             >
               {t('card_expires', { 0: formatDuration(remaining) })}
             </span>
           )}
-        </p>
+        </div>
 
         <div class="ms-auto flex items-center gap-1">
           <Button
@@ -126,11 +126,12 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
             onClick={() => void copyLink(tunnel)}
           >
             <Copy size={16} />
-            {t('copy_link')}
+            {t('session_link')}
           </Button>
           <IconAction
             label={t('qr_for_phones')}
             size="sm"
+            variant="outline"
             disabled={!online}
             icon={<QrCode size={16} />}
             onClick={() => setQrOpen(true)}
@@ -148,10 +149,10 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
             label={t('session_logs')}
             size="sm"
             aria-expanded={logsOpen}
+            aria-pressed={logsOpen}
             icon={<Terminal size={16} />}
             onClick={() => setLogsOpen((open) => !open)}
           />
-          <span class="mx-1 h-5 w-px bg-border-light" aria-hidden="true" />
           <IconAction
             label={t('stop')}
             size="sm"
@@ -161,15 +162,11 @@ export function SessionStrip({ tunnel }: { tunnel: Tunnel }) {
             onClick={stop}
           />
         </div>
-      </div>
+      </Surface>
 
-      {logsOpen && (
-        <div class="border-t border-border-light">
-          <LogsPanel tunnelId={tunnel.id} state={tunnel.state} flat />
-        </div>
-      )}
+      {logsOpen && <LogsPanel tunnelId={tunnel.id} state={tunnel.state} />}
 
       <QrDialog open={qrOpen} url={tunnel.publicUrl ?? ''} onClose={() => setQrOpen(false)} />
-    </article>
+    </div>
   );
 }

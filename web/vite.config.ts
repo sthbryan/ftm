@@ -14,6 +14,10 @@ export default defineConfig({
       'react/jsx-runtime': 'preact/jsx-runtime',
     },
   },
+  server: {
+    // `FTM_API=http://127.0.0.1:<port> bun run dev` talks to a running `ftm --server`.
+    proxy: process.env.FTM_API ? { '/api': process.env.FTM_API } : undefined,
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
