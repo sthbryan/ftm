@@ -7,7 +7,7 @@ package events
 import (
 	"time"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 )
 
 // Kind names an event type, for filtering and logs.
@@ -35,7 +35,7 @@ type Event interface {
 
 // TunnelSaved is published when a saved connection is created or edited.
 type TunnelSaved struct {
-	Tunnel  config.TunnelConfig
+	Tunnel  core.TunnelConfig
 	Created bool
 }
 
@@ -47,7 +47,7 @@ type TunnelDeleted struct {
 // TunnelStatus is published whenever a tunnel changes state: installing,
 // starting, connecting, online, stopping, stopped, timeout or error.
 type TunnelStatus struct {
-	Status config.TunnelStatus
+	Status core.TunnelStatus
 }
 
 // TunnelStats is published when the visitor numbers of an online tunnel
@@ -77,7 +77,7 @@ type LogLine struct {
 
 // SettingsChanged carries the config after a settings change was saved.
 type SettingsChanged struct {
-	Config config.Config
+	Config core.Config
 }
 
 // UpdateAvailable is published once when a newer ftm release is found.

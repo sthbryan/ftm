@@ -4,12 +4,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/sthbryan/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/provider"
 	"github.com/sthbryan/ftm/internal/store"
 )
 
-// internal/providers still asks config.ConfigDir() for its bin dir; this keeps
-// that path pinned to the one Dirs value.
+// internal/provider resolves its bin dir from package dirs; this keeps that
+// path pinned to the one Dirs value.
 func TestProviderBinDirIsDirsBin(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -17,7 +17,7 @@ func TestProviderBinDirIsDirsBin(t *testing.T) {
 	t.Setenv("AppData", filepath.Join(home, "appdata"))
 	t.Setenv("XDG_CONFIG_HOME", "")
 
-	if got, want := providers.BinDir(), store.DefaultDirs().Bin; got != want {
-		t.Fatalf("providers.BinDir() = %q, want store.Dirs.Bin %q", got, want)
+	if got, want := provider.BinDir(), store.DefaultDirs().Bin; got != want {
+		t.Fatalf("provider.BinDir() = %q, want store.Dirs.Bin %q", got, want)
 	}
 }

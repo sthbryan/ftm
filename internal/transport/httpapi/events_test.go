@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
-	"github.com/sthbryan/ftm/internal/process"
 	"github.com/sthbryan/ftm/internal/service"
+	"github.com/sthbryan/ftm/internal/supervisor"
 )
 
 func attachClient(t *testing.T, s *Server) *sseClient {
@@ -43,11 +43,11 @@ func readMessage(t *testing.T, c *sseClient, wantType string) map[string]any {
 // A change made outside the web (the TUI, the desktop shell) reaches the
 // event stream through the bus, in the shapes the web parses.
 func TestChangesFromAnySurfaceReachTheEventStream(t *testing.T) {
-	s := newTestServer(t, process.NewManager(), config.DefaultConfig())
+	s := newTestServer(t, supervisor.NewManager(), core.DefaultConfig())
 	s.listenEvents()
 	client := attachClient(t, s)
 
-	tunnel, err := s.svc.CreateTunnel(service.TunnelInput{Name: "World", Provider: config.ProviderBore, LocalPort: 30000})
+	tunnel, err := s.svc.CreateTunnel(service.TunnelInput{Name: "World", Provider: core.ProviderBore, LocalPort: 30000})
 	if err != nil {
 		t.Fatalf("CreateTunnel: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestChangesFromAnySurfaceReachTheEventStream(t *testing.T) {
 
 // Following a tunnel's logs yields only that tunnel's lines from the bus.
 func TestFollowLogsYieldsOnlyThatTunnel(t *testing.T) {
-	s := newTestServer(t, nil, config.DefaultConfig())
+	s := newTestServer(t, nil, core.DefaultConfig())
 
 	lines, stop := s.followLogs("world")
 	defer stop()
@@ -116,7 +116,7 @@ func TestFollowLogsYieldsOnlyThatTunnel(t *testing.T) {
 
 // The WebSocket is gone: /ws/events is no API route.
 func TestWebSocketRouteIsGone(t *testing.T) {
-	s := newTestServer(t, nil, config.DefaultConfig())
+	s := newTestServer(t, nil, core.DefaultConfig())
 	rec := call(t, s, "GET", "/ws/events", "", "Upgrade", "websocket", "Connection", "Upgrade")
 	if rec.Code == 101 || rec.Code == 400 {
 		t.Fatalf("/ws/events answered %d, want the dashboard fallback", rec.Code)

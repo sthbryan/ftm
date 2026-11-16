@@ -7,6 +7,7 @@ linters:
   default: none
   enable:
     - bodyclose
+    - depguard
     - errcheck
     - govet
     - ineffassign
@@ -14,6 +15,66 @@ linters:
     - staticcheck
     - unused
   settings:
+    # The dependency rules of the target architecture. Tests may wire real
+    # parts together, so only non-test files are checked.
+    depguard:
+      rules:
+        core:
+          list-mode: strict
+          files: ["**/internal/core/**", "!$test"]
+          allow:
+            - $gostd
+            - gopkg.in/yaml.v3
+        store:
+          list-mode: strict
+          files: ["**/internal/store/**", "!$test"]
+          allow:
+            - $gostd
+            - github.com/sthbryan/ftm/internal/core
+            - github.com/sthbryan/ftm/internal/store
+        provider:
+          # store/dirs is the stdlib-only leaf that knows where the bin
+          # directory is.
+          list-mode: strict
+          files: ["**/internal/provider/**", "!$test"]
+          allow:
+            - $gostd
+            - github.com/sthbryan/ftm/internal/core
+            - github.com/sthbryan/ftm/internal/provider
+            - github.com/sthbryan/ftm/internal/store/dirs
+        supervisor:
+          # It runs the provider adapters and publishes what they do.
+          list-mode: strict
+          files: ["**/internal/supervisor/**", "!$test"]
+          allow:
+            - $gostd
+            - github.com/sthbryan/ftm/internal/core
+            - github.com/sthbryan/ftm/internal/events
+            - github.com/sthbryan/ftm/internal/provider
+            - github.com/sthbryan/ftm/internal/supervisor
+        events:
+          list-mode: strict
+          files: ["**/internal/events/**", "!$test"]
+          allow:
+            - $gostd
+            - github.com/sthbryan/ftm/internal/core
+        i18n:
+          files: ["**/internal/i18n/**", "!$test"]
+          deny:
+            - pkg: github.com/sthbryan/ftm
+              desc: i18n holds translations only; callers pass it the language
+        surfaces:
+          files:
+            - "**/internal/transport/**"
+            - "**/internal/ui/**"
+            - "**/internal/cli/**"
+            - "**/internal/platform/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/sthbryan/ftm/internal/supervisor
+              desc: go through internal/service; only cmd/* wires the supervisor
+            - pkg: github.com/sthbryan/ftm/internal/store
+              desc: go through internal/service; only cmd/* opens the store
     errcheck:
       # A write that fails because the client hung up has no recovery path, and
       # the caller already owns the response. Everything else must be handled.
@@ -33,7 +94,7 @@ linters:
       # handler is being rewritten against the newer API in the TUI pass.
       - linters:
           - staticcheck
-        path: internal/app/keyhandlers_mouse\.go
+        path: internal/ui/tui/keyhandlers_mouse\.go
         text: SA1019
     paths:
       - cmd/ftm-desktop

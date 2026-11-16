@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sthbryan/ftm/internal/config"
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 )
@@ -49,10 +48,6 @@ func TF(key string, args ...interface{}) string {
 		template = strings.Replace(template, placeholder, fmt.Sprintf("%v", arg), 1)
 	}
 	return template
-}
-
-func TLang(lang, key string) string {
-	return store.T(key, lang)
 }
 
 func GetCurrentLang() string {
@@ -107,12 +102,6 @@ func (s *TranslationStore) T(key, lang string) string {
 	return key
 }
 
-func LoadTranslations(lang string, data map[string]string) {
-	store.mu.Lock()
-	defer store.mu.Unlock()
-	store.translations[lang] = data
-}
-
 func LoadFromYAML(lang string, content []byte) error {
 	store.mu.Lock()
 	defer store.mu.Unlock()
@@ -126,12 +115,17 @@ func LoadFromYAML(lang string, content []byte) error {
 	return nil
 }
 
-func InitFromConfig(cfg *config.Config) {
-	SetLanguageWithFallback(ResolveLanguage(cfg.Language))
+// LangAuto is the saved language that means "follow the system".
+const LangAuto = "auto"
+
+// UseLanguage switches to the saved language setting, resolving LangAuto (or
+// an empty setting) to the system language.
+func UseLanguage(configured string) {
+	SetLanguageWithFallback(ResolveLanguage(configured))
 }
 
 func ResolveLanguage(configured string) string {
-	if configured == "" || configured == config.LanguageAuto {
+	if configured == "" || configured == LangAuto {
 		return detectSystemLang()
 	}
 	return configured
@@ -151,19 +145,6 @@ func LanguageName(code string) string {
 		return "Português"
 	default:
 		return code
-	}
-}
-
-func LanguageTag(code string) string {
-	switch code {
-	case LangEN:
-		return "en-US"
-	case LangES:
-		return "es-ES"
-	case LangPT:
-		return "pt-BR"
-	default:
-		return "en-US"
 	}
 }
 
@@ -214,28 +195,6 @@ func LoadFromFS(fs embed.FS, prefix string) error {
 	}
 
 	return nil
-}
-
-func AddFallback(lang string) {
-	store.mu.Lock()
-	defer store.mu.Unlock()
-
-	en, ok := store.translations[DefaultLang]
-	if !ok {
-		return
-	}
-
-	current, ok := store.translations[lang]
-	if !ok {
-		store.translations[lang] = en
-		return
-	}
-
-	for k, v := range en {
-		if _, exists := current[k]; !exists {
-			current[k] = v
-		}
-	}
 }
 
 func TranslationsMap() map[string]map[string]string {

@@ -12,10 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
-	"github.com/sthbryan/ftm/internal/process"
-	"github.com/sthbryan/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/provider"
 )
 
 // fakeSupervisor runs nothing but behaves like the process manager: a
@@ -23,9 +22,9 @@ import (
 type fakeSupervisor struct {
 	mu        sync.Mutex
 	bus       *events.Bus
-	installed map[config.Provider]bool
+	installed map[core.Provider]bool
 	release   chan struct{}
-	status    map[string]config.TunnelStatus
+	status    map[string]core.TunnelStatus
 	started   []string
 	stopped   []string
 	logs      map[string][]string
@@ -33,16 +32,16 @@ type fakeSupervisor struct {
 
 func newFakeSupervisor() *fakeSupervisor {
 	return &fakeSupervisor{
-		installed: map[config.Provider]bool{},
-		status:    map[string]config.TunnelStatus{},
+		installed: map[core.Provider]bool{},
+		status:    map[string]core.TunnelStatus{},
 		logs:      map[string][]string{},
 	}
 }
 
-func (f *fakeSupervisor) Start(t config.TunnelConfig) error {
+func (f *fakeSupervisor) Start(t core.TunnelConfig) error {
 	f.mu.Lock()
 	st := t.Status()
-	st.State = config.TunnelStateOnline
+	st.State = core.TunnelStateOnline
 	st.PublicURL = "https://" + t.ID + ".example"
 	f.status[t.ID] = st
 	f.started = append(f.started, t.ID)
@@ -55,7 +54,7 @@ func (f *fakeSupervisor) Start(t config.TunnelConfig) error {
 func (f *fakeSupervisor) Stop(id string) error {
 	f.mu.Lock()
 	st, ok := f.status[id]
-	st.State = config.TunnelStateStopped
+	st.State = core.TunnelStateStopped
 	st.PublicURL = ""
 	f.status[id] = st
 	f.stopped = append(f.stopped, id)
@@ -69,13 +68,13 @@ func (f *fakeSupervisor) Stop(id string) error {
 
 func (f *fakeSupervisor) StopAll() {}
 
-func (f *fakeSupervisor) CheckInstallation(p config.Provider) (bool, bool) {
+func (f *fakeSupervisor) CheckInstallation(p core.Provider) (bool, bool) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return !f.installed[p], true
 }
 
-func (f *fakeSupervisor) InstallProvider(p config.Provider) error {
+func (f *fakeSupervisor) InstallProvider(p core.Provider) error {
 	f.mu.Lock()
 	release := f.release
 	bus := f.bus
@@ -93,7 +92,7 @@ func (f *fakeSupervisor) InstallProvider(p config.Provider) error {
 	return nil
 }
 
-func (f *fakeSupervisor) GetStatus(id string) (config.TunnelStatus, bool) {
+func (f *fakeSupervisor) GetStatus(id string) (core.TunnelStatus, bool) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	st, ok := f.status[id]
@@ -115,26 +114,26 @@ func (f *fakeSupervisor) startedIDs() []string {
 // fakeBinaries adds provider binary management to fakeSupervisor.
 type fakeBinaries struct {
 	*fakeSupervisor
-	updated chan config.Provider
+	updated chan core.Provider
 }
 
 func (f *fakeBinaries) CheckLatest(context.Context, bool) {}
-func (f *fakeBinaries) ProviderBinaries(ctx context.Context) []process.ProviderBinary {
-	return []process.ProviderBinary{f.ProviderBinary(ctx, config.ProviderCloudflared)}
+func (f *fakeBinaries) ProviderBinaries(ctx context.Context) []core.ProviderBinary {
+	return []core.ProviderBinary{f.ProviderBinary(ctx, core.ProviderCloudflared)}
 }
-func (f *fakeBinaries) ProviderBinary(_ context.Context, id config.Provider) process.ProviderBinary {
-	return process.ProviderBinary{ID: id, Name: string(id), Installed: true, Version: "1.0", Latest: "2.0",
-		Source: process.SourceBundled, HasUpdate: true, Updatable: true, CheckedAt: time.UnixMilli(1000)}
+func (f *fakeBinaries) ProviderBinary(_ context.Context, id core.Provider) core.ProviderBinary {
+	return core.ProviderBinary{ID: id, Name: string(id), Installed: true, Version: "1.0", Latest: "2.0",
+		Source: core.SourceBundled, HasUpdate: true, Updatable: true, CheckedAt: time.UnixMilli(1000)}
 }
-func (f *fakeBinaries) UpdateProvider(_ context.Context, id config.Provider, _ chan<- providers.DownloadProgress) (*process.UpdateResult, error) {
+func (f *fakeBinaries) UpdateProvider(_ context.Context, id core.Provider, _ chan<- provider.DownloadProgress) (*core.UpdateResult, error) {
 	f.updated <- id
-	return &process.UpdateResult{Provider: id, Version: "2.0", Restarted: []string{"world"}}, nil
+	return &core.UpdateResult{Provider: id, Version: "2.0", Restarted: []string{"world"}}, nil
 }
-func (f *fakeBinaries) IsUpdating(config.Provider) bool { return false }
+func (f *fakeBinaries) IsUpdating(core.Provider) bool { return false }
 
-func worldConfig() *config.Config {
-	cfg := config.DefaultConfig()
-	cfg.AddTunnel(config.TunnelConfig{ID: "world", Name: "World", Provider: config.ProviderCloudflared, LocalPort: 30000})
+func worldConfig() *core.Config {
+	cfg := core.DefaultConfig()
+	cfg.AddTunnel(core.TunnelConfig{ID: "world", Name: "World", Provider: core.ProviderCloudflared, LocalPort: 30000})
 	return cfg
 }
 
@@ -322,7 +321,7 @@ func TestStartUnknownTunnelIsAJSONNotFound(t *testing.T) {
 }
 
 func TestProviderUpdateRunsInTheBackgroundAndReportsOnce(t *testing.T) {
-	sup := &fakeBinaries{fakeSupervisor: newFakeSupervisor(), updated: make(chan config.Provider, 1)}
+	sup := &fakeBinaries{fakeSupervisor: newFakeSupervisor(), updated: make(chan core.Provider, 1)}
 	s := newTestServer(t, sup, worldConfig())
 	sup.bus = s.bus
 	s.listenEvents()
@@ -335,7 +334,7 @@ func TestProviderUpdateRunsInTheBackgroundAndReportsOnce(t *testing.T) {
 	if resp.StatusCode != http.StatusAccepted || body["ok"] != true || body["provider"] != "cloudflared" || body["state"] != "updating" {
 		t.Fatalf("update = %d %v", resp.StatusCode, body)
 	}
-	if id := <-sup.updated; id != config.ProviderCloudflared {
+	if id := <-sup.updated; id != core.ProviderCloudflared {
 		t.Fatalf("updated %s", id)
 	}
 
@@ -410,7 +409,7 @@ func TestEventsCarryNotificationsAndUpdateAvailability(t *testing.T) {
 	s, ts := newLiveServer(t, newFakeSupervisor())
 	stream := openSSE(t, ts, "/api/events")
 
-	st := config.TunnelStatus{ID: "world", Name: "World", State: config.TunnelStateError, ErrorMessage: "boom"}
+	st := core.TunnelStatus{ID: "world", Name: "World", State: core.TunnelStateError, ErrorMessage: "boom"}
 	s.bus.Publish(events.TunnelStatus{Status: st})
 	if e := stream.next(eventTunnelState); e.Data["state"] != "error" || e.Data["errorMessage"] != "boom" {
 		t.Fatalf("tunnel_state = %v", e.Data)
@@ -419,7 +418,7 @@ func TestEventsCarryNotificationsAndUpdateAvailability(t *testing.T) {
 		t.Fatalf("notification = %v", e.Data)
 	}
 
-	s.BroadcastNewVisitor(config.TunnelStatus{Name: "World", Visitors: 1})
+	s.BroadcastNewVisitor(core.TunnelStatus{Name: "World", Visitors: 1})
 	stream.next(eventNotification)
 
 	s.bus.Publish(events.UpdateAvailable{Current: "1.0.0", Latest: "1.1.0", Method: "self"})
@@ -579,7 +578,7 @@ func TestErrorsAreJSONWithCodeAndMessage(t *testing.T) {
 }
 
 func TestTunnelRoutesKeepTheirShapes(t *testing.T) {
-	s := newTestServer(t, newFakeSupervisor(), config.DefaultConfig())
+	s := newTestServer(t, newFakeSupervisor(), core.DefaultConfig())
 
 	rec := call(t, s, http.MethodPost, "/api/tunnels", `{"name":"Table","provider":"bore","extra":"ignored"}`)
 	wantStatus(t, rec, http.StatusOK)

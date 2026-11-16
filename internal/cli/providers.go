@@ -9,15 +9,22 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/i18n"
-	"github.com/sthbryan/ftm/internal/process"
-	"github.com/sthbryan/ftm/internal/providers"
+	"github.com/sthbryan/ftm/internal/provider"
 )
 
+// Binaries reports and replaces provider binaries. cmd/ftm passes the
+// supervisor.
+type Binaries interface {
+	CheckLatest(ctx context.Context, force bool)
+	ProviderBinaries(ctx context.Context) []core.ProviderBinary
+	ProviderBinary(ctx context.Context, id core.Provider) core.ProviderBinary
+	UpdateProvider(ctx context.Context, id core.Provider, progress chan<- provider.DownloadProgress) (*core.UpdateResult, error)
+}
+
 // Providers runs `ftm providers [update [id]]`.
-func Providers(args []string) error {
-	manager := process.NewManager()
+func Providers(manager Binaries, args []string) error {
 	ctx := context.Background()
 
 	switch {
@@ -34,7 +41,7 @@ func Providers(args []string) error {
 	}
 }
 
-func listProviders(ctx context.Context, out io.Writer, manager *process.Manager) error {
+func listProviders(ctx context.Context, out io.Writer, manager Binaries) error {
 	manager.CheckLatest(ctx, true)
 	report := manager.ProviderBinaries(ctx)
 
@@ -59,7 +66,7 @@ func listProviders(ctx context.Context, out io.Writer, manager *process.Manager)
 		}
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", b.ID, dash(b.Version)+marker, dash(b.Latest), sourceLabel(b.Source))
 
-		if b.Error != "" && b.Source != process.SourceSystem {
+		if b.Error != "" && b.Source != core.SourceSystem {
 			failures = append(failures, i18n.TF("providers_check_failed", b.ID, b.Error))
 		}
 	}
@@ -84,19 +91,19 @@ func listProviders(ctx context.Context, out io.Writer, manager *process.Manager)
 
 // updateProviders updates one provider, or every bundled one that is behind
 // when id is empty.
-func updateProviders(ctx context.Context, out io.Writer, manager *process.Manager, id string) error {
-	var targets []config.Provider
+func updateProviders(ctx context.Context, out io.Writer, manager Binaries, id string) error {
+	var targets []core.Provider
 
 	if id != "" {
-		provider := config.Provider(strings.ToLower(id))
+		provider := core.Provider(strings.ToLower(id))
 		if !isKnownProvider(provider) {
 			return errors.New(i18n.TF("providers_unknown", id))
 		}
 		info := manager.ProviderBinary(ctx, provider)
 		switch info.Source {
-		case process.SourceSystem:
+		case core.SourceSystem:
 			return errors.New(i18n.TF("providers_not_updatable", provider))
-		case process.SourcePath:
+		case core.SourcePath:
 			return errors.New(i18n.TF("providers_external", provider, info.Path))
 		}
 		targets = append(targets, provider)
@@ -132,8 +139,8 @@ func updateProviders(ctx context.Context, out io.Writer, manager *process.Manage
 	return errors.Join(failures...)
 }
 
-func isKnownProvider(p config.Provider) bool {
-	for _, known := range config.AllProviders() {
+func isKnownProvider(p core.Provider) bool {
+	for _, known := range core.AllProviders() {
 		if known == p {
 			return true
 		}
@@ -143,8 +150,8 @@ func isKnownProvider(p config.Provider) bool {
 
 // printProgress draws a single updating percentage line until the channel is
 // closed.
-func printProgress(out io.Writer) (chan providers.DownloadProgress, <-chan struct{}) {
-	ch := make(chan providers.DownloadProgress, 16)
+func printProgress(out io.Writer) (chan provider.DownloadProgress, <-chan struct{}) {
+	ch := make(chan provider.DownloadProgress, 16)
 	done := make(chan struct{})
 
 	go func() {
@@ -168,13 +175,13 @@ func printProgress(out io.Writer) (chan providers.DownloadProgress, <-chan struc
 	return ch, done
 }
 
-func sourceLabel(s process.BinarySource) string {
+func sourceLabel(s core.BinarySource) string {
 	switch s {
-	case process.SourceBundled:
+	case core.SourceBundled:
 		return i18n.T("providers_source_bundled")
-	case process.SourcePath:
+	case core.SourcePath:
 		return i18n.T("providers_source_path")
-	case process.SourceSystem:
+	case core.SourceSystem:
 		return i18n.T("providers_source_system")
 	default:
 		return i18n.T("providers_source_none")

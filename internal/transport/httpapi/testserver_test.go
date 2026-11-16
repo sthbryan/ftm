@@ -8,16 +8,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
 	"github.com/sthbryan/ftm/internal/events"
-	"github.com/sthbryan/ftm/internal/process"
 	"github.com/sthbryan/ftm/internal/service"
 	"github.com/sthbryan/ftm/internal/store"
+	"github.com/sthbryan/ftm/internal/supervisor"
 )
 
 // newTestServer wires a server the way the app does, with the config saved
 // under a temp dir. sup may be nil for routes that never start anything.
-func newTestServer(t *testing.T, sup service.Supervisor, cfg *config.Config) *Server {
+func newTestServer(t *testing.T, sup service.Supervisor, cfg *core.Config) *Server {
 	t.Helper()
 
 	root := t.TempDir()
@@ -32,7 +32,7 @@ func newTestServer(t *testing.T, sup service.Supervisor, cfg *config.Config) *Se
 	if sup == nil {
 		sup = nopSupervisor{}
 	}
-	if m, ok := sup.(*process.Manager); ok {
+	if m, ok := sup.(*supervisor.Manager); ok {
 		m.SetEvents(bus)
 	}
 	s := NewServer(service.New(st, sup, bus), bus)
@@ -77,10 +77,10 @@ func wantStatus(t *testing.T, rec *httptest.ResponseRecorder, want int) {
 
 type nopSupervisor struct{}
 
-func (nopSupervisor) Start(config.TunnelConfig) error                { return nil }
-func (nopSupervisor) Stop(string) error                              { return nil }
-func (nopSupervisor) StopAll()                                       {}
-func (nopSupervisor) CheckInstallation(config.Provider) (bool, bool) { return false, false }
-func (nopSupervisor) InstallProvider(config.Provider) error          { return nil }
+func (nopSupervisor) Start(core.TunnelConfig) error                { return nil }
+func (nopSupervisor) Stop(string) error                            { return nil }
+func (nopSupervisor) StopAll()                                     {}
+func (nopSupervisor) CheckInstallation(core.Provider) (bool, bool) { return false, false }
+func (nopSupervisor) InstallProvider(core.Provider) error          { return nil }
 
 var _ = http.MethodGet

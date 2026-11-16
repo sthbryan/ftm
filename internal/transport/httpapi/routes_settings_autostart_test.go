@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sthbryan/ftm/internal/autostart"
-	"github.com/sthbryan/ftm/internal/config"
+	"github.com/sthbryan/ftm/internal/core"
+	"github.com/sthbryan/ftm/internal/platform/autostart"
 )
 
 type stubAutostart struct {
@@ -38,7 +38,7 @@ func (s *stubAutostart) Disable() error {
 func settingsServer(t *testing.T, manager autostart.Manager) *Server {
 	t.Helper()
 
-	s := newTestServer(t, nil, config.DefaultConfig())
+	s := newTestServer(t, nil, core.DefaultConfig())
 	s.autostart = manager
 
 	return s
