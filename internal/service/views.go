@@ -1,9 +1,11 @@
 package service
 
 import (
-	"fmt"
 	"net"
 	"slices"
+	"strconv"
+	"sync"
+	"time"
 
 	"github.com/sthbryan/ftm/internal/core"
 )
@@ -112,13 +114,20 @@ func (s *Service) DetectFoundryPorts(extra ...int) (inUse, scanned []int, sugges
 			scanned = append(scanned, port)
 		}
 	}
-	for _, port := range scanned {
-		ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-		if err != nil {
+	busy := make([]bool, len(scanned))
+	var wg sync.WaitGroup
+	for i, port := range scanned {
+		wg.Add(1)
+		go func(i, port int) {
+			defer wg.Done()
+			busy[i] = listening(port)
+		}(i, port)
+	}
+	wg.Wait()
+	for i, port := range scanned {
+		if busy[i] {
 			inUse = append(inUse, port)
-			continue
 		}
-		_ = ln.Close()
 	}
 
 	suggested = foundryPorts[0]
@@ -129,4 +138,18 @@ func (s *Service) DetectFoundryPorts(extra ...int) (inUse, scanned []int, sugges
 		}
 	}
 	return inUse, scanned, suggested
+}
+
+// listening reports whether something accepts connections on the port on this
+// computer. Binding the port instead would miss a server that listens only on
+// 127.0.0.1: macOS still lets the wildcard address bind next to it.
+func listening(port int) bool {
+	for _, host := range []string{"127.0.0.1", "::1"} {
+		conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, strconv.Itoa(port)), 200*time.Millisecond)
+		if err == nil {
+			_ = conn.Close()
+			return true
+		}
+	}
+	return false
 }

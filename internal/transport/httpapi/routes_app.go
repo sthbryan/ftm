@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"errors"
+	"github.com/sthbryan/ftm/internal/service"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -48,9 +49,11 @@ type okOutput struct {
 
 type detectPortOutput struct {
 	Body struct {
-		Ports     []int `json:"ports" doc:"Checked ports something listens on"`
-		Scanned   []int `json:"scanned" doc:"Every port checked: the usual Foundry ports plus the one asked for"`
-		Suggested int   `json:"suggested"`
+		Ports     []int                   `json:"ports" doc:"Checked ports something listens on"`
+		Scanned   []int                   `json:"scanned" doc:"Every port checked: the usual Foundry ports plus the one asked for"`
+		Foundry   []int                   `json:"foundry" doc:"Busy ports where Foundry VTT answers"`
+		Worlds    []service.FoundryStatus `json:"worlds" doc:"What each Foundry says on /api/status: world, system, users"`
+		Suggested int                     `json:"suggested"`
 	}
 }
 
@@ -133,11 +136,19 @@ func (s *Server) registerApp(api huma.API) {
 		OperationID: "detect-port",
 		Method:      http.MethodGet,
 		Path:        "/api/detect-port",
-		Summary:     "Find a running Foundry on its usual ports",
+		Summary:     "Find a running Foundry on its usual ports, or on the one asked for",
 		Tags:        []string{tagApp},
 	}, func(ctx context.Context, in *detectPortInput) (*detectPortOutput, error) {
 		out := &detectPortOutput{}
 		out.Body.Ports, out.Body.Scanned, out.Body.Suggested = s.svc.DetectFoundryPorts(in.Port)
+		out.Body.Worlds = s.svc.FoundryOn(ctx, out.Body.Ports)
+		out.Body.Foundry = make([]int, 0, len(out.Body.Worlds))
+		for _, status := range out.Body.Worlds {
+			out.Body.Foundry = append(out.Body.Foundry, status.Port)
+		}
+		if len(out.Body.Foundry) > 0 {
+			out.Body.Suggested = out.Body.Foundry[0]
+		}
 		return out, nil
 	})
 

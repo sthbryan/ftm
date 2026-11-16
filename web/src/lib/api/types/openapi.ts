@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Find a running Foundry on its usual ports */
+        /** Find a running Foundry on its usual ports, or on the one asked for */
         get: operations["detect-port"];
         put?: never;
         post?: never;
@@ -351,12 +351,16 @@ export interface components {
             deleted: number;
         };
         DetectPortOutputBody: {
+            /** @description Busy ports where Foundry VTT answers */
+            foundry: number[] | null;
             /** @description Checked ports something listens on */
             ports: number[] | null;
             /** @description Every port checked: the usual Foundry ports plus the one asked for */
             scanned: number[] | null;
             /** Format: int64 */
             suggested: number;
+            /** @description What each Foundry says on /api/status: world, system, users */
+            worlds: components["schemas"]["FoundryStatus"][] | null;
         };
         Error: {
             /**
@@ -369,6 +373,19 @@ export interface components {
              * @example tunnel not found
              */
             message: string;
+        };
+        FoundryStatus: {
+            active: boolean;
+            /** Format: int64 */
+            port: number;
+            system?: string;
+            systemVersion?: string;
+            /** Format: int64 */
+            uptimeMs?: number;
+            /** Format: int64 */
+            users: number;
+            version?: string;
+            world?: string;
         };
         I18nCurrentOutputBody: {
             language: string;
