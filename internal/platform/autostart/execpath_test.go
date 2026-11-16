@@ -1,6 +1,9 @@
 package autostart
 
-import "testing"
+import (
+	"path/filepath"
+	"testing"
+)
 
 func TestResolveExecPathPrefersTheAppImageOverTheMountPoint(t *testing.T) {
 	tests := []struct {
@@ -43,8 +46,11 @@ func TestResolveExecPathPrefersTheAppImageOverTheMountPoint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := resolveExecPath(tt.goos, tt.appImage, tt.executable)
-			if got != tt.want {
-				t.Errorf("resolveExecPath(%q, %q, %q) = %q, want %q", tt.goos, tt.appImage, tt.executable, got, tt.want)
+			// The path is cleaned with the host separator, which is all a
+			// Windows host running the other platforms' cases can check.
+			want := filepath.Clean(tt.want)
+			if got != want {
+				t.Errorf("resolveExecPath(%q, %q, %q) = %q, want %q", tt.goos, tt.appImage, tt.executable, got, want)
 			}
 		})
 	}
