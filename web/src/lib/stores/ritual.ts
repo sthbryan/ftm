@@ -1,6 +1,7 @@
 import { effect, signal } from '@preact/signals';
 import { playersJoined } from '@/lib/ritual';
 import { cue } from '@/lib/sound';
+import { playersOf } from './players';
 import { tunnels } from './tunnels';
 
 /** Online connections the GM has already invited to; they live as strips. */
@@ -28,7 +29,7 @@ export function watchSession(): () => void {
     const stillOnline = new Set<string>();
     for (const tunnel of tunnels.value) {
       if (tunnel.state !== 'online') continue;
-      after[tunnel.id] = tunnel.activeSessions ?? 0;
+      after[tunnel.id] = playersOf(tunnel);
       stillOnline.add(tunnel.id);
     }
 

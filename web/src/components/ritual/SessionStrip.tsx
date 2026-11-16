@@ -8,6 +8,7 @@ import { pipApi, statusApi } from '@/lib/api';
 import { expiryLevel } from '@/lib/ritual';
 import { now, useClock } from '@/lib/stores/clock';
 import { t } from '@/lib/stores/i18n';
+import { playersOf } from '@/lib/stores/players';
 import { toast } from '@/lib/stores/toast';
 import { stopTunnel, tunnelsConnected } from '@/lib/stores/tunnels';
 import { formatClock, formatDuration } from '@/lib/utils/duration';
@@ -58,7 +59,7 @@ export function SessionStrip({
 
   const online = tunnel.state === 'online';
   const stale = online && !tunnelsConnected.value;
-  const players = tunnel.activeSessions ?? 0;
+  const players = playersOf(tunnel);
   const remaining = tunnel.expiresAt && online ? tunnel.expiresAt - now.value : 0;
   const expiry = expiryLevel(remaining);
   const elapsed = tunnel.startedAt && online && !stale ? now.value - tunnel.startedAt : 0;
